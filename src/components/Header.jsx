@@ -6,12 +6,17 @@ function Header() {
           <p className="eyebrow">Seguimiento laboral</p>
           <h1>Gestor de Postulaciones IT</h1>
           <p className="header-description">
-            Organizá tus búsquedas laborales y no pierdas ningún seguimiento.
+            Encontrá oportunidades compatibles, decidí dónde postularte y seguí cada proceso laboral.
           </p>
         </div>
-        <button className="button button-primary" type="button">
-          Nueva postulación
-        </button>
+        <div className="header-actions">
+          <button className="button button-primary" type="button">
+            Agregar oportunidad
+          </button>
+          <button className="button button-secondary" type="button">
+            Registrar postulación
+          </button>
+        </div>
       </div>
     </header>
   )

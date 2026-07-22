@@ -10,19 +10,19 @@ function StatsPanel() {
 
       <div className="statistics-grid">
         <article className="stat-card">
-          <p>Total</p>
+          <p>Oportunidades detectadas</p>
           <strong>0</strong>
         </article>
         <article className="stat-card">
-          <p>Activas</p>
+          <p>Recomendadas</p>
           <strong>0</strong>
         </article>
         <article className="stat-card">
-          <p>Procesos avanzados</p>
+          <p>Postulaciones activas</p>
           <strong>0</strong>
         </article>
         <article className="stat-card">
-          <p>Ofertas</p>
+          <p>Seguimientos pendientes</p>
           <strong>0</strong>
         </article>
       </div>

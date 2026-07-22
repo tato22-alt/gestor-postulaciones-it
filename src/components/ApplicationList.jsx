@@ -1,17 +1,14 @@
 import EmptyState from './EmptyState.jsx'
-import FiltersBar from './FiltersBar.jsx'
 
 function ApplicationList() {
   return (
     <section className="panel" aria-labelledby="applications-title">
-      <div className="list-toolbar">
+      <div className="section-heading">
         <div>
-          <p className="section-kicker">Oportunidades</p>
-          <h2 id="applications-title">Postulaciones</h2>
-          <p className="results-count">0 resultados</p>
+          <p className="section-kicker">Procesos</p>
+          <h2 id="applications-title">Postulaciones activas</h2>
         </div>
-
-        <FiltersBar />
+        <p>Procesos en los que ya enviaste tu solicitud.</p>
       </div>
 
       <EmptyState />

@@ -36,6 +36,13 @@
   font-size: 1.05rem;
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .eyebrow,
 .section-kicker {
   margin: 0;
@@ -53,7 +60,6 @@
 }
 
 .section-heading,
-.list-toolbar,
 .follow-up-panel {
   display: flex;
   align-items: flex-start;
@@ -66,7 +72,6 @@
 }
 
 .section-heading h2,
-.list-toolbar h2,
 .follow-up-panel h2 {
   margin: 4px 0 0;
 }
@@ -111,6 +116,35 @@
 
 .panel {
   padding: 28px;
+}
+
+.workspace-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #dfe3e8;
+}
+
+.workspace-tab {
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #667085;
+  font: inherit;
+  font-weight: 700;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+
+.workspace-tab:hover,
+.workspace-tab-active {
+  border-bottom-color: #2563eb;
+  color: #2563eb;
+}
+
+.workspace-tab:focus-visible {
+  border-radius: 6px;
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 2px;
 }
 
 .follow-up-panel {
@@ -226,25 +260,8 @@
   background: #f5f7fa;
 }
 
-.list-toolbar {
-  align-items: flex-end;
-}
-
-.results-count {
-  margin: 6px 0 0;
-  color: #667085;
-  font-size: 0.9rem;
-}
-
-.filters {
-  display: grid;
-  grid-template-columns: minmax(240px, 1fr) minmax(180px, 0.6fr);
-  gap: 12px;
-  width: min(100%, 520px);
-}
-
 .empty-state {
-  margin-top: 28px;
+  margin-top: 0;
   border: 1px dashed #b8c1ce;
   border-radius: 12px;
   background: #f8fafc;
@@ -264,10 +281,17 @@
   color: #667085;
 }
 
+.compact-empty-state {
+  padding-block: 36px;
+}
+
+.empty-state-action {
+  margin-top: 22px;
+}
+
 @media (max-width: 800px) {
   .header-content,
   .section-heading,
-  .list-toolbar,
   .follow-up-panel {
     align-items: stretch;
     flex-direction: column;
@@ -286,8 +310,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .filters {
-    width: 100%;
+  .header-actions {
+    justify-content: flex-start;
   }
 }
 
@@ -306,8 +330,7 @@
   }
 
   .statistics-grid,
-  .form-grid,
-  .filters {
+  .form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -327,6 +350,11 @@
   .form-actions .button,
   .header-content .button {
     width: 100%;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
   }
 
   .empty-state {
