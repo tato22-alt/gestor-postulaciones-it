@@ -14,13 +14,11 @@ The actual repository remains the final source of truth.
 
 ## Current Milestone
 
-The manual opportunity-creation and local-persistence flows are implemented, audited, committed, and published on `main`.
+Manual opportunity creation, local persistence, the data-driven dashboard, same-origin cross-tab synchronization, search, and status filtering are implemented, audited, committed, and published on `main`.
 
-The data-driven dashboard and same-origin cross-tab synchronization are committed locally on `main` and have not been pushed.
+The current working tree adds opportunity editing with identity preservation, shared validation, immutable collection replacement, persistence, and optimistic-concurrency protection. These changes remain local for final review.
 
-The current working tree adds non-destructive opportunity search and status filtering. These changes remain intentionally unstaged, uncommitted, and unpushed for manual review.
-
-The application can create opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the complete collection, synchronize valid storage changes between same-origin tabs, and derive a visible subset from temporary search and status criteria.
+The application can create and edit opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the complete collection, synchronize valid storage changes between same-origin tabs, and derive a visible subset from temporary search and status criteria.
 
 ## Implemented
 
@@ -154,6 +152,28 @@ The pure `filterOpportunities` application function derives a new array without 
 
 Dashboard metrics continue to use the complete opportunity collection and do not change merely because the visible list is filtered.
 
+### Opportunity editing
+
+The current working tree supports:
+
+* opening an existing opportunity in the shared form;
+* preloading an independent temporary draft;
+* editing company, title, URL, location, modality, employment type, publication date, and description;
+* canceling without changing React state or persistence;
+* preserving `id`, `createdAt`, `detectedAt`, `status`, source metadata, and non-editable values;
+* advancing `updatedAt` on every accepted edit;
+* rebuilding a valid `JobOpportunity` instance;
+* replacing only the selected collection element without mutating the source array;
+* saving the complete collection through `LocalStorageOpportunityRepository`;
+* recalculating search results, filters, and dashboard metrics from the updated source collection;
+* receiving valid edits from same-origin tabs;
+* detecting a stale same-record edit through the expected `updatedAt` value;
+* blocking stale saves while preserving both the local draft and the newer source record.
+
+The pure `updateOpportunity` application function coordinates validation, identity preservation, immutable replacement, and optimistic-concurrency comparison without depending on React, the DOM, or browser storage.
+
+Create and edit modes share input normalization and validation through `opportunityInput.js`. Visual components remain unaware of localStorage details.
+
 ### Documentation
 
 Relevant documentation distinguishes:
@@ -167,7 +187,6 @@ Relevant documentation distinguishes:
 
 The repository does not yet include:
 
-* opportunity editing;
 * opportunity deletion;
 * opportunity archiving behavior;
 * duplicate detection;
@@ -200,7 +219,7 @@ They represented an earlier application-centered interface and must not be resto
 
 ### Presentation
 
-React components render the header, statistics, workspace tabs, manual opportunity form, opportunity search and status controls, opportunity cards, opportunity section, and the static source, application, and follow-up sections.
+React components render the header, statistics, workspace tabs, the shared create/edit opportunity form, opportunity search and status controls, opportunity cards with edit actions, the opportunity section, and the static source, application, and follow-up sections.
 
 ### State ownership
 
@@ -208,13 +227,14 @@ React components render the header, statistics, workspace tabs, manual opportuni
 
 * the opportunity collection;
 * opportunity-form visibility;
+* the selected edit session and expected `updatedAt` version;
 * the current persistence warning;
 * the temporary opportunity search query;
 * the temporary opportunity status filter.
 
 `OpportunityForm` owns:
 
-* the temporary form draft;
+* the temporary create or edit draft;
 * form validation errors.
 
 Dashboard values are derived from the opportunity collection during rendering. They are not independent state and are not stored in `localStorage`.
@@ -223,9 +243,13 @@ Visible opportunities are derived from the same collection and the temporary sea
 
 ### Domain coordination
 
-`App` coordinates accepted form data and creates `JobOpportunity` instances.
+`App` coordinates accepted form data, creates `JobOpportunity` instances, selects the edit target, and persists accepted collection changes.
 
 `JobOpportunity` owns default identity, timestamps, and initial opportunity status.
+
+`updateOpportunity` validates editable data, compares the expected record version, rebuilds the domain entity while preserving identity, and returns an immutably updated collection.
+
+`opportunityInput` centralizes the shared form draft, validation, and normalization rules used by creation and editing.
 
 `calculateDashboardMetrics` is a pure application-level calculation that transforms validated opportunities into presentation-ready counts and percentages.
 
@@ -247,7 +271,7 @@ No remote service is connected.
 
 ## Current Limitations
 
-* Opportunity creation, local search, and status filtering are the only functional opportunity workflows.
+* Opportunity creation, editing, local search, and status filtering are the functional opportunity workflows.
 * Application, source, follow-up, and workspace-tab sections remain static.
 * Persistence remains local to one browser origin and device.
 * No remote synchronization exists.
@@ -309,6 +333,17 @@ The manual opportunity and persistence flows have been reviewed through:
 * temporary filter reset after reload;
 * active-filter recalculation after a same-origin tab update;
 * literal handling of malicious-looking search text without execution or regular-expression errors.
+* 30 deterministic opportunity-editing scenarios;
+* accepted edits with identity and creation metadata preserved;
+* cancellation without state or persistence changes;
+* persistence and domain-instance rehydration after editing;
+* automatic search and dashboard recalculation;
+* unrelated same-origin updates while an edit draft remains open;
+* stale same-record edit detection and blocked overwrite;
+* preserved draft and newer source record after a conflict;
+* continued creation behavior after editing;
+* edit-form validation and unsafe URL rejection;
+* responsive edit controls at 1440, 1024, 768, 390, and 320 CSS pixels.
 
 Luciano manually approved:
 
@@ -328,7 +363,7 @@ These gaps should be addressed only when the corresponding approved milestone re
 
 ## Next Planned Technical Direction
 
-The next proposed milestone must be selected after the current search and status filtering changes are manually reviewed and committed.
+The next proposed milestone must be selected after the current opportunity-editing changes are manually reviewed.
 
 The intended direction is:
 
@@ -342,6 +377,8 @@ JobOpportunity and LocalStorageOpportunityRepository
 calculateDashboardMetrics and StatsPanel
         ↓
 filterOpportunities and OpportunityFilters
+        ↓
+updateOpportunity and shared opportunity input rules
 ```
 
 The implemented architecture now:
@@ -355,6 +392,8 @@ The implemented architecture now:
 * synchronizes same-origin tabs without polling;
 * derives a visible opportunity subset from temporary UI criteria;
 * keeps dashboard metrics independent from list filtering;
+* preserves entity identity while applying accepted edits;
+* blocks stale same-record edits instead of using silent last-write-wins behavior;
 * remains replaceable by a future remote repository.
 
 No later milestone is authorized automatically.
@@ -363,7 +402,7 @@ No later milestone is authorized automatically.
 
 The following remain planned for later approved milestones:
 
-* editing and deletion;
+* deletion;
 * application conversion and tracking;
 * source approval and monitoring;
 * duplicate detection;

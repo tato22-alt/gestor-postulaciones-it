@@ -148,7 +148,9 @@ Las métricas no se persisten por separado: se recalculan desde las oportunidade
 
 La vista de oportunidades permite buscar por empresa o puesto y filtrar por cualquiera de los estados controlados. La búsqueda y el filtro pueden combinarse, no modifican la colección persistida y vuelven a su estado inicial al recargar la página. El dashboard continúa mostrando métricas de la colección completa, aunque la vista esté filtrada.
 
-Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen edición, eliminación, sincronización remota, postulaciones funcionales, seguimientos funcionales ni cuentas de usuario.
+Las oportunidades existentes pueden editarse sin cambiar su identidad ni su fecha de creación. La edición reutiliza las mismas reglas de validación del alta, actualiza `updatedAt`, persiste la colección completa y recalcula automáticamente la búsqueda, los filtros y el dashboard. Si otra pestaña modifica la misma oportunidad mientras el formulario está abierto, el guardado se bloquea para evitar sobrescribir silenciosamente datos más recientes.
+
+Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen eliminación, sincronización remota, postulaciones funcionales, seguimientos funcionales ni cuentas de usuario.
 
 ## Autor
 
