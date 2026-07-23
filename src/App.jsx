@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import calculateDashboardMetrics from './application/calculateDashboardMetrics.js'
+import filterOpportunities from './application/filterOpportunities.js'
 import ApplicationList from './components/ApplicationList.jsx'
 import FollowUpPanel from './components/FollowUpPanel.jsx'
 import Header from './components/Header.jsx'
@@ -42,6 +43,12 @@ function App() {
   const [persistenceWarning, setPersistenceWarning] = useState(
     initialOpportunityLoad.ok ? null : LOAD_WARNING,
   )
+  const [opportunitySearchQuery, setOpportunitySearchQuery] = useState('')
+  const [opportunityStatusFilter, setOpportunityStatusFilter] = useState(null)
+  const visibleOpportunities = filterOpportunities(opportunities, {
+    searchQuery: opportunitySearchQuery,
+    status: opportunityStatusFilter,
+  })
   const dashboardMetrics = calculateDashboardMetrics({
     opportunities,
     now: new Date(),
@@ -76,6 +83,15 @@ function App() {
 
   const closeOpportunityForm = () => {
     setIsOpportunityFormVisible(false)
+  }
+
+  const clearOpportunitySearch = () => {
+    setOpportunitySearchQuery('')
+  }
+
+  const resetOpportunityFilters = () => {
+    setOpportunitySearchQuery('')
+    setOpportunityStatusFilter(null)
   }
 
   const createOpportunity = (opportunityData) => {
@@ -115,7 +131,17 @@ function App() {
         {isOpportunityFormVisible && (
           <OpportunityForm onSubmit={createOpportunity} onCancel={closeOpportunityForm} />
         )}
-        <OpportunitySection opportunities={opportunities} onAddOpportunity={openOpportunityForm} />
+        <OpportunitySection
+          opportunities={opportunities}
+          visibleOpportunities={visibleOpportunities}
+          searchQuery={opportunitySearchQuery}
+          statusFilter={opportunityStatusFilter}
+          onSearchChange={setOpportunitySearchQuery}
+          onStatusChange={setOpportunityStatusFilter}
+          onClearSearch={clearOpportunitySearch}
+          onResetFilters={resetOpportunityFilters}
+          onAddOpportunity={openOpportunityForm}
+        />
         <SourceSection />
         <ApplicationList />
         <FollowUpPanel />

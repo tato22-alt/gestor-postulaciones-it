@@ -426,11 +426,74 @@
   opacity: 0.8;
 }
 
+.opportunity-filters {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+  border: 1px solid #dfe3e8;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 18px;
+}
+
+.opportunity-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(200px, 1fr);
+  gap: 16px;
+}
+
+.opportunity-filter-field {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.opportunity-filter-field label {
+  color: #344054;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.opportunity-filter-field input,
+.opportunity-filter-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #cbd2dc;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  font: inherit;
+  padding: 11px 12px;
+}
+
+.opportunity-filter-field input:focus,
+.opportunity-filter-field select:focus {
+  border-color: #2563eb;
+  outline: 3px solid rgba(37, 99, 235, 0.14);
+}
+
+.opportunity-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.opportunity-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .opportunity-count {
-  margin: 0 0 16px;
+  min-width: 0;
+  margin: 0;
   color: #667085;
   font-size: 0.9rem;
   font-weight: 650;
+  overflow-wrap: anywhere;
 }
 
 .opportunity-list {
@@ -578,6 +641,10 @@
     grid-column: auto;
   }
 
+  .opportunity-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
   .header-actions {
     justify-content: flex-start;
   }
@@ -617,8 +684,15 @@
   }
 
   .form-actions .button,
-  .header-content .button {
+  .header-content .button,
+  .opportunity-filter-actions .button {
     width: 100%;
+  }
+
+  .opportunity-filter-summary,
+  .opportunity-filter-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .header-actions {
