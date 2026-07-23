@@ -118,6 +118,28 @@
   padding: 28px;
 }
 
+.persistence-warning {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  border: 1px solid #e5a93d;
+  border-left-width: 5px;
+  border-radius: 10px;
+  background: #fff8e8;
+  color: #5f4300;
+  padding: 16px 18px;
+  overflow-wrap: anywhere;
+}
+
+.persistence-warning strong,
+.persistence-warning p {
+  margin: 0;
+}
+
+.persistence-warning p {
+  line-height: 1.5;
+}
+
 .workspace-tabs {
   display: flex;
   gap: 8px;

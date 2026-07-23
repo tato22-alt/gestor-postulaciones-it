@@ -81,7 +81,7 @@ Todavía no existen:
 - validaciones de campos obligatorios;
 - reglas de transición entre estados;
 - instancias con información de Luciano;
-- persistencia o repositorios;
+- persistencia remota o repositorios para otros agregados;
 - monitoreo de fuentes;
 - scraping o consumo de APIs;
 - detección de duplicados;
@@ -92,6 +92,6 @@ Todavía no existen:
 - autenticación;
 - inteligencia artificial.
 
-La interfaz React ya utiliza `JobOpportunity` para representar las oportunidades cargadas manualmente. Esta integración no agrega persistencia ni reglas de negocio nuevas al modelo.
+La interfaz React ya utiliza `JobOpportunity` para representar las oportunidades cargadas manualmente. La infraestructura local persiste estas oportunidades mediante `LocalStorageOpportunityRepository`, valida el formato almacenado y rehidrata instancias reales de la clase. El modelo de dominio continúa sin depender de React, `localStorage` ni del repositorio.
 
 Los valores `null` representan información no disponible o aún no configurada; no constituyen una categoría de negocio adicional.

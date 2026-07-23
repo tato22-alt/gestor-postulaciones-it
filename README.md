@@ -124,9 +124,11 @@ Cada decisión técnica importante debe explicar:
 
 ## Estado actual del proyecto
 
-La aplicación permite cargar manualmente oportunidades laborales, validar los campos obligatorios y mostrarlas durante la sesión actual. Cada alta crea una instancia de `JobOpportunity` y actualiza los contadores sin convertir la oportunidad en una postulación.
+La aplicación permite cargar manualmente oportunidades laborales, validar los campos obligatorios y conservarlas entre recargas del navegador. Cada alta crea una instancia de `JobOpportunity`, actualiza los contadores y guarda la colección completa mediante un repositorio aislado de `localStorage`, sin convertir la oportunidad en una postulación.
 
-La persistencia todavía no está implementada. Las oportunidades se conservan únicamente en memoria y desaparecen al recargar la página; `localStorage` continúa como una capacidad planificada del MVP.
+Los datos persistidos usan una clave propia y un formato versionado. Al iniciar, el repositorio valida la estructura antes de reconstruir instancias reales de `JobOpportunity`. Si encuentra datos corruptos o una versión no compatible, no los sobrescribe: inicia una sesión sin persistencia y muestra una advertencia recuperable.
+
+Esta persistencia es exclusivamente local al navegador y al dispositivo actual. Todavía no existen edición, eliminación, sincronización remota ni cuentas de usuario.
 
 ## Autor
 

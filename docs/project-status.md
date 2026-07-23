@@ -14,13 +14,11 @@ The actual repository remains the final source of truth.
 
 ## Current Milestone
 
-The manual opportunity-creation flow is implemented, audited, and manually verified.
+The manual opportunity-creation flow is implemented, audited, committed, and published on `main`.
 
-Its current local changes have not yet been committed.
+Local opportunity persistence is implemented and verified in the current working tree. These persistence changes remain intentionally uncommitted and unpushed for manual review.
 
-The application can create opportunities in React memory and render them immediately.
-
-Persistence is not implemented.
+The application can create opportunities, persist them in the current browser, rehydrate domain instances after reload, and recover safely when stored data is invalid.
 
 ## Implemented
 
@@ -87,6 +85,25 @@ The interface has been checked at representative desktop and mobile widths.
 
 Long descriptions and malicious-looking text remain safely contained and rendered as text.
 
+### Local opportunity persistence
+
+The current working tree supports:
+
+* an isolated `LocalStorageOpportunityRepository`;
+* dependency injection of the browser storage adapter;
+* a stable namespaced storage key;
+* a versioned persistence envelope;
+* full-collection immutable saves after accepted creation;
+* strict validation of the parsed envelope and every opportunity record;
+* reconstruction of real `JobOpportunity` instances;
+* preservation of identifiers, timestamps, status, optional fields, arrays, and `null` values;
+* safe handling of missing storage;
+* safe handling of malformed JSON and unsupported versions;
+* safe handling of read and write failures;
+* preservation of corrupted stored data without automatic overwrite;
+* a visible, semantic storage warning;
+* shared HTTP/HTTPS URL validation for form and repository boundaries.
+
 ### Documentation
 
 Relevant documentation distinguishes:
@@ -100,8 +117,6 @@ Relevant documentation distinguishes:
 
 The repository does not yet include:
 
-* localStorage persistence;
-* an opportunity repository;
 * opportunity editing;
 * opportunity deletion;
 * opportunity archiving behavior;
@@ -163,22 +178,22 @@ Presentation components receive data through props and communicate actions throu
 
 ### Infrastructure
 
-No persistence infrastructure exists yet.
+`LocalStorageOpportunityRepository` owns browser-storage access and remains outside the presentation and domain layers.
 
-No React component accesses localStorage.
+`App` receives repository results and coordinates state updates, but visual components do not access `localStorage` directly.
+
+Persisted records use the key `it-job-search-assistant.opportunities` and a versioned envelope with `schemaVersion: 1`.
 
 No remote service is connected.
 
 ## Current Limitations
 
-* Opportunities disappear after a browser reload.
-* Closing and reopening the application removes in-memory opportunities.
 * Only the opportunity-creation flow has functional behavior.
 * Application, source, follow-up, and workspace-tab sections remain static.
-* Persistence warnings do not exist because persistence is not implemented.
+* Persistence remains local to one browser and device.
 * No remote synchronization exists.
 * No multi-device data sharing exists.
-* No recovery flow for corrupted stored data exists.
+* Corrupted data is preserved and reported, but there is no user-facing repair or export workflow yet.
 * Automated tests have not been introduced.
 
 ## Security State
@@ -192,14 +207,16 @@ The current implementation:
 * does not use `dangerouslySetInnerHTML`;
 * does not execute user content;
 * does not store secrets;
-* does not use browser storage;
+* treats browser storage as untrusted input;
+* rejects malformed records and unsafe stored URLs before rendering;
+* preserves corrupted values instead of silently deleting them;
 * does not connect to external APIs.
 
 Frontend validation remains a user-experience boundary, not a future backend security boundary.
 
 ## Verification State
 
-The manual opportunity flow has been reviewed through:
+The manual opportunity and persistence flows have been reviewed through:
 
 * production build;
 * lint;
@@ -209,6 +226,11 @@ The manual opportunity flow has been reviewed through:
 * multiple opportunity creation;
 * opportunity counter updates;
 * reload behavior;
+* deterministic repository scenarios with an injected in-memory storage adapter;
+* missing, malformed, unsupported, and invalid stored data;
+* storage read and write failures;
+* preservation and recovery of corrupted stored values;
+* domain-instance rehydration;
 * malicious-looking text;
 * long content;
 * desktop and mobile layouts;
@@ -226,13 +248,13 @@ Luciano manually approved:
 
 No blocking source defect is currently known.
 
-The repository does not yet have automated unit tests, automated component tests, deterministic repository tests, or persistence failure handling.
+The repository does not yet have an automated test framework or automated component tests. Persistence behavior is currently covered by deterministic repository checks executed without adding dependencies, plus browser validation.
 
 These gaps should be addressed only when the corresponding approved milestone requires them.
 
 ## Next Planned Technical Direction
 
-The next proposed milestone is local opportunity persistence through an isolated repository.
+The next proposed milestone must be selected after the current local persistence changes are manually reviewed and committed.
 
 The intended direction is:
 
@@ -248,7 +270,7 @@ Opportunity repository
 localStorage
 ```
 
-The repository should:
+The implemented repository now:
 
 * isolate browser storage;
 * use a stable namespaced key;
@@ -260,7 +282,7 @@ The repository should:
 * report load and save failures safely;
 * remain replaceable by a future remote repository.
 
-This milestone requires explicit authorization after the current files are reviewed and committed.
+No later milestone is authorized automatically.
 
 ## Intentionally Deferred
 

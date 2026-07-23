@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { EMPLOYMENT_TYPES, MODALITIES } from '../constants/domainOptions.js'
+import { isValidHttpUrl, normalizeHttpUrl } from '../utils/url.js'
 
 const EMPTY_DRAFT = {
   company: '',
@@ -10,15 +11,6 @@ const EMPTY_DRAFT = {
   employmentType: '',
   publishedAt: '',
   description: '',
-}
-
-function isValidHttpUrl(value) {
-  try {
-    const url = new URL(value.trim())
-    return url.protocol === 'http:' || url.protocol === 'https:'
-  } catch {
-    return false
-  }
 }
 
 function getFieldError(fieldName, value) {
@@ -59,7 +51,7 @@ function normalizeDraft(draft) {
   return {
     company: draft.company.trim(),
     title: draft.title.trim(),
-    url: new URL(draft.url.trim()).toString(),
+    url: normalizeHttpUrl(draft.url),
     location: draft.location.trim(),
     modality: draft.modality || null,
     employmentType: draft.employmentType || null,
