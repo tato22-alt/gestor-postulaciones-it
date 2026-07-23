@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import calculateDashboardMetrics from './application/calculateDashboardMetrics.js'
 import filterOpportunities from './application/filterOpportunities.js'
+import updateOpportunity from './application/updateOpportunity.js'
 import ApplicationList from './components/ApplicationList.jsx'
 import FollowUpPanel from './components/FollowUpPanel.jsx'
 import Header from './components/Header.jsx'
@@ -21,6 +22,15 @@ const LOAD_WARNING =
 
 const SAVE_WARNING =
   'La oportunidad se agregó a esta sesión, pero no pudo guardarse en el navegador. Puede perderse al recargar la página.'
+
+const EDIT_SAVE_WARNING =
+  'La oportunidad se actualizó en esta sesión, pero no pudo guardarse en el navegador. La edición puede perderse al recargar la página.'
+
+const EDIT_CONFLICT_WARNING =
+  'Esta oportunidad cambió en otra pestaña mientras la editabas. Tus cambios no se guardaron. Cancelá la edición y volvé a abrirla para trabajar con la versión más reciente.'
+
+const EDIT_NOT_FOUND_WARNING =
+  'La oportunidad que estabas editando ya no está disponible. Tus cambios no se guardaron. Cancelá la edición para continuar.'
 
 function getBrowserStorage() {
   if (typeof window === 'undefined') {
@@ -45,6 +55,8 @@ function App() {
   )
   const [opportunitySearchQuery, setOpportunitySearchQuery] = useState('')
   const [opportunityStatusFilter, setOpportunityStatusFilter] = useState(null)
+  const [editingSession, setEditingSession] = useState(null)
+  const [editWarning, setEditWarning] = useState(null)
   const visibleOpportunities = filterOpportunities(opportunities, {
     searchQuery: opportunitySearchQuery,
     status: opportunityStatusFilter,
@@ -78,11 +90,25 @@ function App() {
   }, [])
 
   const openOpportunityForm = () => {
+    setEditingSession(null)
+    setEditWarning(null)
     setIsOpportunityFormVisible(true)
   }
 
   const closeOpportunityForm = () => {
     setIsOpportunityFormVisible(false)
+    setEditingSession(null)
+    setEditWarning(null)
+  }
+
+  const openOpportunityEditForm = (opportunity) => {
+    setEditingSession({
+      id: opportunity.id,
+      expectedUpdatedAt: opportunity.updatedAt,
+      initialValues: opportunity,
+    })
+    setEditWarning(null)
+    setIsOpportunityFormVisible(true)
   }
 
   const clearOpportunitySearch = () => {
@@ -118,6 +144,45 @@ function App() {
     }
 
     closeOpportunityForm()
+    return true
+  }
+
+  const editOpportunity = (opportunityData) => {
+    if (!editingSession) {
+      return false
+    }
+
+    const updateResult = updateOpportunity(opportunities, {
+      id: editingSession.id,
+      expectedUpdatedAt: editingSession.expectedUpdatedAt,
+      changes: opportunityData,
+    })
+
+    if (!updateResult.ok) {
+      setEditWarning(
+        updateResult.status === 'not_found'
+          ? EDIT_NOT_FOUND_WARNING
+          : EDIT_CONFLICT_WARNING,
+      )
+      return false
+    }
+
+    setOpportunities(updateResult.opportunities)
+
+    const saveResult = opportunityRepository.saveAll(
+      updateResult.opportunities,
+    )
+
+    if (saveResult.ok) {
+      setPersistenceWarning(null)
+    } else {
+      setPersistenceWarning(
+        (currentWarning) => currentWarning ?? EDIT_SAVE_WARNING,
+      )
+    }
+
+    closeOpportunityForm()
+    return true
   }
 
   return (
@@ -129,7 +194,18 @@ function App() {
         <WorkspaceTabs />
         <PersistenceWarning message={persistenceWarning} />
         {isOpportunityFormVisible && (
-          <OpportunityForm onSubmit={createOpportunity} onCancel={closeOpportunityForm} />
+          <OpportunityForm
+            key={
+              editingSession
+                ? `edit-${editingSession.id}-${editingSession.expectedUpdatedAt}`
+                : 'create'
+            }
+            mode={editingSession ? 'edit' : 'create'}
+            initialValues={editingSession?.initialValues}
+            submissionWarning={editWarning}
+            onSubmit={editingSession ? editOpportunity : createOpportunity}
+            onCancel={closeOpportunityForm}
+          />
         )}
         <OpportunitySection
           opportunities={opportunities}
@@ -141,6 +217,9 @@ function App() {
           onClearSearch={clearOpportunitySearch}
           onResetFilters={resetOpportunityFilters}
           onAddOpportunity={openOpportunityForm}
+          editingOpportunityId={editingSession?.id ?? null}
+          isOpportunityFormVisible={isOpportunityFormVisible}
+          onEditOpportunity={openOpportunityEditForm}
         />
         <SourceSection />
         <ApplicationList />

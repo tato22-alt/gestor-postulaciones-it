@@ -11,6 +11,9 @@ function OpportunitySection({
   onClearSearch,
   onResetFilters,
   onAddOpportunity,
+  editingOpportunityId,
+  isOpportunityFormVisible,
+  onEditOpportunity,
 }) {
   return (
     <section className="panel" aria-labelledby="opportunities-title">
@@ -60,7 +63,13 @@ function OpportunitySection({
       ) : (
         <div className="opportunity-list">
           {visibleOpportunities.map((opportunity) => (
-            <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+            <OpportunityCard
+              key={opportunity.id}
+              opportunity={opportunity}
+              isEditDisabled={isOpportunityFormVisible}
+              isBeingEdited={editingOpportunityId === opportunity.id}
+              onEdit={onEditOpportunity}
+            />
           ))}
         </div>
       )}

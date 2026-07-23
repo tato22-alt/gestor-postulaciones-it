@@ -260,6 +260,28 @@
   line-height: 1.5;
 }
 
+.edit-conflict-warning {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 24px;
+  border: 1px solid #d92d20;
+  border-left-width: 5px;
+  border-radius: 10px;
+  background: #fff1f0;
+  color: #7a271a;
+  padding: 16px 18px;
+  overflow-wrap: anywhere;
+}
+
+.edit-conflict-warning strong,
+.edit-conflict-warning p {
+  margin: 0;
+}
+
+.edit-conflict-warning p {
+  line-height: 1.5;
+}
+
 .workspace-tabs {
   display: flex;
   gap: 8px;
@@ -579,8 +601,15 @@
 .opportunity-link {
   display: inline-flex;
   align-items: center;
-  justify-self: start;
   text-decoration: none;
+}
+
+.opportunity-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
 }
 
 .empty-state {
@@ -685,7 +714,8 @@
 
   .form-actions .button,
   .header-content .button,
-  .opportunity-filter-actions .button {
+  .opportunity-filter-actions .button,
+  .opportunity-card-actions .button {
     width: 100%;
   }
 
@@ -697,6 +727,11 @@
 
   .header-actions {
     width: 100%;
+    flex-direction: column;
+  }
+
+  .opportunity-card-actions {
+    align-items: stretch;
     flex-direction: column;
   }
 

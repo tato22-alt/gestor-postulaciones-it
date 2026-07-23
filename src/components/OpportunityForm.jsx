@@ -1,81 +1,70 @@
 import { useState } from 'react'
+import {
+  createOpportunityDraft,
+  normalizeOpportunityInput,
+  validateOpportunityInput,
+} from '../application/opportunityInput.js'
 import { EMPLOYMENT_TYPES, MODALITIES } from '../constants/domainOptions.js'
-import { isValidHttpUrl, normalizeHttpUrl } from '../utils/url.js'
 
-const EMPTY_DRAFT = {
-  company: '',
-  title: '',
-  url: '',
-  location: '',
-  modality: '',
-  employmentType: '',
-  publishedAt: '',
-  description: '',
+const ERROR_MESSAGES = {
+  company: {
+    required: 'Ingresá la empresa.',
+  },
+  title: {
+    required: 'Ingresá el puesto.',
+  },
+  url: {
+    required: 'Ingresá el enlace a la publicación.',
+    invalid_url: 'Ingresá una URL válida que comience con http:// o https://.',
+  },
+  location: {
+    invalid_text: 'Ingresá una ubicación válida.',
+  },
+  modality: {
+    invalid_option: 'Elegí una modalidad válida.',
+  },
+  employmentType: {
+    invalid_option: 'Elegí un tipo de jornada válido.',
+  },
+  publishedAt: {
+    invalid_date: 'Ingresá una fecha de publicación válida.',
+  },
+  description: {
+    invalid_text: 'Ingresá una descripción válida.',
+  },
 }
 
-function getFieldError(fieldName, value) {
-  if (fieldName === 'company' && !value.trim()) {
-    return 'Ingresá la empresa.'
-  }
-
-  if (fieldName === 'title' && !value.trim()) {
-    return 'Ingresá el puesto.'
-  }
-
-  if (fieldName === 'url') {
-    if (!value.trim()) {
-      return 'Ingresá el enlace a la publicación.'
-    }
-
-    if (!isValidHttpUrl(value)) {
-      return 'Ingresá una URL válida que comience con http:// o https://.'
-    }
-  }
-
-  return null
+function getErrorMessage(fieldName, errorCode) {
+  return ERROR_MESSAGES[fieldName]?.[errorCode] ?? 'Revisá este campo.'
 }
 
-function validateDraft(draft) {
-  return ['company', 'title', 'url'].reduce((errors, fieldName) => {
-    const fieldError = getFieldError(fieldName, draft[fieldName])
-
-    if (fieldError) {
-      errors[fieldName] = fieldError
-    }
-
-    return errors
-  }, {})
-}
-
-function normalizeDraft(draft) {
-  return {
-    company: draft.company.trim(),
-    title: draft.title.trim(),
-    url: normalizeHttpUrl(draft.url),
-    location: draft.location.trim(),
-    modality: draft.modality || null,
-    employmentType: draft.employmentType || null,
-    publishedAt: draft.publishedAt || null,
-    description: draft.description.trim(),
-  }
-}
-
-function OpportunityForm({ onSubmit, onCancel }) {
-  const [draft, setDraft] = useState(EMPTY_DRAFT)
+function OpportunityForm({
+  mode = 'create',
+  initialValues,
+  submissionWarning,
+  onSubmit,
+  onCancel,
+}) {
+  const [draft, setDraft] = useState(() =>
+    createOpportunityDraft(initialValues),
+  )
   const [errors, setErrors] = useState({})
+  const isEditMode = mode === 'edit'
 
   const handleChange = (event) => {
     const { name, value } = event.target
+    const nextDraft = { ...draft, [name]: value }
+
     setDraft((currentDraft) => ({ ...currentDraft, [name]: value }))
 
     if (Object.hasOwn(errors, name)) {
-      const fieldError = getFieldError(name, value)
+      const nextFieldError = validateOpportunityInput(nextDraft)[name]
 
       setErrors((currentErrors) => {
         const nextErrors = { ...currentErrors }
 
-        if (fieldError) {
-          nextErrors[name] = fieldError
+        if (nextFieldError) {
+          nextErrors[name] = nextFieldError
         } else {
           delete nextErrors[name]
         }
@@ -87,15 +76,20 @@ function OpportunityForm({ onSubmit, onCancel }) {
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    const validationErrors = validateDraft(draft)
+    const validationErrors = validateOpportunityInput(draft)
     setErrors(validationErrors)
 
     if (Object.keys(validationErrors).length > 0) {
       return
     }
 
-    onSubmit(normalizeDraft(draft))
-    setDraft({ ...EMPTY_DRAFT })
+    const wasAccepted = onSubmit(normalizeOpportunityInput(draft))
+
+    if (wasAccepted === false) {
+      return
+    }
+
+    setDraft(createOpportunityDraft())
     setErrors({})
   }
 
@@ -103,11 +97,26 @@ function OpportunityForm({ onSubmit, onCancel }) {
     <section className="panel" aria-labelledby="opportunity-form-title">
       <div className="section-heading">
         <div>
-          <p className="section-kicker">Carga manual</p>
-          <h2 id="opportunity-form-title">Agregar oportunidad</h2>
+          <p className="section-kicker">
+            {isEditMode ? 'Edición' : 'Carga manual'}
+          </p>
+          <h2 id="opportunity-form-title">
+            {isEditMode ? 'Editar oportunidad' : 'Agregar oportunidad'}
+          </h2>
         </div>
-        <p>Registrá los datos básicos de una oferta para revisarla.</p>
+        <p>
+          {isEditMode
+            ? 'Actualizá los datos de la oferta sin cambiar su identidad.'
+            : 'Registrá los datos básicos de una oferta para revisarla.'}
+        </p>
       </div>
+
+      {submissionWarning && (
+        <div className="edit-conflict-warning" role="alert">
+          <strong>No pudimos guardar la edición</strong>
+          <p>{submissionWarning}</p>
+        </div>
+      )}
 
       <form className="opportunity-form" onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
@@ -120,13 +129,14 @@ function OpportunityForm({ onSubmit, onCancel }) {
               name="company"
               value={draft.company}
               onChange={handleChange}
+              autoFocus
               aria-invalid={Boolean(errors.company)}
               aria-describedby={errors.company ? 'opportunity-company-error' : undefined}
               required
             />
             {errors.company && (
               <p className="form-error" id="opportunity-company-error" role="alert">
-                {errors.company}
+                {getErrorMessage('company', errors.company)}
               </p>
             )}
           </div>
@@ -146,7 +156,7 @@ function OpportunityForm({ onSubmit, onCancel }) {
             />
             {errors.title && (
               <p className="form-error" id="opportunity-title-error" role="alert">
-                {errors.title}
+                {getErrorMessage('title', errors.title)}
               </p>
             )}
           </div>
@@ -168,7 +178,7 @@ function OpportunityForm({ onSubmit, onCancel }) {
             />
             {errors.url && (
               <p className="form-error" id="opportunity-url-error" role="alert">
-                {errors.url}
+                {getErrorMessage('url', errors.url)}
               </p>
             )}
           </div>
@@ -180,8 +190,17 @@ function OpportunityForm({ onSubmit, onCancel }) {
               name="location"
               value={draft.location}
               onChange={handleChange}
+              aria-invalid={Boolean(errors.location)}
+              aria-describedby={
+                errors.location ? 'opportunity-location-error' : undefined
+              }
               placeholder="Ciudad o región"
             />
+            {errors.location && (
+              <p className="form-error" id="opportunity-location-error" role="alert">
+                {getErrorMessage('location', errors.location)}
+              </p>
+            )}
           </div>
 
           <div className="form-field">
@@ -191,6 +210,10 @@ function OpportunityForm({ onSubmit, onCancel }) {
               name="modality"
               value={draft.modality}
               onChange={handleChange}
+              aria-invalid={Boolean(errors.modality)}
+              aria-describedby={
+                errors.modality ? 'opportunity-modality-error' : undefined
+              }
             >
               <option value="">Sin especificar</option>
               {Object.values(MODALITIES).map((modality) => (
@@ -199,6 +222,11 @@ function OpportunityForm({ onSubmit, onCancel }) {
                 </option>
               ))}
             </select>
+            {errors.modality && (
+              <p className="form-error" id="opportunity-modality-error" role="alert">
+                {getErrorMessage('modality', errors.modality)}
+              </p>
+            )}
           </div>
 
           <div className="form-field">
@@ -208,6 +236,12 @@ function OpportunityForm({ onSubmit, onCancel }) {
               name="employmentType"
               value={draft.employmentType}
               onChange={handleChange}
+              aria-invalid={Boolean(errors.employmentType)}
+              aria-describedby={
+                errors.employmentType
+                  ? 'opportunity-employment-type-error'
+                  : undefined
+              }
             >
               <option value="">Sin especificar</option>
               {Object.values(EMPLOYMENT_TYPES).map((employmentType) => (
@@ -216,6 +250,15 @@ function OpportunityForm({ onSubmit, onCancel }) {
                 </option>
               ))}
             </select>
+            {errors.employmentType && (
+              <p
+                className="form-error"
+                id="opportunity-employment-type-error"
+                role="alert"
+              >
+                {getErrorMessage('employmentType', errors.employmentType)}
+              </p>
+            )}
           </div>
 
           <div className="form-field">
@@ -226,7 +269,22 @@ function OpportunityForm({ onSubmit, onCancel }) {
               type="date"
               value={draft.publishedAt}
               onChange={handleChange}
+              aria-invalid={Boolean(errors.publishedAt)}
+              aria-describedby={
+                errors.publishedAt
+                  ? 'opportunity-published-at-error'
+                  : undefined
+              }
             />
+            {errors.publishedAt && (
+              <p
+                className="form-error"
+                id="opportunity-published-at-error"
+                role="alert"
+              >
+                {getErrorMessage('publishedAt', errors.publishedAt)}
+              </p>
+            )}
           </div>
 
           <div className="form-field form-field-wide">
@@ -236,9 +294,24 @@ function OpportunityForm({ onSubmit, onCancel }) {
               name="description"
               value={draft.description}
               onChange={handleChange}
+              aria-invalid={Boolean(errors.description)}
+              aria-describedby={
+                errors.description
+                  ? 'opportunity-description-error'
+                  : undefined
+              }
               rows="5"
               placeholder="Información relevante de la publicación"
             />
+            {errors.description && (
+              <p
+                className="form-error"
+                id="opportunity-description-error"
+                role="alert"
+              >
+                {getErrorMessage('description', errors.description)}
+              </p>
+            )}
           </div>
         </div>
 
@@ -251,7 +324,7 @@ function OpportunityForm({ onSubmit, onCancel }) {
             type="submit"
             disabled={Object.keys(errors).length > 0}
           >
-            Guardar oportunidad
+            {isEditMode ? 'Guardar cambios' : 'Guardar oportunidad'}
           </button>
         </div>
       </form>

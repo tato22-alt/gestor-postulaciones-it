@@ -18,7 +18,12 @@ function formatPublishedDate(value) {
   return new Intl.DateTimeFormat('es-AR').format(date)
 }
 
-function OpportunityCard({ opportunity }) {
+function OpportunityCard({
+  opportunity,
+  isEditDisabled,
+  isBeingEdited,
+  onEdit,
+}) {
   return (
     <article className="opportunity-card">
       <div className="opportunity-card-header">
@@ -67,14 +72,25 @@ function OpportunityCard({ opportunity }) {
         <p className="opportunity-description">{opportunity.description}</p>
       )}
 
-      <a
-        className="button button-secondary opportunity-link"
-        href={opportunity.url}
-        target="_blank"
-        rel="noreferrer"
-      >
-        Abrir publicación
-      </a>
+      <div className="opportunity-card-actions">
+        <a
+          className="button button-secondary opportunity-link"
+          href={opportunity.url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Abrir publicación
+        </a>
+        <button
+          className="button button-secondary"
+          type="button"
+          disabled={isEditDisabled}
+          aria-label={`Editar ${opportunity.title} en ${opportunity.company}`}
+          onClick={() => onEdit(opportunity)}
+        >
+          {isBeingEdited ? 'Editando' : 'Editar'}
+        </button>
+      </div>
     </article>
   )
 }
