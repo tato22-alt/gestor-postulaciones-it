@@ -124,7 +124,9 @@ Cada decisión técnica importante debe explicar:
 
 ## Estado actual del proyecto
 
-Inicialización técnica completada con React, Vite y Git. El desarrollo funcional todavía no comenzó.
+La aplicación permite cargar manualmente oportunidades laborales, validar los campos obligatorios y mostrarlas durante la sesión actual. Cada alta crea una instancia de `JobOpportunity` y actualiza los contadores sin convertir la oportunidad en una postulación.
+
+La persistencia todavía no está implementada. Las oportunidades se conservan únicamente en memoria y desaparecen al recargar la página; `localStorage` continúa como una capacidad planificada del MVP.
 
 ## Autor
 

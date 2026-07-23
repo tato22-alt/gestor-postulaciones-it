@@ -82,7 +82,6 @@ Todavía no existen:
 - reglas de transición entre estados;
 - instancias con información de Luciano;
 - persistencia o repositorios;
-- integración con React;
 - monitoreo de fuentes;
 - scraping o consumo de APIs;
 - detección de duplicados;
@@ -92,5 +91,7 @@ Todavía no existen:
 - envío de notificaciones;
 - autenticación;
 - inteligencia artificial.
+
+La interfaz React ya utiliza `JobOpportunity` para representar las oportunidades cargadas manualmente. Esta integración no agrega persistencia ni reglas de negocio nuevas al modelo.
 
 Los valores `null` representan información no disponible o aún no configurada; no constituyen una categoría de negocio adicional.

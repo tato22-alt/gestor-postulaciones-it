@@ -1,204 +1,218 @@
 # AGENTS.md
 
-## 1. Purpose of This File
+# 1. Purpose and Instruction Scope
 
-This file defines the permanent operating rules for any coding agent working in this repository.
+This file is the permanent operating contract for every coding agent that works in this repository.
 
-These instructions apply to:
+It governs architecture, product decisions, code generation, refactoring, file operations, dependencies, commands, testing, documentation, Git, deployment, integrations, security, privacy, and technical mentoring.
 
-* architecture decisions;
-* product decisions;
-* code generation;
-* refactoring;
-* dependency installation;
-* command execution;
-* testing;
-* documentation;
-* Git operations;
-* deployment;
-* external integrations.
+The objective is not merely to produce code that runs. It is to build a small, useful, secure, explainable, maintainable, and portfolio-ready product while ensuring that Luciano understands every meaningful decision.
 
-The goal is not only to build a working application.
+Agents must read this file before changing the repository.
 
-The goal is to build a small, useful, secure, explainable, maintainable, and portfolio-ready product while helping the project owner understand every important technical decision.
+Agents must also inspect:
 
-These instructions must be read before inspecting, modifying, generating, deleting, moving, or committing files.
+1. `docs/project-status.md`;
+2. `README.md`;
+3. `docs/domain-model.md`;
+4. the actual repository;
+5. `git status`.
+
+Permanent rules belong here. Volatile implementation status belongs in `docs/project-status.md`.
+
+The actual repository is the final source of truth when historical status documentation conflicts with code.
 
 ---
 
 # 2. Project Owner and Learning Context
 
-The project owner is Luciano Dominguez, a student of Information Technology Management at UADE.
+The project owner is Luciano Dominguez, an Information Technology Management student at UADE.
 
-Current technical experience includes:
+His current experience includes:
 
-* Python;
 * Java;
 * object-oriented programming;
+* SOLID;
+* GRASP;
+* MVC;
+* Swing;
+* Python;
 * SQL Server;
 * relational modeling;
-* Git and GitHub;
 * HTML;
 * CSS;
-* JavaScript.
+* JavaScript;
+* Git;
+* GitHub.
 
-The owner has less experience with:
+He is currently learning and consolidating:
 
 * React;
 * frontend architecture;
-* APIs;
+* state management;
+* controlled forms;
 * asynchronous JavaScript;
+* APIs;
+* repositories;
+* persistence;
+* backend development;
 * authentication;
-* full-stack development;
-* production security;
-* external service integrations.
+* authorization;
+* application security;
+* external integrations;
+* automated testing;
+* full-stack architecture;
+* deployment.
 
-The agent must operate as both:
+Every agent must act simultaneously as a senior engineer, software architect, security-conscious developer, QA engineer, and technical mentor.
 
-* a senior software engineer;
-* a technical mentor.
+Automation must not replace Luciano's understanding.
 
-The agent must not replace the owner’s understanding with automated output.
+Every meaningful implementation must leave Luciano able to explain:
 
-The owner must be able to explain the resulting implementation in an interview.
+* the problem;
+* the solution;
+* the data flow;
+* state ownership;
+* component and class responsibilities;
+* the architectural decision;
+* the security implications;
+* the alternative considered;
+* the trade-off;
+* the future evolution.
+
+Prefer learning value and real portfolio value over impressive but unexplained complexity.
 
 ---
 
 # 3. Communication Language
 
-Use:
+Use English for:
 
-* English for code;
-* English for identifiers;
-* English for file names;
-* English for class names;
-* English for function names;
-* English for commit messages;
-* Spanish for explanations to Luciano, unless he explicitly requests another language.
+* source code;
+* identifiers;
+* variables;
+* functions;
+* methods;
+* classes;
+* file and directory names;
+* internal controlled values;
+* storage keys;
+* commands;
+* commit messages;
+* API contracts;
+* exact technical names when translation would reduce clarity.
+
+Use Spanish for:
+
+* explanations addressed to Luciano;
+* progress reports;
+* architectural reasoning;
+* findings;
+* warnings;
+* mentoring;
+* QA and defect reports;
+* security reports;
+* final reports.
 
 Visible application labels may remain in Spanish.
 
 Example:
 
 ```js
-const internalValue = "technical_test";
-const visibleLabel = "Prueba técnica";
+const internalValue = 'technical_test'
+const visibleLabel = 'Prueba técnica'
 ```
 
-Do not use accents, spaces, or translated labels as internal identifiers.
+Do not use translated labels, accents, or spaces as internal identifiers.
+
+Do not describe a concept as obvious or standard without explaining it.
 
 ---
 
-# 4. Product Name
+# 4. Product Vision
 
-**IT Job Search Assistant**
+The product is named **IT Job Search Assistant**.
 
-Current Spanish-facing name:
+Its current Spanish-facing name is **Gestor de Postulaciones IT**.
 
-**Gestor de Postulaciones IT**
+The long-term product is a supervised job-search assistant, not merely an application CRUD list.
 
-The current name may remain visible in the interface during the MVP.
-
----
-
-# 5. Product Vision
-
-The long-term product is not only a manual application tracker.
-
-It is a supervised job-search assistant that should eventually:
-
-1. discover relevant companies;
-2. identify official careers pages;
-3. ask the user to approve sources;
-4. monitor approved sources;
-5. detect new job opportunities;
-6. prevent duplicate opportunities;
-7. analyze compatibility with a candidate profile;
-8. explain strengths, missing skills, and warnings;
-9. recommend the most relevant opportunities;
-10. help prepare applications;
-11. track applications and follow-ups.
-
-The system must assist the user.
-
-It must not blindly apply to jobs without user review.
-
----
-
-# 6. Core Product Principle
-
-The system must clearly distinguish between:
-
-## Job opportunity
-
-A job opening that was discovered, imported, or manually entered.
-
-## Job application
-
-A confirmed action where the candidate actually applied to a job opportunity.
-
-A saved or detected opportunity is not automatically an application.
-
-This distinction must remain explicit throughout:
-
-* domain modeling;
-* UI design;
-* persistence;
-* analytics;
-* future integrations.
-
-Never merge `JobOpportunity` and `Application` into a single concept merely for implementation convenience.
-
----
-
-# 7. Confirmed Product Workflow
-
-The intended long-term workflow is:
+The intended workflow is:
 
 ```text
 Company source discovered
         ↓
 User approves source
         ↓
-Source is monitored
+Approved source is monitored
         ↓
-Job opportunity detected
+Job opportunity is detected
         ↓
-Duplicate detection
+Possible duplicate is evaluated
         ↓
-Compatibility analysis
+Compatibility is analyzed
         ↓
-Recommendation and warnings
+Recommendation, strengths, warnings, and missing skills are shown
         ↓
-User reviews opportunity
+User reviews the opportunity
         ↓
 User decides whether to apply
         ↓
-Application is recorded
+Application is explicitly recorded
         ↓
 Application status and follow-up are tracked
 ```
 
-Automation must stop before sensitive or irreversible actions unless the user explicitly approves them.
+The system must assist the user.
+
+It must not silently make sensitive decisions on the user's behalf.
+
+Development must remain incremental.
+
+The local frontend MVP comes before remote infrastructure, source discovery, matching, and artificial intelligence.
+
+Do not present a planned capability as implemented.
 
 ---
 
-# 8. Automation Policy
+# 5. JobOpportunity and Application Distinction
+
+The system must always distinguish:
+
+## JobOpportunity
+
+An opening that was detected, imported, or manually entered.
+
+## Application
+
+A confirmed action where the candidate actually applied to an opportunity.
+
+A detected, saved, analyzed, dismissed, archived, or recommended opportunity is not automatically an application.
+
+This distinction must remain explicit in domain modeling, React state, persistence, analytics, UI labels, statistics, matching, follow-ups, future APIs, database design, and automation.
+
+Do not add an `applied` status to `JobOpportunity` merely to avoid creating an `Application`.
+
+Do not create an `Application` until the user confirms that an application was actually submitted.
+
+Never merge these concepts for implementation convenience.
+
+---
+
+# 6. Supervised Automation Policy
 
 The system may eventually automate:
 
 * company discovery;
-* careers-page discovery;
+* official careers-page discovery;
 * source monitoring;
-* opportunity detection;
 * opportunity extraction;
 * duplicate detection;
-* opportunity classification;
-* compatibility analysis;
-* ranking;
-* warnings;
-* recommendation generation;
-* follow-up reminders;
+* classification;
+* matching;
+* recommendations;
+* reminders;
 * draft preparation.
 
 The system must not automatically:
@@ -208,230 +222,143 @@ The system must not automatically:
 * provide salary expectations;
 * answer personal screening questions;
 * upload a CV;
-* send an email;
-* message a recruiter;
-* claim experience the candidate does not have;
+* send emails;
+* contact recruiters;
+* claim false experience;
 * invent qualifications;
-* provide private information;
+* provide private data;
 * bypass platform restrictions.
 
-Any future submission workflow must require explicit user confirmation.
+Any sensitive, external, irreversible, or reputational action requires explicit user approval.
 
 ---
 
-# 9. Current Delivery Strategy
+# 7. Instruction Priority
 
-The product is developed incrementally.
+Apply this instruction priority model.
 
-## Phase 1 — Local frontend MVP
+The instruction hierarchy is:
 
-Technologies:
+1. security, privacy, legal, and data-loss protections;
+2. explicit instructions in the current user task;
+3. permanent repository rules in `AGENTS.md`;
+4. approved product and domain decisions;
+5. current project status documentation;
+6. existing repository conventions;
+7. reversible engineering judgment.
 
-* React;
-* Vite;
-* JavaScript;
-* CSS;
-* localStorage;
-* Git;
-* GitHub.
+When instructions conflict:
 
-Goals:
-
-* manage opportunities;
-* manage applications;
-* search and filter;
-* display basic statistics;
-* display follow-ups;
-* validate forms;
-* persist local data;
-* provide responsive behavior;
-* publish a demonstrable frontend.
-
-## Phase 2 — Remote application
-
-Planned technologies and concepts:
-
-* InsForge;
-* PostgreSQL;
-* remote CRUD;
-* SDK usage;
-* APIs;
-* async/await;
-* authentication;
-* sessions;
-* authorization;
-* environment variables;
-* loading states;
-* error states;
-* Edge Functions.
-
-## Phase 3 — Opportunity discovery
-
-Planned capabilities:
-
-* company discovery;
-* official careers-page approval;
-* approved-source monitoring;
-* opportunity extraction;
-* deduplication;
-* stale-offer detection.
-
-## Phase 4 — Matching engine
-
-Planned capabilities:
-
-* candidate profile;
-* configurable job-search preferences;
-* rule-based compatibility scoring;
-* strengths;
-* warnings;
-* missing skills;
-* recommendation ranking.
-
-## Phase 5 — Artificial intelligence
-
-Planned capabilities:
-
-* extract requirements from job descriptions;
-* interpret unstructured descriptions;
-* compare opportunities with the candidate profile;
-* generate interview questions;
-* prepare follow-up drafts;
-* prepare application materials.
-
-AI integrations must run through a backend or Edge Function.
-
-Secret API keys must never be exposed in frontend code.
+* never violate security;
+* never expose secrets;
+* never destroy user work;
+* never perform an irreversible action without approval;
+* report the conflict in Spanish;
+* stop only when the conflict materially affects correctness or safety.
 
 ---
 
-# 10. Scope Discipline
+# 8. Scope Discipline
 
-Implement only the task explicitly requested by the user.
+Implement only the explicitly requested task.
 
 Do not add functionality because it appears:
 
 * modern;
-* convenient;
 * impressive;
-* common in other projects;
-* useful someday.
+* convenient;
+* common;
+* likely useful later.
 
-Do not build speculative infrastructure.
+Do not:
 
-Do not prepare unrelated future features.
+* build speculative infrastructure;
+* add future abstractions without a current use case;
+* introduce a pattern merely for portfolio appearance;
+* refactor unrelated code;
+* install tools not required by the current task;
+* expand a small correction into a product redesign.
 
-Do not create abstractions without a current use case.
+When future work is identified:
 
-Do not transform a small task into a broad refactoring.
-
-When a feature belongs to a later phase, document it instead of implementing it.
+* report it;
+* classify it;
+* do not implement it automatically.
 
 ---
 
-# 11. No-Assumptions Policy
+# 9. No-Assumptions and Autonomy Policy
 
-Do not invent missing business rules.
+Coding agents must not invent business rules.
 
-Do not silently choose values for:
+Agents must not stop unnecessarily for trivial, reversible technical decisions.
 
+## The agent must stop and ask when a decision involves:
+
+* data deletion;
+* destructive recovery;
+* irreversible behavior;
+* security policy;
+* privacy policy;
+* credentials;
+* secrets;
+* authentication design;
+* authorization rules;
+* persistent schema meaning;
+* migrations with data-loss risk;
+* externally visible product behavior with multiple valid interpretations;
+* business rules;
 * scoring weights;
-* salary policies;
-* employment types;
-* travel limits;
-* user permissions;
-* notification timing;
-* required fields;
-* matching rules;
-* source-monitoring rules;
-* security policies;
 * duplicate criteria;
-* job expiration rules;
-* application transitions.
+* salary policy;
+* job expiration policy;
+* application transitions;
+* automatic external actions;
+* new dependencies;
+* remote Git actions;
+* deployment;
+* paid services;
+* legal terms;
+* platform restrictions;
+* account access;
+* user identity;
+* handling of sensitive information.
 
-Before implementation, separate unknown information into:
+## The agent may choose and document without asking when the decision is:
 
-## Blocking information
+* internal;
+* reversible;
+* low-risk;
+* inside the approved task;
+* consistent with existing conventions;
+* not product-visible;
+* not security-sensitive.
 
-Information required to implement the current task correctly.
+Examples:
 
-## Non-blocking information
+* internal variable names;
+* small CSS organization;
+* function decomposition;
+* local helper placement;
+* neutral formatting;
+* obvious lint corrections;
+* selecting the simplest equivalent implementation;
+* adding `min-width: 0` to prevent confirmed overflow;
+* using an already-approved domain constant.
 
-Information that can safely remain configurable, nullable, or deferred.
+For these choices:
 
-If blocking information is missing:
-
-1. stop before implementation;
-2. list all blocking questions together;
-3. ask them in one grouped message;
-4. explain why each answer affects the design.
-
-Do not ask questions one at a time when several are already known to be necessary.
-
-If a neutral, reversible default is technically necessary, clearly label it as a proposed default and obtain approval before implementation.
-
----
-
-# 12. Mutable Preferences Must Be Data
-
-Candidate-specific preferences must not be hardcoded into business logic.
-
-Examples include:
-
-* target roles;
-* salary reference;
-* preferred modality;
-* travel-time tolerance;
-* accepted employment types;
-* weekly opportunity target;
-* language tolerance;
-* experience tolerance;
-* notification preferences.
-
-These values must belong to configurable domain objects such as:
-
-* `CandidateProfile`;
-* `JobSearchPreferences`.
-
-The application should eventually support different users without rewriting matching logic.
+1. choose the simplest correct option;
+2. document the decision in the final report;
+3. continue without interrupting the task.
 
 ---
 
-# 13. Confirmed Initial Search Direction
+# 10. Privacy and Data Minimization
 
-The initial profile currently prioritizes:
+Store only information necessary for the product.
 
-1. technical or functional support;
-2. functional or process analysis;
-3. Python trainee roles;
-4. SQL and database roles;
-5. Java trainee roles;
-6. general IT internships.
-
-Current preferences include:
-
-* remote work as the primary modality;
-* hybrid or on-site opportunities within a configurable travel-time range;
-* internships and part-time work as primary employment types;
-* full-time opportunities shown with a warning instead of discarded;
-* required professional experience shown as a warning instead of an automatic rejection;
-* advanced English shown as a warning instead of an automatic rejection;
-* salary used as an advisory signal, not a hard exclusion;
-* stale opportunities flagged after a configurable number of days;
-* duplicate opportunities not preserved;
-* a weekly target represented as a configurable range.
-
-These values describe the current user configuration.
-
-They must not become global rules of the application.
-
----
-
-# 14. Privacy Policy
-
-Store only data required for the product.
-
-Potentially acceptable professional information includes:
+Potentially acceptable professional data includes:
 
 * name;
 * general city;
@@ -439,351 +366,500 @@ Potentially acceptable professional information includes:
 * education;
 * skills;
 * languages;
-* experience summary;
+* professional experience summary;
 * availability;
 * job preferences;
-* professional CV content.
+* CV professional content.
 
-Do not store unless a future requirement explicitly justifies it:
+Do not store without an approved requirement:
 
 * DNI;
 * CUIL;
-* passport data;
-* exact home address;
-* banking information;
-* medical information;
+* passport information;
+* exact address;
+* bank information;
+* medical data;
 * passwords;
 * portal credentials;
-* photographs of identity documents;
+* identity document images;
 * private authentication tokens;
 * secret API keys.
 
-Never log sensitive information.
+Never place sensitive information in:
 
-Never include secrets in:
-
-* React source code;
-* Git commits;
-* README files;
+* frontend source code;
+* Git history;
+* README examples;
 * screenshots;
 * console output;
-* example payloads;
+* sample payloads;
+* public issue descriptions;
 * frontend environment variables.
 
 ---
 
-# 15. Technology Constraints for the MVP
+# 11. Application Security
 
-Use only:
+Treat all user-controlled and external content as untrusted.
+
+Never:
+
+* use `eval`;
+* execute user-provided content;
+* render untrusted HTML;
+* use `dangerouslySetInnerHTML` without an explicitly approved sanitization strategy;
+* trust external job descriptions;
+* accept arbitrary URL schemes;
+* log secrets or sensitive content;
+* commit secrets;
+* disable security controls to make development easier;
+* expose internal stack traces in production UI.
+
+For user-controlled URLs:
+
+* parse them;
+* apply an allowlist;
+* accept only required protocols;
+* reject `javascript:`, `data:`, `file:`, and unsupported schemes;
+* use safe external-link attributes;
+* revalidate URLs at persistence or backend boundaries.
+
+Render user text using normal React text interpolation.
+
+When backend services exist:
+
+* validate again server-side;
+* enforce size limits;
+* enforce rate limits where appropriate;
+* use least privilege;
+* protect against injection;
+* protect against unauthorized object access;
+* avoid exposing sequential internal identifiers when that creates risk.
+
+---
+
+# 12. Secret Management
+
+Secret keys must never exist in frontend code.
+
+Do not commit:
+
+* API keys;
+* database credentials;
+* service-role keys;
+* private tokens;
+* OAuth secrets;
+* SMTP passwords;
+* signing secrets.
+
+When secrets become necessary:
+
+* use backend or Edge Function secrets;
+* document variable names only;
+* provide `.env.example` with placeholders;
+* confirm `.env` files are ignored;
+* avoid printing values;
+* rotate any secret that was exposed.
+
+---
+
+# 13. Approved Technologies and Dependency Policy
+
+The local MVP uses:
 
 * React;
 * Vite;
 * JavaScript;
-* CSS;
+* plain CSS;
 * browser APIs;
-* localStorage;
+* localStorage when persistence is approved;
 * Git;
 * GitHub.
 
-Do not introduce during the MVP without explicit approval:
+Do not introduce a new framework, state library, component library, backend service, database, authentication provider, AI provider, or scraping framework without explicit approval.
 
-* TypeScript;
-* Next.js;
-* Tailwind CSS;
-* Bootstrap;
-* Redux;
-* React Router;
-* Zustand;
-* form libraries;
-* component libraries;
-* chart libraries;
-* backend services;
-* authentication;
-* remote databases;
-* Firebase;
-* Supabase;
-* InsForge;
-* artificial intelligence;
-* scraping frameworks;
-* browser automation frameworks.
+Do not install a dependency unless:
 
-A new dependency requires explicit justification and user approval.
+1. the current task requires it;
+2. native APIs are insufficient;
+3. the benefit is concrete;
+4. security implications were considered;
+5. maintenance implications were considered;
+6. bundle implications were considered;
+7. the user explicitly approved it.
+
+Before requesting approval, explain in Spanish:
+
+* package name;
+* problem solved;
+* native alternative;
+* production impact;
+* approximate complexity;
+* security considerations;
+* exact installation command.
+
+Do not install global packages without explicit approval.
+
+Do not perform automatic dependency upgrades.
+
+Do not modify lockfiles without a justified dependency operation.
 
 ---
 
-# 16. Architecture Principles
+# 14. Architecture Principles
 
-Apply these principles pragmatically:
+Apply these principles:
 
 * single responsibility;
 * separation of concerns;
 * high cohesion;
 * low coupling;
-* dependency inversion where useful;
 * explicit data flow;
 * one source of truth;
+* dependency inversion where useful;
+* domain separated from infrastructure;
+* persistence separated from presentation;
+* business rules separated from UI labels;
+* security boundaries explicit;
 * small reversible changes;
 * simple solutions before advanced solutions;
-* domain concepts separated from infrastructure;
-* UI separated from persistence;
-* business decisions separated from presentation.
+* current complexity before imagined future complexity;
+* composition over inheritance;
+* testable boundaries;
+* dependency direction toward the domain.
 
 Do not overengineer.
 
-Architecture must reflect current complexity, not imagined future complexity.
+Do not create an abstraction before there are at least:
+
+* a current use case;
+* a clear responsibility;
+* a real dependency to isolate;
+* or more than one implementation that justifies it.
 
 ---
 
-# 17. Architectural Layers
+# 15. Architectural Layers
 
-Use these conceptual layers when they become necessary:
+Use these conceptual layers when their responsibilities exist.
 
 ## Presentation layer
 
-React components responsible for rendering and user interaction.
+Responsible for:
 
-Examples:
+* rendering;
+* user interaction;
+* controlled forms;
+* visible validation;
+* accessibility;
+* navigation;
+* responsive layout;
+* UI states.
 
-* forms;
-* lists;
-* filters;
-* statistics;
-* empty states;
-* follow-up views.
+React visual components must not:
+
+* access localStorage directly;
+* perform database queries;
+* contain secret keys;
+* implement source monitoring;
+* implement authorization;
+* perform unrelated domain decisions.
 
 ## Application layer
 
-Coordinates use cases and workflows.
-
-Examples:
+Responsible for coordinating use cases such as:
 
 * create opportunity;
 * update opportunity;
-* convert opportunity into application;
-* calculate visible items;
-* coordinate persistence.
+* remove opportunity;
+* convert opportunity to application;
+* load persisted data;
+* save accepted data;
+* calculate visible results;
+* coordinate repositories;
+* produce user-safe errors.
 
-Do not create this layer prematurely if React state is still sufficient.
+Do not create this layer prematurely when a small handler in `App` is still clear.
+
+Introduce it when coordination or dependencies become difficult to maintain.
 
 ## Domain layer
 
-Represents business concepts and rules.
+Responsible for:
 
-Expected concepts include:
+* business concepts;
+* controlled state;
+* invariants;
+* domain relationships;
+* domain-level validation;
+* meaningful behavior.
 
-* `CandidateProfile`;
-* `JobSearchPreferences`;
-* `CompanySource`;
-* `JobOpportunity`;
-* `MatchResult`;
-* `Application`.
+Domain classes must not depend on:
 
-## Infrastructure layer
-
-Handles external systems.
-
-Examples:
-
+* React;
+* DOM APIs;
 * localStorage;
 * InsForge;
 * PostgreSQL;
-* APIs;
-* email;
+* HTTP clients;
 * AI providers;
-* approved source monitoring.
+* UI labels;
+* browser-specific behavior.
 
-Domain classes must not depend directly on infrastructure details.
+## Infrastructure layer
+
+Responsible for:
+
+* localStorage;
+* remote APIs;
+* InsForge;
+* PostgreSQL;
+* authentication providers;
+* email;
+* external monitoring;
+* AI providers;
+* logging services;
+* deployment-specific adapters.
+
+Infrastructure implementations must not redefine domain rules.
 
 ---
 
-# 18. Object-Oriented Programming Guidelines
+# 16. Object-Oriented Programming Guidelines
 
 Use object-oriented programming where it improves domain clarity.
 
-Do not force object-oriented patterns into every file.
+React components should remain functional components unless a concrete requirement justifies otherwise.
 
-React UI components should remain functional components unless a concrete requirement justifies otherwise.
+A domain class must have:
 
-Use domain classes to represent meaningful business entities.
-
-A class must have:
-
-* a clear domain meaning;
-* a clear responsibility;
+* clear business meaning;
+* clear responsibility;
+* coherent state;
 * a reason to exist beyond grouping fields.
-
-Do not create classes only to appear object-oriented.
 
 Avoid:
 
 * god classes;
+* anemic abstractions created only for appearance;
 * deep inheritance;
+* inheritance only for code reuse;
 * speculative interfaces;
-* abstract base classes without multiple real implementations;
-* getters and setters that add no behavior;
-* methods with no current use case;
-* inheritance used only for code reuse.
+* abstract base classes without real implementations;
+* getters and setters without behavior;
+* methods without a current use case;
+* UI behavior in domain entities;
+* infrastructure access from entities.
 
 Prefer:
 
 * composition;
-* explicit relationships;
 * constructor object parameters;
-* immutable-style updates when practical;
+* explicit relationships;
+* defensive copies;
 * focused methods;
-* validation at clear boundaries.
+* immutable-style changes;
+* validation at boundaries;
+* controlled domain values.
+
+When explaining OOP to Luciano, relate it to his Java projects.
 
 ---
 
-# 19. Domain Boundaries
+# 17. Domain Boundaries
+
+Maintain these explicit responsibilities:
 
 ## CandidateProfile
 
-Represents stable professional information about a candidate.
+Stable professional information about a candidate.
 
-Must not contain job-search workflow logic.
+Must not contain search workflow or infrastructure logic.
 
 ## JobSearchPreferences
 
-Represents configurable search criteria and tolerances.
+Configurable criteria, tolerances, warnings, and search preferences.
 
 Must not contain candidate identity.
 
 ## CompanySource
 
-Represents a potential or approved official company careers source.
+Represents a possible or approved official job source.
 
-Monitoring must not occur until the source is approved.
+Monitoring cannot begin until approval exists.
 
 ## JobOpportunity
 
-Represents a detected or manually entered opening.
+Represents a manually entered, imported, or detected opening.
 
-It does not mean that the user applied.
+It does not mean the user applied.
 
 ## MatchResult
 
-Represents the result of evaluating a candidate and preferences against an opportunity.
+Represents compatibility evaluation.
+
+It may contain:
+
+* strengths;
+* warnings;
+* missing skills;
+* unknown information;
+* recommendation;
+* optional score.
 
 It must not submit applications.
 
 ## Application
 
-Represents an actual application made by the candidate.
+Represents an actual confirmed application.
 
-It must reference an opportunity when possible.
+It should reference a `JobOpportunity` when possible.
 
-Do not merge these responsibilities.
+Do not merge these concepts for implementation convenience.
 
 ---
 
-# 20. Constants and Controlled Values
+# 18. Controlled Internal Values
 
-Controlled values must be centralized.
+Internal controlled values must be centralized.
 
-Examples:
-
-* source statuses;
-* opportunity statuses;
-* application statuses;
-* modalities;
-* employment types;
-* requirement policies;
-* recommendation values;
-* salary periods;
-* notification channels.
-
-Internal values must be:
+They must be:
 
 * stable;
-* lowercase where practical;
 * in English;
+* lowercase where practical;
 * without spaces;
 * without accents.
 
 Visible labels may be Spanish.
 
-Do not scatter string literals across components.
+Do not scatter internal status literals across components.
 
-Do not build a complex enum framework in JavaScript.
+Do not introduce a complex enum framework in JavaScript.
 
 Use the simplest structure that supports:
 
-* internal values;
-* visible labels;
-* consistent validation;
-* select options.
+* values;
+* labels;
+* validation;
+* select options;
+* consistent persistence.
 
 ---
 
-# 21. React Rules
+# 19. React Rules
 
 Use functional components.
 
-Keep components focused on one visual responsibility.
+Keep components focused.
 
-A component should receive data through props and communicate actions through callbacks when needed.
+Data should flow downward through props.
 
-Do not access localStorage directly from visual components.
+Actions should flow upward through callbacks.
 
-Do not perform remote requests directly across multiple components.
+Maintain one clear owner for each state concept.
 
-Do not store derived values as independent state unless necessary.
+Do not:
 
-Examples of derived values:
+* copy props into unnecessary state;
+* store derived counts;
+* mutate arrays or objects;
+* access storage from visual components;
+* perform remote requests in many unrelated components;
+* introduce Context without a concrete problem;
+* introduce reducers prematurely;
+* introduce global state prematurely;
+* introduce memoization without evidence;
+* create custom hooks merely to appear advanced.
 
-* filtered opportunities;
-* statistics;
-* result counts;
-* upcoming follow-ups;
-* grouped opportunities.
+Before adding state, explain:
 
-Derive them from the source data.
-
-Avoid duplicated state.
-
-Avoid premature use of:
-
-* Context;
-* reducers;
-* custom hooks;
-* global state libraries;
-* memoization.
-
-Introduce these only when a real problem exists and explain that problem first.
+1. what must survive a render;
+2. who owns it;
+3. who needs it;
+4. whether it is primary or derived;
+5. whether it belongs to UI draft state or accepted domain state.
 
 ---
 
-# 22. State Management Rules
+# 20. State Ownership
 
 Maintain one clear source of truth for each concept.
 
 Before adding state, explain:
 
-1. what information must persist between renders;
+1. what information must survive a render;
 2. which component owns it;
 3. which components need it;
-4. whether it is primary or derived state.
+4. whether it is primary or derived;
+5. whether it is temporary UI state or accepted domain state;
+6. whether it must survive a reload.
 
 Do not create state merely because a value appears in the interface.
 
-Use controlled forms when form behavior is implemented.
+Counts, filtered collections, grouped results, follow-ups, and statistics should normally be derived from their source data.
 
-Do not mix form draft data with persisted domain data.
+Do not maintain a count independently from the array it counts.
 
-A form draft is temporary UI state.
+Do not mix form drafts, accepted entities, persistence errors, validation errors, and loading state.
 
-A domain object represents accepted application data.
+Use immutable updates so React receives a new reference.
+
+Avoid duplicated state that can drift out of sync.
 
 ---
 
-# 23. Persistence Rules
+# 21. Forms and Validation
 
-Persistence must be isolated behind a service or repository.
+Form drafts are temporary presentation state.
 
-React components must not depend directly on localStorage implementation details.
+Accepted domain entities are not form drafts.
 
-Expected conceptual repository operations may include:
+Validation must be separated conceptually into:
+
+## Client-side UX validation
+
+Used for:
+
+* immediate feedback;
+* required fields;
+* supported URL formats;
+* input normalization;
+* understandable messages.
+
+## Domain validation
+
+Used for:
+
+* business invariants;
+* controlled values;
+* valid domain states.
+
+## Backend validation
+
+Required when remote persistence or APIs are introduced.
+
+Frontend validation must never be treated as a security boundary.
+
+Forms must:
+
+* use associated labels;
+* communicate required fields;
+* show errors near inputs;
+* preserve valid user input after an error;
+* render error meaning beyond color;
+* avoid unsafe HTML;
+* prevent duplicate submissions when applicable.
+
+---
+
+# 22. Persistence and Repositories
+
+Persistence must be isolated behind a repository or service boundary.
+
+Visual React components must not depend directly on localStorage implementation details.
+
+Repository operations may include:
 
 * `getAll`;
 * `getById`;
@@ -791,806 +867,892 @@ Expected conceptual repository operations may include:
 * `update`;
 * `remove`.
 
-Only implement operations required by current use cases.
+Implement only operations required by current use cases.
 
-The localStorage implementation should eventually be replaceable by an InsForge implementation without redesigning the UI.
+The localStorage repository should be replaceable by a remote repository without redesigning UI components.
 
-Handle:
+Handle safely:
 
 * missing keys;
+* empty data;
 * invalid JSON;
-* unexpected data shapes;
-* storage failures.
+* wrong shapes;
+* unsupported versions;
+* storage quota failures;
+* unavailable storage;
+* partial writes.
 
-Do not silently destroy corrupted data.
+Never silently destroy corrupted data.
 
-Report recoverable failures clearly.
+Do not automatically overwrite corrupted data with an empty array.
+
+Prefer:
+
+* preserving the original value;
+* reporting the problem;
+* offering a recoverable path;
+* using explicit versioned storage structures when required.
+
+Parsed JSON objects are not automatically domain instances.
+
+Rehydrate valid records through domain constructors while preserving stored identifiers and timestamps.
+
+Prefer a versioned storage envelope when stored shape may evolve.
+
+Storage schema versions belong to infrastructure, not domain entities.
+
+Do not persist React internals, functions, validation errors, form visibility, temporary drafts, or secrets.
 
 ---
 
-# 24. Source Discovery and Monitoring Rules
+# 23. Corrupted-Storage Protection
 
-Future opportunity discovery must prefer:
+Treat browser storage as an untrusted external boundary.
+
+Handle missing keys, valid empty data, malformed JSON, non-object envelopes, missing or unsupported schema versions, missing or non-array collections, malformed records, unsafe persisted URLs, unavailable storage, quota failures, security exceptions, and read or write exceptions.
+
+Missing storage may produce an empty valid collection.
+
+Corrupted storage must not crash the application, be silently deleted, be automatically overwritten, be rendered without validation, or be reported as successfully loaded.
+
+Preserve the original corrupted value unless the user explicitly authorizes destructive recovery.
+
+Show a clear, non-sensitive Spanish warning.
+
+The application may continue with a safe in-memory collection.
+
+Do not automatically save that fallback collection after a loading failure.
+
+Choose a strict or partial-recovery policy explicitly.
+
+For a small MVP, prefer strict rejection of the complete collection unless partial recovery has a clear approved benefit.
+
+If saving fails:
+
+* keep accepted data visible in memory when safe;
+* state that it was not persisted;
+* do not claim it will survive reload;
+* do not expose raw exception details in the UI.
+
+Recovery and reset actions require explicit product and data-loss decisions.
+
+---
+
+# 24. API and Backend Evolution
+
+When backend functionality is introduced:
+
+* define clear request and response contracts;
+* validate input server-side;
+* validate output shape;
+* handle status codes explicitly;
+* handle loading states;
+* handle empty states;
+* handle network errors;
+* handle timeout behavior;
+* handle retry behavior carefully;
+* avoid infinite retries;
+* avoid leaking internal errors;
+* use environment variables correctly;
+* never expose privileged keys to the browser;
+* separate public and secret configuration;
+* document required environment variables without committing values.
+
+Remote data must be treated as untrusted.
+
+---
+
+# 25. Authentication and Authorization
+
+When authentication is introduced, distinguish:
+
+* authentication: who the user is;
+* authorization: what data and actions the user may access.
+
+Never:
+
+* trust a client-provided user ID as proof of identity;
+* assume authentication automatically grants access;
+* expose service-role or privileged keys in React;
+* rely only on hidden buttons for authorization;
+* store passwords manually;
+* log access tokens;
+* include tokens in URLs;
+* leak sessions through error messages.
+
+Authorization must be enforced at the backend or database policy boundary.
+
+---
+
+# 26. Source Discovery and Monitoring
+
+Prefer:
 
 * official APIs;
-* approved integrations;
-* official company careers pages;
+* official integrations;
+* official careers pages;
+* approved feeds;
 * user-approved sources;
-* permitted feeds;
 * email alerts.
 
 Do not implement unrestricted scraping.
 
-Do not automate platforms in ways that:
+Do not:
 
-* violate platform rules;
-* imitate unauthorized user actions;
-* risk account suspension;
 * bypass access controls;
 * bypass CAPTCHAs;
-* evade rate limits.
+* evade rate limits;
+* imitate unauthorized user actions;
+* violate terms;
+* risk account suspension;
+* monitor unapproved sources;
+* collect unnecessary personal data.
 
-Every discovered company source must have an approval state.
-
-Possible source states include:
-
-* pending;
-* approved;
-* rejected;
-* paused.
+Every `CompanySource` must have an approval state.
 
 Only approved sources may be monitored.
 
 ---
 
-# 25. Duplicate Detection Principles
+# 27. Scraping and Platform Restrictions
 
-Do not implement duplicate detection until the criteria are explicitly approved.
+Do not implement unrestricted scraping.
 
-Potential signals may later include:
+Do not bypass access controls, CAPTCHAs, or rate limits.
+
+Do not imitate unauthorized user actions, violate platform terms, risk account suspension, monitor unapproved sources, automate authenticated platforms without authorization, or collect prohibited data.
+
+Before implementing extraction, inspect official API availability, robots and access policies, terms of use, authentication requirements, rate limits, data minimization, and source approval.
+
+If compliance is uncertain, stop and ask.
+
+Prefer a permitted feed or manual import over a risky scraper.
+
+Do not design evasion techniques.
+
+---
+
+# 28. Duplicate Detection
+
+Do not invent duplicate rules.
+
+Potential signals may include:
 
 * normalized URL;
-* external source identifier;
+* external source ID;
 * company;
 * title;
 * location;
 * publication date;
 * content fingerprint.
 
-Duplicate detection must avoid silently deleting potentially distinct opportunities.
+Do not silently delete uncertain matches.
 
-When uncertain, prefer flagging a possible duplicate for review.
+Prefer flagging possible duplicates for user review.
 
 ---
 
-# 26. Compatibility Analysis Principles
+# 29. Matching and Recommendations
 
 Do not invent scoring weights.
 
-Do not calculate a compatibility score until:
+Before implementing matching, confirm:
 
-* criteria are approved;
-* weights are approved;
-* warning behavior is approved;
-* missing-data behavior is approved.
+* criteria;
+* weights;
+* warning behavior;
+* exclusion behavior;
+* missing-data behavior;
+* recommendation thresholds;
+* explanation requirements.
 
-A matching result should eventually distinguish:
-
-* strengths;
-* warnings;
-* missing skills;
-* unknown information;
-* recommendation;
-* numeric score, if used.
-
-A warning is not the same as a rejection.
+A warning is not a rejection.
 
 Missing information is not automatically negative.
 
-The system must explain why it generated a recommendation.
+Every recommendation must be explainable.
+
+Candidate-specific preferences must remain configurable data, not hardcoded global rules.
 
 ---
 
-# 27. Artificial Intelligence Rules
+# 30. AI Security and Prompt-Injection Protection
 
 AI is not part of the current MVP.
 
 When AI is introduced:
 
 * call providers only from backend or Edge Functions;
-* never expose secret provider keys in React;
+* never expose provider keys in React;
+* treat job descriptions as untrusted;
+* protect against prompt injection;
 * validate input size;
-* validate output shape;
+* validate output structure;
 * use structured outputs when practical;
 * handle timeouts;
-* handle provider failures;
+* handle failures;
 * control retries;
 * control cost;
 * rate-limit requests;
-* do not trust generated content blindly;
+* record the model and prompt version when relevant;
 * require user review before important actions;
-* treat job descriptions as untrusted input;
-* protect against prompt injection.
+* never treat generated content as authoritative.
 
-AI must not fabricate:
+AI must never fabricate:
 
-* candidate experience;
-* skills;
+* experience;
 * education;
-* salary history;
+* skills;
 * language level;
+* salary history;
+* availability;
 * legal status;
-* availability.
+* application history.
 
 ---
 
-# 28. Security Rules
-
-Never:
-
-* commit secrets;
-* expose privileged keys;
-* disable security controls;
-* store passwords in source code;
-* log authentication tokens;
-* trust frontend validation as the only validation;
-* render untrusted HTML;
-* use `dangerouslySetInnerHTML` without an approved sanitization strategy;
-* accept a user ID supplied by the client as proof of identity;
-* assume authentication implies authorization.
-
-When authentication is introduced, clearly separate:
-
-* authentication: who the user is;
-* authorization: which data the user may access.
-
----
-
-# 29. File Modification Policy
+# 31. File Modification Safety
 
 Before modifying files:
 
-1. inspect the relevant files;
+1. inspect relevant files;
 2. inspect nearby conventions;
-3. identify the smallest valid change;
-4. list the files that will be modified;
-5. explain why each file must change.
+3. identify the smallest coherent change;
+4. list expected files;
+5. explain why each file needs modification.
 
-Do not modify unrelated files.
+Do not:
 
-Do not reformat entire files for a small change.
-
-Do not rename or move files without a concrete reason.
-
-Do not replace working code with a new style unless explicitly requested.
-
-Do not modify `AGENTS.md` unless the user explicitly asks to update project instructions.
-
----
-
-# 30. Dependency Policy
-
-Do not install a dependency unless:
-
-1. the current task requires it;
-2. browser or platform APIs are insufficient;
-3. the benefit is concrete;
-4. the maintenance cost is understood;
-5. the bundle and security implications are considered;
-6. the user explicitly approves it.
-
-Before requesting approval, explain:
-
-* package name;
-* problem solved;
-* native alternative;
-* package size or complexity implications;
-* whether it affects production code;
-* exact installation command.
-
-Never install packages globally unless explicitly requested.
+* modify unrelated files;
+* reformat entire files for small changes;
+* rename files without a reason;
+* move files without a reason;
+* replace working code merely for stylistic preference;
+* delete user work;
+* modify `AGENTS.md` without explicit authorization.
 
 ---
 
-# 31. Command Execution Policy
+# 32. Command Execution Safety
 
-Before running an important command, explain:
+Before executing an important or write-capable command, explain:
 
 * the command;
 * its purpose;
 * expected side effects;
-* files or dependencies it may change;
-* whether it requires network access;
+* files it may modify;
+* whether it uses the network;
 * whether it requires elevated permissions.
 
 Read-only inspection commands may be grouped.
 
-Do not execute destructive commands.
-
-Never use without explicit, task-specific approval:
+Never use without explicit task-specific approval:
 
 * `git reset --hard`;
 * `git clean -fd`;
 * force push;
-* mass file deletion;
-* recursive deletion outside generated folders;
 * history rewriting;
+* mass deletion;
+* recursive deletion outside known generated directories;
 * credential deletion;
-* disabling security controls.
+* security-control disabling;
+* database destructive migrations;
+* production data mutation.
 
-Work only inside the active repository unless the user explicitly approves an external path.
-
----
-
-# 32. Development Workflow
-
-For every implementation task:
-
-## Step 1 — Orient
-
-* confirm repository path;
-* confirm current branch;
-* inspect `git status`;
-* inspect relevant files;
-* read applicable documentation.
-
-## Step 2 — Define
-
-Explain:
-
-* the concrete objective;
-* the problem being solved;
-* what is outside the task;
-* files expected to change;
-* relevant technical concept.
-
-## Step 3 — Clarify
-
-Identify all blocking unknowns.
-
-Ask grouped questions if necessary.
-
-Do not begin implementation with unresolved blocking decisions.
-
-## Step 4 — Implement
-
-* make the smallest coherent change;
-* preserve existing behavior outside the requested scope;
-* avoid unrelated refactoring;
-* keep the project executable.
-
-## Step 5 — Verify
-
-Run appropriate checks.
-
-At minimum for source changes:
-
-```bash
-npm run build
-npm run lint
-```
-
-Run additional checks when relevant.
-
-## Step 6 — Review
-
-Inspect:
-
-```bash
-git diff --stat
-git diff
-git status
-```
-
-Check for:
-
-* accidental files;
-* secrets;
-* unrelated changes;
-* unused code;
-* console errors;
-* scope expansion.
-
-## Step 7 — Explain
-
-Explain in Spanish:
-
-1. what changed;
-2. why it changed;
-3. how it works;
-4. which OOP or architecture concept applies;
-5. what alternative existed;
-6. how to defend the decision in an interview.
-
-## Step 8 — Stop
-
-Do not continue to the next feature automatically.
-
-Wait for explicit authorization.
+Work only inside the active repository unless explicitly approved.
 
 ---
 
-# 33. Testing Policy
+# 33. Iterative Engineering Workflow
+
+Use this cycle as many times as necessary:
+
+```text
+Inspect
+→ explain
+→ implement a small coherent change
+→ build
+→ lint
+→ test
+→ inspect browser behavior
+→ inspect security and accessibility
+→ inspect the diff
+→ fix confirmed defects
+→ rerun affected checks
+→ repeat until stable
+```
+
+The first implementation must not automatically be treated as final.
+
+Do not stop while:
+
+* build fails;
+* lint fails;
+* a confirmed defect remains;
+* validation is inconsistent;
+* security behavior is unsafe;
+* accessibility is broken;
+* responsive overflow exists;
+* browser console errors exist;
+* unrelated changes remain;
+* documentation contradicts behavior.
+
+Do not use iteration as permission to add unrelated features.
+
+---
+
+# 34. Testing Strategy
 
 Every implemented behavior must have a verification strategy.
 
-During the MVP, tests may include:
+Verification may include:
 
-* build validation;
-* lint validation;
-* manual browser validation;
+* build;
+* lint;
+* static analysis;
+* manual browser checks;
+* deterministic unit tests;
+* integration tests;
+* repository tests;
+* storage corruption tests;
 * responsive checks;
-* form edge cases;
-* persistence checks;
-* browser reload checks;
-* invalid stored-data checks.
+* keyboard checks;
+* security input tests;
+* reload tests;
+* regression tests.
 
-Before declaring a task complete, state:
+Do not claim success only because code compiles.
+
+Do not claim visual correctness without browser inspection.
+
+Do not claim keyboard accessibility if it was not tested.
+
+Do not claim external-link behavior if it was not observed or structurally verified.
+
+Clearly state:
 
 * what was tested;
 * what was not tested;
+* what was blocked;
 * which risks remain.
-
-Do not claim success only because the code compiles.
-
-Do not claim visual correctness without a browser review.
-
-Do not introduce automated test libraries until the project has behavior worth testing and the user approves the dependency.
 
 ---
 
-# 34. Manual Browser Validation
+# 35. Automated Test Evolution
+
+The project now contains behavior worth testing.
+
+When deterministic business, validation, repository, or transformation logic becomes non-trivial, the agent must:
+
+1. identify which behavior should be automated;
+2. propose the smallest appropriate test strategy;
+3. explain whether a dependency is required;
+4. explain the native alternative;
+5. request approval before installing a testing dependency;
+6. avoid relying only on manual testing for deterministic logic.
+
+---
+
+# 36. QA and Regression Testing
+
+For every functional UI change, test where relevant:
+
+* initial state;
+* empty state;
+* one item;
+* multiple items;
+* invalid input;
+* correction after validation failure;
+* optional values;
+* long text;
+* long unbroken strings;
+* narrow viewport;
+* desktop viewport;
+* horizontal overflow;
+* browser console;
+* keyboard navigation;
+* safe rendering of malicious-looking text;
+* safe URLs;
+* refresh behavior;
+* previous workflows;
+* Git diff scope.
+
+Classify findings as:
+
+* BLOCKER;
+* CRITICAL;
+* HIGH;
+* MEDIUM;
+* LOW;
+* OBSERVATION.
+
+Do not invent defects.
+
+Fix automatically only when:
+
+* the defect is confirmed;
+* expected behavior is clear;
+* the fix is inside scope;
+* it does not require a product decision;
+* it does not add a feature;
+* it can be regression-tested.
+
+---
+
+# 37. Browser Validation
 
 When UI behavior changes:
 
-1. run the development server;
+1. start the development server;
 2. provide the exact local URL;
 3. keep the server available for review;
-4. ask the user to inspect the result;
-5. do not commit until review is complete when visual approval matters.
+4. inspect the actual page;
+5. request manual review when visual approval matters.
 
-Check at minimum:
+Check desktop and mobile layout, horizontal overflow, labels, buttons, disabled controls, empty states, one and multiple items, long text, native controls, external links, reload behavior, browser console, React warnings, failed resources, invalid DOM nesting, duplicate keys, and controlled-input warnings.
 
-* desktop layout;
-* mobile layout;
-* horizontal overflow;
-* form labels;
-* buttons;
-* empty states;
-* long text;
-* browser console.
+Do not claim browser behavior that was only inferred from code.
+
+Distinguish automated observation, structural code review, user-provided manual validation, and blocked verification.
+
+Do not commit visually sensitive work before required manual approval.
 
 ---
 
-# 35. Git Rules
+# 38. Accessibility
 
-Use small, coherent commits.
+Accessibility is part of correctness.
 
-A commit should represent one understandable change.
+Use:
 
-Before committing:
-
-1. show `git status`;
-2. show the staged file list;
-3. show `git diff --cached --stat`;
-4. summarize the change;
-5. propose a commit message;
-6. wait for explicit approval.
-
-Do not commit automatically.
-
-Do not push automatically.
-
-Do not create branches, tags, remotes, pull requests, or releases without explicit approval.
-
-Never force push.
-
-Use Conventional Commit-style messages when appropriate:
-
-```text
-chore: initialize React project with Vite
-docs: define project scope and agent guidelines
-feat: add opportunity creation form
-refactor: split static layout into components
-fix: handle invalid stored opportunity data
-style: improve responsive form layout
-test: add opportunity validation tests
-```
-
-Do not mix unrelated concerns in one commit.
-
----
-
-# 36. Documentation Rules
-
-Documentation must reflect actual implemented behavior.
-
-Do not document a future feature as completed.
-
-Clearly distinguish:
-
-* implemented;
-* planned;
-* out of scope;
-* under discussion.
-
-Update documentation when a change affects:
-
-* product scope;
-* domain concepts;
-* setup;
-* architecture;
-* environment variables;
-* security;
-* usage;
-* deployment.
-
-Use Mermaid diagrams only when they improve understanding.
-
-Keep documentation understandable to a trainee developer.
-
----
-
-# 37. Code Quality Rules
-
-Prefer:
-
-* clear names;
-* short focused functions;
-* explicit control flow;
-* simple data structures;
-* predictable return values;
-* reusable pure functions where appropriate;
-* consistent formatting;
-* accessible HTML;
-* semantic elements.
-
-Avoid:
-
-* clever one-liners;
-* hidden side effects;
-* unexplained magic numbers;
-* deeply nested conditions;
-* duplicated business rules;
-* generic names such as `data`, `item`, or `thing` when a domain name exists;
-* comments that only repeat the code;
-* commented-out code;
-* dead code;
-* speculative TODOs.
-
-A TODO must identify:
-
-* the missing behavior;
-* why it is deferred;
-* what decision is required.
-
----
-
-# 38. Error Handling Rules
-
-Do not swallow errors silently.
-
-Differentiate when possible:
-
-* validation errors;
-* storage errors;
-* network errors;
-* authentication errors;
-* authorization errors;
-* unexpected internal errors.
-
-User-facing messages should be understandable.
-
-Technical details should not expose:
-
-* secrets;
-* tokens;
-* private paths unnecessarily;
-* internal stack traces in production UI.
-
-Do not use a generic “Something went wrong” when a specific recovery action is available.
-
----
-
-# 39. Accessibility Rules
-
-Use semantic HTML.
-
-Every form field must have an associated label.
-
-Buttons must use actual `<button>` elements.
-
-Links must use actual `<a>` elements.
+* semantic HTML;
+* associated labels;
+* real buttons;
+* real anchors;
+* logical headings;
+* visible focus;
+* keyboard-compatible controls;
+* understandable errors;
+* `aria-invalid` and `aria-describedby` where useful;
+* non-color-only communication;
+* readable contrast;
+* reasonable zoom behavior.
 
 Do not use clickable `<div>` elements for standard controls.
 
-Ensure:
+Test keyboard interaction and browser zoom when UI behavior changes.
 
-* keyboard usability;
-* visible focus states;
-* readable contrast;
-* understandable validation messages;
-* no color-only meaning;
-* reasonable heading hierarchy.
-
-Accessibility is part of correctness, not optional decoration.
+State limitations honestly when automation cannot verify them.
 
 ---
 
-# 40. CSS Rules
+# 39. Responsive and CSS Rules
 
 Use plain CSS during the MVP.
 
-Keep styles understandable and maintainable.
-
 Prefer:
 
-* Flexbox;
 * Grid;
+* Flexbox;
 * responsive units;
+* limited breakpoints;
 * clear class names;
-* mobile-safe layouts;
-* limited breakpoints.
+* `min-width: 0` for shrinkable grid/flex children when needed;
+* text wrapping for user-controlled content;
+* mobile-safe actions.
 
 Avoid:
 
 * excessive absolute positioning;
 * unnecessary animation;
 * decorative complexity;
+* inline styles without a reason;
 * overly specific selectors;
-* inline styles without a concrete reason;
-* duplicated declarations.
+* duplicated declarations;
+* one stylesheet per tiny component without a clear need.
 
-Do not create one CSS file per component unless project complexity later justifies it.
+Test at representative widths such as:
+
+* 1440 px;
+* 1024 px;
+* 768 px;
+* 390 px;
+* 320 px.
 
 ---
 
-# 41. Performance Rules
+# 40. Error Handling
+
+Do not swallow errors silently.
+
+Differentiate:
+
+* validation errors;
+* storage errors;
+* network errors;
+* authentication errors;
+* authorization errors;
+* parsing errors;
+* unexpected internal errors.
+
+User messages must be understandable and actionable.
+
+Do not expose:
+
+* secrets;
+* tokens;
+* private paths unnecessarily;
+* raw internal stack traces;
+* database details;
+* provider credentials.
+
+Do not use a generic error when a specific recovery action is available.
+
+---
+
+# 41. Logging and Observability
+
+Do not add production logging without a concrete need.
+
+Never log:
+
+* passwords;
+* tokens;
+* secrets;
+* private CV data;
+* sensitive candidate information;
+* full external payloads unnecessarily.
+
+Development logs must be removed before completion unless intentionally justified.
+
+When remote services are introduced, distinguish:
+
+* user-visible errors;
+* development diagnostics;
+* production observability.
+
+Production observability must avoid sensitive content.
+
+---
+
+# 42. Documentation
+
+Documentation must reflect implemented behavior.
+
+Clearly distinguish:
+
+* implemented;
+* planned;
+* deferred;
+* out of scope;
+* under discussion.
+
+Update documentation when changes affect:
+
+* setup;
+* architecture;
+* domain;
+* product scope;
+* usage;
+* persistence;
+* environment variables;
+* security;
+* deployment;
+* testing.
+
+Do not document future features as complete.
+
+Keep documentation understandable to a trainee developer.
+
+Use diagrams only when they improve understanding.
+
+Use:
+
+* `AGENTS.md` for permanent operating rules;
+* `docs/project-status.md` for current implementation status;
+* `README.md` for product overview, setup, and user-facing project information;
+* `docs/domain-model.md` for domain concepts and relationships.
+
+Do not duplicate volatile status across several files.
+
+Do not modify `AGENTS.md` merely because implementation status changed.
+
+---
+
+# 43. Git
+
+Use small, coherent commits.
+
+A commit must represent one understandable unit of work.
+
+Do not:
+
+* stage automatically;
+* commit automatically;
+* push automatically;
+* create branches automatically;
+* create tags automatically;
+* create pull requests automatically;
+* create releases automatically;
+* rewrite history;
+* force push.
+
+Before an approved commit:
+
+1. show `git status`;
+2. show changed files;
+3. stage only authorized files;
+4. show staged file names;
+5. show `git diff --cached --stat`;
+6. summarize the commit;
+7. propose a Conventional Commit message;
+8. obtain explicit approval.
+
+Before an approved push:
+
+1. show commits ahead of `origin/main`;
+2. confirm the intended remote;
+3. confirm the intended branch;
+4. do not use `--force`.
+
+---
+
+# 44. Deployment
+
+Do not deploy automatically.
+
+Before deployment, explain:
+
+* platform;
+* public URL;
+* build command;
+* output directory;
+* environment variables;
+* public versus secret variables;
+* expected cost;
+* rollback approach;
+* privacy implications;
+* external service dependencies.
+
+Do not expose development-only configuration.
+
+Do not claim production readiness only because a deployment succeeds.
+
+---
+
+# 45. Performance
 
 Do not optimize prematurely.
 
 Do not add:
 
 * memoization;
-* virtualization;
 * caching layers;
+* virtualization;
 * lazy loading;
 * complex selectors;
+* premature indexing;
+* background processing;
 
-unless a measured or clearly observable problem exists.
+without an observable or measured problem.
 
-When proposing optimization, first explain:
+Before optimization, explain:
 
-* the actual bottleneck;
+* bottleneck;
 * evidence;
-* expected improvement;
-* added complexity.
+* expected benefit;
+* added complexity;
+* regression risk.
 
 ---
 
-# 42. Interview-Readiness Requirement
+# 46. Code Quality
 
-Every important implementation decision must be explainable in an interview.
+Prefer:
 
-After completing a meaningful task, provide a short interview explanation using this structure:
+* clear domain names;
+* focused functions;
+* explicit control flow;
+* predictable returns;
+* pure helpers where appropriate;
+* consistent formatting;
+* accessible markup;
+* semantic elements;
+* small coherent modules;
+* defensive boundary handling.
 
-```text
-Problem:
-Decision:
-Why:
-Alternative:
-Trade-off:
-Future evolution:
-```
+Avoid:
 
-Example:
+* clever one-liners;
+* hidden side effects;
+* magic values;
+* deep nesting;
+* duplicated business rules;
+* generic names such as `data` when a domain name exists;
+* comments that repeat code;
+* commented-out code;
+* dead code;
+* obsolete components;
+* speculative TODOs.
 
-```text
-Problem:
-UI components should not depend directly on browser storage.
+A TODO must explain:
 
-Decision:
-Storage access was isolated behind a repository.
-
-Why:
-It reduces coupling and allows localStorage to be replaced later.
-
-Alternative:
-Read and write localStorage directly from React components.
-
-Trade-off:
-The repository adds one extra abstraction.
-
-Future evolution:
-The same interface can later use InsForge.
-```
+* missing behavior;
+* reason for deferral;
+* required decision.
 
 ---
 
-# 43. Mentoring Requirement
+# 47. Mentoring
 
-When introducing a new concept, explain:
+When introducing a concept, explain in Spanish:
 
 1. what it is;
 2. why it exists;
 3. how it applies here;
 4. a simple example;
 5. a common mistake;
-6. how it relates to previous knowledge.
+6. how it relates to Luciano's Java, POO, SQL, Git, or previous projects.
 
-Prioritize understanding over speed.
+Do not describe concepts as obvious or standard without explanation.
 
-Do not dump large unexplained code blocks.
+Do not provide large unexplained code dumps.
 
-When practical, explain the flow before showing implementation.
-
-Do not describe a concept as “standard” or “obvious” without explanation.
+Explain flows before implementation when practical.
 
 ---
 
-# 44. Task Completion Report
+# 48. Interview Readiness
 
-At the end of every task, report:
+After a meaningful feature, provide:
 
-## Objective
+```text
+Problem:
+Decision:
+Why:
+Alternative:
+Trade-off:
+Future evolution:
+```
 
-What the task intended to accomplish.
+Also explain:
 
-## Changes
-
-Files created, modified, moved, or deleted.
-
-## Behavior
-
-What now works differently.
-
-## Architecture
-
-Relevant responsibility or dependency changes.
-
-## Verification
-
-Commands and manual checks performed.
-
-## Git status
-
-Current branch and working-tree status.
-
-## Excluded work
-
-Explicitly state what was not implemented.
-
-## Remaining risks
-
-Known limitations or decisions still pending.
-
-## Learning summary
-
-Explain the main technical concept in Spanish.
-
-Then stop.
+* responsibility ownership;
+* data flow;
+* security boundary;
+* testing strategy;
+* how the solution may evolve.
 
 ---
 
-# 45. Mandatory Stop Conditions
+# 49. Proportional Reporting
 
-Stop immediately and ask for guidance when:
+Use a report proportional to task size.
 
-* the repository path appears incorrect;
-* unrecognized user changes are present;
-* a requested action may overwrite work;
-* a business rule is materially ambiguous;
-* credentials or secrets are required;
-* a platform integration may violate its rules;
-* a destructive command appears necessary;
-* a dependency is required but not approved;
-* the task would expand beyond the requested scope;
-* the implementation conflicts with this file;
-* build or lint fails for reasons outside the current task;
-* authenticated identity does not match the expected account;
-* a remote repository already exists unexpectedly.
+## Small task report
 
-Do not “solve” these situations by guessing.
+Include:
 
----
+* objective;
+* files changed;
+* verification;
+* Git status;
+* remaining risk.
 
-# 46. Current Repository Status
+## Feature or milestone report
 
-At the time this instruction set was prepared, the project has:
+Include:
 
-* a React and Vite application;
-* JavaScript;
-* CSS;
-* Git configured;
-* GitHub remote configured;
-* a public repository;
-* a static responsive interface;
-* the interface split into React components;
-* no functional application state;
-* no persistence;
-* no backend;
-* no job discovery;
-* no matching engine;
-* no AI integration.
+* objective;
+* behavior;
+* architecture;
+* domain impact;
+* security;
+* accessibility;
+* tests;
+* regression results;
+* documentation;
+* Git status;
+* excluded work;
+* remaining risks;
+* learning summary;
+* interview explanation.
 
-Existing UI components include:
-
-* `Header`;
-* `StatsPanel`;
-* `FollowUpPanel`;
-* `ApplicationForm`;
-* `FiltersBar`;
-* `ApplicationList`;
-* `EmptyState`.
-
-This status section provides context.
-
-It does not authorize the next implementation automatically.
-
-Always follow the explicit current user task.
+Do not produce a milestone-sized report for a trivial one-line correction.
 
 ---
 
-# 47. Current Architectural Direction
+# 50. Mandatory Stop Conditions
 
-The next domain concepts are expected to include:
+Stop and ask for guidance when:
 
-* `CandidateProfile`;
-* `JobSearchPreferences`;
-* `CompanySource`;
-* `JobOpportunity`;
-* `MatchResult`;
-* `Application`.
+* repository path is incorrect;
+* current branch is unexpected;
+* unrecognized changes exist;
+* user work may be overwritten;
+* destructive action seems necessary;
+* credentials are required;
+* secrets are exposed;
+* business behavior is materially ambiguous;
+* a new dependency is required;
+* remote action is required;
+* deployment is requested without sufficient configuration;
+* a platform integration may violate rules;
+* authenticated identity is unexpected;
+* data migration may lose data;
+* implementation conflicts with security or privacy;
+* a problem outside the task blocks build or lint;
+* the requested scope cannot be completed safely.
 
-Before implementing them:
-
-* inspect the current repository;
-* confirm no conflicting work exists;
-* explain the model;
-* verify all required business decisions;
-* implement only the explicitly approved subset.
-
-Do not assume all expected classes must be created in a single task.
+Do not stop for low-risk reversible implementation details already covered by approved conventions.
 
 ---
 
-# 48. Definition of Done for a Task
+# 51. Definition of Done for a Task
 
 A task is complete only when:
 
-* the requested scope is implemented;
+* requested scope is implemented;
 * unrelated behavior remains unchanged;
 * code is understandable;
-* build succeeds;
-* lint succeeds;
-* relevant manual verification is completed;
+* responsibilities are clear;
+* build succeeds when applicable;
+* lint succeeds when applicable;
+* relevant tests pass;
+* browser behavior was checked when applicable;
+* accessibility was considered;
+* security was considered;
 * no unapproved dependency was added;
 * no sensitive data was exposed;
-* documentation is consistent when applicable;
-* Git changes are known and reviewable;
-* the user received an educational explanation;
+* documentation is consistent;
+* Git changes are known;
+* remaining risks are reported;
+* Luciano received an educational explanation;
 * no commit or push occurred without approval.
 
 ---
 
-# 49. Definition of Done for the MVP
+# 52. Definition of Done for the Local MVP
 
-The frontend MVP will be considered complete when a user can:
+The local frontend MVP is complete when a user can:
 
 1. create an opportunity;
 2. view opportunities;
 3. edit an opportunity;
-4. delete an opportunity;
+4. delete or archive an opportunity safely;
 5. search by company or role;
 6. filter by status;
-7. view basic statistics;
-8. identify upcoming follow-ups;
-9. preserve data after reloading the browser;
-10. recover safely from missing or invalid stored data;
-11. use the application on mobile and desktop;
-12. access the published application through a public URL.
+7. view useful statistics;
+8. convert an opportunity into an application explicitly;
+9. manage application status;
+10. identify follow-ups;
+11. preserve data after reload;
+12. recover safely from invalid stored data;
+13. use the application on mobile and desktop;
+14. use the application with keyboard navigation;
+15. access a published public version.
 
-The MVP does not require:
+The local MVP does not require:
 
 * automatic job discovery;
 * remote database;
@@ -1598,22 +1760,40 @@ The MVP does not require:
 * AI;
 * automatic applications.
 
-Those belong to later phases.
-
 ---
 
-# 50. Final Operating Principle
+# 53. Final Operating Principles
 
 Build the smallest correct step.
 
-Explain it.
+Understand the repository before changing it.
 
-Verify it.
+Protect user work, privacy, and secrets.
 
-Make it reversible.
+Keep opportunities separate from applications.
 
-Do not guess.
+Keep domain, presentation, and infrastructure responsibilities explicit.
+
+Treat external and persisted data as untrusted.
+
+Do not invent business rules.
+
+Choose reversible low-risk details without unnecessary interruption.
+
+Ask before irreversible, sensitive, or product-defining decisions.
+
+Explain the flow.
+
+Verify behavior, not only compilation.
+
+Inspect security, accessibility, responsive behavior, and the final diff.
+
+Use Git intentionally.
+
+Never force push.
+
+Make every meaningful decision teachable and defensible in an interview.
 
 Do not overengineer.
 
-Do not advance without authorization.
+Do not advance beyond the authorized scope.
