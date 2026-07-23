@@ -14,11 +14,11 @@ The actual repository remains the final source of truth.
 
 ## Current Milestone
 
-The manual opportunity-creation flow is implemented, audited, committed, and published on `main`.
+The manual opportunity-creation and local-persistence flows are implemented, audited, committed, and published on `main`.
 
-Local opportunity persistence is implemented and verified in the current working tree. These persistence changes remain intentionally uncommitted and unpushed for manual review.
+The current working tree adds a real data-driven opportunity dashboard and same-origin cross-tab synchronization. These changes remain intentionally unstaged, uncommitted, and unpushed for manual review.
 
-The application can create opportunities, persist them in the current browser, rehydrate domain instances after reload, and recover safely when stored data is invalid.
+The application can create opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the current collection, and synchronize valid storage changes between same-origin tabs.
 
 ## Implemented
 
@@ -67,7 +67,7 @@ The current flow supports:
 * domain-generated timestamps;
 * immutable React state updates;
 * one or multiple opportunity cards;
-* a real detected-opportunity count;
+* immediate dashboard updates after accepted creation;
 * conditional optional-field rendering;
 * safe external links;
 * safe React text rendering.
@@ -103,6 +103,33 @@ The current working tree supports:
 * preservation of corrupted stored data without automatic overwrite;
 * a visible, semantic storage warning;
 * shared HTTP/HTTPS URL validation for form and repository boundaries.
+
+The reported reload issue was reproduced as an origin mismatch rather than a repository defect. `http://127.0.0.1:5173` and `http://localhost:5173` use independent browser storage because the hostname is part of the origin. Valid records remained available after normal reload, hard reload, and closing and reopening the exact same URL.
+
+### Data-driven dashboard
+
+The current working tree derives, without separate React or persisted metric state:
+
+* total opportunities;
+* opportunities by actual status;
+* detected opportunities;
+* opportunities with and without a publication date;
+* opportunities by modality;
+* opportunities by employment type;
+* opportunities created during the current local week;
+* percentages only when the total is greater than zero.
+
+Application, interview, offer, and follow-up metrics are not inferred from opportunities. The interface identifies those workflows as not implemented.
+
+The pure `calculateDashboardMetrics` application module receives the opportunity collection and an injectable current date. It does not depend on React or browser storage and does not mutate its inputs.
+
+### Same-origin tab synchronization
+
+`App` listens for the browser `storage` event and reacts only to the opportunity storage key. It reloads through `LocalStorageOpportunityRepository`, so external values receive the same schema, URL, and domain validation as startup data.
+
+Valid external changes replace the current collection immutably. Invalid external data remains untouched, the visible collection is preserved, and a safe warning is shown. A later valid load clears the repository block and allows persistence to continue.
+
+This behavior synchronizes tabs that share protocol, hostname, and port. It does not synchronize different origins, browsers, devices, or users, and it is not remote real-time behavior.
 
 ### Documentation
 
@@ -159,20 +186,23 @@ React components render the header, statistics, workspace tabs, manual opportuni
 `App` owns:
 
 * the opportunity collection;
-* opportunity-form visibility.
+* opportunity-form visibility;
+* the current persistence warning.
 
 `OpportunityForm` owns:
 
 * the temporary form draft;
 * form validation errors.
 
-The detected-opportunity count is derived from `opportunities.length`.
+Dashboard values are derived from the opportunity collection during rendering. They are not independent state and are not stored in `localStorage`.
 
 ### Domain coordination
 
 `App` coordinates accepted form data and creates `JobOpportunity` instances.
 
 `JobOpportunity` owns default identity, timestamps, and initial opportunity status.
+
+`calculateDashboardMetrics` is a pure application-level calculation that transforms validated opportunities into presentation-ready counts and percentages.
 
 Presentation components receive data through props and communicate actions through callbacks.
 
@@ -184,15 +214,18 @@ Presentation components receive data through props and communicate actions throu
 
 Persisted records use the key `it-job-search-assistant.opportunities` and a versioned envelope with `schemaVersion: 1`.
 
+Same-origin tab changes are received through the browser `storage` event and reloaded through the repository.
+
 No remote service is connected.
 
 ## Current Limitations
 
 * Only the opportunity-creation flow has functional behavior.
 * Application, source, follow-up, and workspace-tab sections remain static.
-* Persistence remains local to one browser and device.
+* Persistence remains local to one browser origin and device.
 * No remote synchronization exists.
 * No multi-device data sharing exists.
+* Tabs using `localhost`, `127.0.0.1`, or different ports do not share data.
 * Corrupted data is preserved and reported, but there is no user-facing repair or export workflow yet.
 * Automated tests have not been introduced.
 
@@ -225,8 +258,14 @@ The manual opportunity and persistence flows have been reviewed through:
 * valid HTTP and HTTPS submissions;
 * multiple opportunity creation;
 * opportunity counter updates;
+* dashboard transitions from zero to one and two opportunities;
+* modality and employment-type metric updates;
 * reload behavior;
-* deterministic repository scenarios with an injected in-memory storage adapter;
+* normal reload, hard reload, and same-origin tab reopening;
+* two-way same-origin cross-tab updates;
+* unrelated storage-key events being ignored;
+* 27 deterministic repository scenarios with an injected in-memory storage adapter;
+* 12 deterministic dashboard-calculation scenarios;
 * missing, malformed, unsupported, and invalid stored data;
 * storage read and write failures;
 * preservation and recovery of corrupted stored values;
@@ -246,7 +285,7 @@ Luciano manually approved:
 
 ## Current Technical Debt
 
-No blocking source defect is currently known.
+No blocking source defect is currently known. The reload report was conclusively traced to browser-origin isolation rather than a same-origin persistence failure.
 
 The repository does not yet have an automated test framework or automated component tests. Persistence behavior is currently covered by deterministic repository checks executed without adding dependencies, plus browser validation.
 
@@ -254,33 +293,30 @@ These gaps should be addressed only when the corresponding approved milestone re
 
 ## Next Planned Technical Direction
 
-The next proposed milestone must be selected after the current local persistence changes are manually reviewed and committed.
+The next proposed milestone must be selected after the current dashboard and cross-tab changes are manually reviewed and committed.
 
 The intended direction is:
 
 ```text
 OpportunityForm
         ↓
-App coordinates accepted data
+App coordinates accepted data and owns opportunities
         ↓
-JobOpportunity
+JobOpportunity and LocalStorageOpportunityRepository
         ↓
-Opportunity repository
-        ↓
-localStorage
+calculateDashboardMetrics and StatsPanel
 ```
 
-The implemented repository now:
+The implemented architecture now:
 
-* isolate browser storage;
-* use a stable namespaced key;
-* use a versioned envelope;
-* validate parsed records;
-* rehydrate real `JobOpportunity` instances;
-* preserve IDs and timestamps;
-* preserve corrupted data;
-* report load and save failures safely;
-* remain replaceable by a future remote repository.
+* isolates browser storage behind a repository;
+* uses a stable namespaced key and versioned envelope;
+* validates parsed records and rehydrates real `JobOpportunity` instances;
+* preserves IDs, timestamps, order, optional fields, and corrupted data;
+* reports load and save failures safely;
+* derives dashboard metrics from one source of truth;
+* synchronizes same-origin tabs without polling;
+* remains replaceable by a future remote repository.
 
 No later milestone is authorized automatically.
 

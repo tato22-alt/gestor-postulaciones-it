@@ -70,6 +70,22 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 * Git;
 * GitHub.
 
+## Ejecución local
+
+Después de instalar las dependencias con `npm install`, iniciá Vite con:
+
+```bash
+npm run dev -- --host 127.0.0.1
+```
+
+Abrí siempre la URL canónica informada por Vite:
+
+```text
+http://127.0.0.1:5173/
+```
+
+`localStorage` está aislado por origen, es decir, por la combinación de protocolo, nombre del host y puerto. Por eso `http://127.0.0.1:5173` y `http://localhost:5173` almacenan colecciones independientes, aunque muestren la misma aplicación. Tampoco comparten datos dos puertos diferentes.
+
 ## Funcionalidades fuera del alcance actual
 
 * TypeScript;
@@ -124,11 +140,13 @@ Cada decisión técnica importante debe explicar:
 
 ## Estado actual del proyecto
 
-La aplicación permite cargar manualmente oportunidades laborales, validar los campos obligatorios y conservarlas entre recargas del navegador. Cada alta crea una instancia de `JobOpportunity`, actualiza los contadores y guarda la colección completa mediante un repositorio aislado de `localStorage`, sin convertir la oportunidad en una postulación.
+La aplicación permite cargar manualmente oportunidades laborales, validar los campos obligatorios y conservarlas entre recargas del navegador. Cada alta crea una instancia de `JobOpportunity`, actualiza el dashboard a partir de la colección real y guarda la colección completa mediante un repositorio aislado de `localStorage`, sin convertir la oportunidad en una postulación.
 
 Los datos persistidos usan una clave propia y un formato versionado. Al iniciar, el repositorio valida la estructura antes de reconstruir instancias reales de `JobOpportunity`. Si encuentra datos corruptos o una versión no compatible, no los sobrescribe: inicia una sesión sin persistencia y muestra una advertencia recuperable.
 
-Esta persistencia es exclusivamente local al navegador y al dispositivo actual. Todavía no existen edición, eliminación, sincronización remota ni cuentas de usuario.
+Las métricas no se persisten por separado: se recalculan desde las oportunidades cada vez que cambia el estado de React. Otras pestañas abiertas con el mismo origen reciben los cambios mediante el evento `storage`; las pestañas con otro host o puerto no se sincronizan.
+
+Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen edición, eliminación, sincronización remota, postulaciones funcionales, seguimientos funcionales ni cuentas de usuario.
 
 ## Autor
 
