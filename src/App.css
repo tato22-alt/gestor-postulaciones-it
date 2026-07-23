@@ -114,6 +114,126 @@
   line-height: 1;
 }
 
+.stat-card > span {
+  display: block;
+  margin-top: 8px;
+  color: #667085;
+  font-size: 0.8rem;
+}
+
+.dashboard-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.dashboard-group {
+  min-width: 0;
+  border: 1px solid #dfe3e8;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(23, 32, 51, 0.04);
+  padding: 22px;
+}
+
+.dashboard-group-wide {
+  grid-column: 1 / -1;
+}
+
+.dashboard-group-heading {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.dashboard-group-heading h3,
+.dashboard-group-heading p {
+  margin: 0;
+}
+
+.dashboard-group-heading h3 {
+  color: #172033;
+  font-size: 1.05rem;
+}
+
+.dashboard-group-heading p {
+  color: #667085;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.metric-list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.metric-list li {
+  min-width: 0;
+}
+
+.metric-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 7px;
+}
+
+.metric-value-row span {
+  min-width: 0;
+  color: #344054;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.metric-value-row strong {
+  color: #172033;
+  font-size: 1rem;
+}
+
+.metric-list progress {
+  display: block;
+  width: 100%;
+  height: 10px;
+  accent-color: #2563eb;
+}
+
+.metric-percentage {
+  display: block;
+  margin-top: 5px;
+  color: #667085;
+  font-size: 0.78rem;
+}
+
+.unsupported-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.unsupported-metrics div {
+  min-width: 0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 14px;
+}
+
+.unsupported-metrics dt {
+  color: #344054;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.unsupported-metrics dd {
+  margin: 4px 0 0;
+  color: #667085;
+}
+
 .panel {
   padding: 28px;
 }
@@ -450,6 +570,14 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .dashboard-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-group-wide {
+    grid-column: auto;
+  }
+
   .header-actions {
     justify-content: flex-start;
   }
@@ -470,7 +598,8 @@
   }
 
   .statistics-grid,
-  .form-grid {
+  .form-grid,
+  .unsupported-metrics {
     grid-template-columns: 1fr;
   }
 

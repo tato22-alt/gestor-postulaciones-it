@@ -214,7 +214,7 @@ class LocalStorageOpportunityRepository {
     }
 
     if (rawValue === null || rawValue === undefined) {
-      return { ok: true, status: 'empty', opportunities: [] }
+      return this.completeLoad('empty', [])
     }
 
     let envelope
@@ -245,11 +245,10 @@ class LocalStorageOpportunityRepository {
       (opportunity) => new JobOpportunity(opportunity),
     )
 
-    return {
-      ok: true,
-      status: opportunities.length === 0 ? 'empty' : 'loaded',
+    return this.completeLoad(
+      opportunities.length === 0 ? 'empty' : 'loaded',
       opportunities,
-    }
+    )
   }
 
   saveAll(opportunities) {
@@ -293,6 +292,11 @@ class LocalStorageOpportunityRepository {
   blockPersistence(status) {
     this.isPersistenceBlocked = true
     return { ok: false, status, opportunities: [] }
+  }
+
+  completeLoad(status, opportunities) {
+    this.isPersistenceBlocked = false
+    return { ok: true, status, opportunities }
   }
 }
 

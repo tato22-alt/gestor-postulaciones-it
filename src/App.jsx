@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
+import calculateDashboardMetrics from './application/calculateDashboardMetrics.js'
 import ApplicationList from './components/ApplicationList.jsx'
 import FollowUpPanel from './components/FollowUpPanel.jsx'
 import Header from './components/Header.jsx'
@@ -10,7 +11,9 @@ import SourceSection from './components/SourceSection.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import WorkspaceTabs from './components/WorkspaceTabs.jsx'
 import JobOpportunity from './domain/JobOpportunity.js'
-import LocalStorageOpportunityRepository from './infrastructure/LocalStorageOpportunityRepository.js'
+import LocalStorageOpportunityRepository, {
+  OPPORTUNITY_STORAGE_KEY,
+} from './infrastructure/LocalStorageOpportunityRepository.js'
 
 const LOAD_WARNING =
   'No pudimos recuperar las oportunidades guardadas de forma segura. Los datos almacenados se conservaron sin sobrescribirse. Los cambios de esta sesión no se guardarán permanentemente.'
@@ -39,6 +42,33 @@ function App() {
   const [persistenceWarning, setPersistenceWarning] = useState(
     initialOpportunityLoad.ok ? null : LOAD_WARNING,
   )
+  const dashboardMetrics = calculateDashboardMetrics({
+    opportunities,
+    now: new Date(),
+  })
+
+  useEffect(() => {
+    const synchronizeOpportunities = (event) => {
+      if (event.key !== OPPORTUNITY_STORAGE_KEY) {
+        return
+      }
+
+      const loadResult = opportunityRepository.loadAll()
+
+      if (loadResult.ok) {
+        setOpportunities([...loadResult.opportunities])
+        setPersistenceWarning(null)
+      } else {
+        setPersistenceWarning(LOAD_WARNING)
+      }
+    }
+
+    window.addEventListener('storage', synchronizeOpportunities)
+
+    return () => {
+      window.removeEventListener('storage', synchronizeOpportunities)
+    }
+  }, [])
 
   const openOpportunityForm = () => {
     setIsOpportunityFormVisible(true)
@@ -79,7 +109,7 @@ function App() {
       <Header onAddOpportunity={openOpportunityForm} />
 
       <main className="app-main">
-        <StatsPanel detectedOpportunityCount={opportunities.length} />
+        <StatsPanel metrics={dashboardMetrics} />
         <WorkspaceTabs />
         <PersistenceWarning message={persistenceWarning} />
         {isOpportunityFormVisible && (
