@@ -146,6 +146,8 @@ Los datos persistidos usan una clave propia y un formato versionado. Al iniciar,
 
 Las métricas no se persisten por separado: se recalculan desde las oportunidades cada vez que cambia el estado de React. Otras pestañas abiertas con el mismo origen reciben los cambios mediante el evento `storage`; las pestañas con otro host o puerto no se sincronizan.
 
+La vista de oportunidades permite buscar por empresa o puesto y filtrar por cualquiera de los estados controlados. La búsqueda y el filtro pueden combinarse, no modifican la colección persistida y vuelven a su estado inicial al recargar la página. El dashboard continúa mostrando métricas de la colección completa, aunque la vista esté filtrada.
+
 Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen edición, eliminación, sincronización remota, postulaciones funcionales, seguimientos funcionales ni cuentas de usuario.
 
 ## Autor

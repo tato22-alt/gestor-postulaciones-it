@@ -16,9 +16,11 @@ The actual repository remains the final source of truth.
 
 The manual opportunity-creation and local-persistence flows are implemented, audited, committed, and published on `main`.
 
-The current working tree adds a real data-driven opportunity dashboard and same-origin cross-tab synchronization. These changes remain intentionally unstaged, uncommitted, and unpushed for manual review.
+The data-driven dashboard and same-origin cross-tab synchronization are committed locally on `main` and have not been pushed.
 
-The application can create opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the current collection, and synchronize valid storage changes between same-origin tabs.
+The current working tree adds non-destructive opportunity search and status filtering. These changes remain intentionally unstaged, uncommitted, and unpushed for manual review.
+
+The application can create opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the complete collection, synchronize valid storage changes between same-origin tabs, and derive a visible subset from temporary search and status criteria.
 
 ## Implemented
 
@@ -131,6 +133,27 @@ Valid external changes replace the current collection immutably. Invalid externa
 
 This behavior synchronizes tabs that share protocol, hostname, and port. It does not synchronize different origins, browsers, devices, or users, and it is not remote real-time behavior.
 
+### Opportunity search and status filtering
+
+The current working tree supports:
+
+* search by company or title;
+* case-insensitive matching;
+* leading and trailing whitespace normalization;
+* literal string comparison without regular expressions;
+* filtering by every centralized opportunity status;
+* an `all` option that exists only in the presentation layer;
+* combined search and status criteria;
+* actions to clear the search or reset all filters;
+* visible result counts derived from the source and visible collections;
+* distinct empty states for an empty collection and a filtered collection with no matches;
+* temporary filters that intentionally reset after a page reload;
+* automatic visible-result recalculation after same-origin tab updates.
+
+The pure `filterOpportunities` application function derives a new array without mutating the source collection. It is independent of React, browser storage, and the DOM.
+
+Dashboard metrics continue to use the complete opportunity collection and do not change merely because the visible list is filtered.
+
 ### Documentation
 
 Relevant documentation distinguishes:
@@ -147,8 +170,6 @@ The repository does not yet include:
 * opportunity editing;
 * opportunity deletion;
 * opportunity archiving behavior;
-* search;
-* filtering;
 * duplicate detection;
 * conversion of an opportunity into an application;
 * a functional application workflow;
@@ -179,7 +200,7 @@ They represented an earlier application-centered interface and must not be resto
 
 ### Presentation
 
-React components render the header, statistics, workspace tabs, manual opportunity form, opportunity cards, opportunity section, and the static source, application, and follow-up sections.
+React components render the header, statistics, workspace tabs, manual opportunity form, opportunity search and status controls, opportunity cards, opportunity section, and the static source, application, and follow-up sections.
 
 ### State ownership
 
@@ -187,7 +208,9 @@ React components render the header, statistics, workspace tabs, manual opportuni
 
 * the opportunity collection;
 * opportunity-form visibility;
-* the current persistence warning.
+* the current persistence warning;
+* the temporary opportunity search query;
+* the temporary opportunity status filter.
 
 `OpportunityForm` owns:
 
@@ -196,6 +219,8 @@ React components render the header, statistics, workspace tabs, manual opportuni
 
 Dashboard values are derived from the opportunity collection during rendering. They are not independent state and are not stored in `localStorage`.
 
+Visible opportunities are derived from the same collection and the temporary search and status criteria. The derived array, result count, search query, and status filter are not persisted.
+
 ### Domain coordination
 
 `App` coordinates accepted form data and creates `JobOpportunity` instances.
@@ -203,6 +228,8 @@ Dashboard values are derived from the opportunity collection during rendering. T
 `JobOpportunity` owns default identity, timestamps, and initial opportunity status.
 
 `calculateDashboardMetrics` is a pure application-level calculation that transforms validated opportunities into presentation-ready counts and percentages.
+
+`filterOpportunities` is a pure application-level function that applies search and status predicates to the source collection without mutating it.
 
 Presentation components receive data through props and communicate actions through callbacks.
 
@@ -220,7 +247,7 @@ No remote service is connected.
 
 ## Current Limitations
 
-* Only the opportunity-creation flow has functional behavior.
+* Opportunity creation, local search, and status filtering are the only functional opportunity workflows.
 * Application, source, follow-up, and workspace-tab sections remain static.
 * Persistence remains local to one browser origin and device.
 * No remote synchronization exists.
@@ -273,7 +300,15 @@ The manual opportunity and persistence flows have been reviewed through:
 * malicious-looking text;
 * long content;
 * desktop and mobile layouts;
-* browser console inspection.
+* browser console inspection;
+* 21 deterministic opportunity-filtering scenarios;
+* company and title search in the browser;
+* case-insensitive, partial, and whitespace-normalized search;
+* individual and combined status criteria;
+* filtered and unfiltered result counts;
+* temporary filter reset after reload;
+* active-filter recalculation after a same-origin tab update;
+* literal handling of malicious-looking search text without execution or regular-expression errors.
 
 Luciano manually approved:
 
@@ -293,7 +328,7 @@ These gaps should be addressed only when the corresponding approved milestone re
 
 ## Next Planned Technical Direction
 
-The next proposed milestone must be selected after the current dashboard and cross-tab changes are manually reviewed and committed.
+The next proposed milestone must be selected after the current search and status filtering changes are manually reviewed and committed.
 
 The intended direction is:
 
@@ -305,6 +340,8 @@ App coordinates accepted data and owns opportunities
 JobOpportunity and LocalStorageOpportunityRepository
         ↓
 calculateDashboardMetrics and StatsPanel
+        ↓
+filterOpportunities and OpportunityFilters
 ```
 
 The implemented architecture now:
@@ -316,6 +353,8 @@ The implemented architecture now:
 * reports load and save failures safely;
 * derives dashboard metrics from one source of truth;
 * synchronizes same-origin tabs without polling;
+* derives a visible opportunity subset from temporary UI criteria;
+* keeps dashboard metrics independent from list filtering;
 * remains replaceable by a future remote repository.
 
 No later milestone is authorized automatically.
@@ -326,7 +365,6 @@ The following remain planned for later approved milestones:
 
 * editing and deletion;
 * application conversion and tracking;
-* local search and filtering;
 * source approval and monitoring;
 * duplicate detection;
 * compatibility analysis;
