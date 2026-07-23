@@ -1,4 +1,4 @@
-function Header() {
+function Header({ onAddOpportunity }) {
   return (
     <header className="app-header">
       <div className="header-content">
@@ -10,10 +10,15 @@ function Header() {
           </p>
         </div>
         <div className="header-actions">
-          <button className="button button-primary" type="button">
+          <button className="button button-primary" type="button" onClick={onAddOpportunity}>
             Agregar oportunidad
           </button>
-          <button className="button button-secondary" type="button">
+          <button
+            className="button button-secondary"
+            type="button"
+            title="Disponible en una etapa posterior"
+            disabled
+          >
             Registrar postulación
           </button>
         </div>

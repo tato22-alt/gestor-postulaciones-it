@@ -1,4 +1,4 @@
-function StatsPanel() {
+function StatsPanel({ detectedOpportunityCount }) {
   return (
     <section aria-labelledby="statistics-title">
       <div className="section-heading">
@@ -11,7 +11,7 @@ function StatsPanel() {
       <div className="statistics-grid">
         <article className="stat-card">
           <p>Oportunidades detectadas</p>
-          <strong>0</strong>
+          <strong>{detectedOpportunityCount}</strong>
         </article>
         <article className="stat-card">
           <p>Recomendadas</p>
