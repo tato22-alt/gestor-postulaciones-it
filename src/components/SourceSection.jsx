@@ -11,7 +11,12 @@ function SourceSection() {
 
       <div className="empty-state compact-empty-state">
         <h3>No hay fuentes aprobadas todavía.</h3>
-        <button className="button button-secondary empty-state-action" type="button">
+        <button
+          className="button button-secondary empty-state-action"
+          type="button"
+          title="Disponible en una etapa posterior"
+          disabled
+        >
           Descubrir empresas
         </button>
       </div>

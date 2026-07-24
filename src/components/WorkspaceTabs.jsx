@@ -4,7 +4,12 @@ function WorkspaceTabs() {
       <button className="workspace-tab workspace-tab-active" type="button" aria-current="page">
         Oportunidades
       </button>
-      <button className="workspace-tab" type="button">
+      <button
+        className="workspace-tab"
+        type="button"
+        title="Disponible en una etapa posterior"
+        disabled
+      >
         Postulaciones
       </button>
     </nav>
