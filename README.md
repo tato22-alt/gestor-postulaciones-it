@@ -25,40 +25,54 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 
 ## Funcionalidades del MVP
 
+### Implementado
+
 * crear postulaciones;
 * visualizar postulaciones;
 * editar postulaciones;
-* eliminar postulaciones;
 * buscar por empresa o puesto;
 * filtrar por estado;
 * mostrar estadísticas básicas;
-* identificar próximos seguimientos;
 * validar formularios;
 * persistir datos con `localStorage`;
-* diseño responsive;
+* diseño responsive.
+
+### Planificado
+
+* eliminar postulaciones;
+* identificar próximos seguimientos;
 * publicación online.
 
-## Datos de una postulación
+## Datos de una oportunidad
 
+* identificador;
 * empresa;
 * puesto;
-* enlace;
-* fecha de postulación;
-* estado;
+* descripción;
+* enlace a la publicación;
+* ubicación;
 * modalidad;
-* fuente;
-* fecha de seguimiento;
-* próxima acción;
-* notas.
+* tipo de jornada;
+* experiencia requerida;
+* habilidades requeridas;
+* habilidades preferidas;
+* requisitos de idioma;
+* salario;
+* fecha de publicación;
+* fecha de detección;
+* estado;
+* fecha de creación;
+* fecha de última modificación;
+* fuente (referencia a la empresa que originó la oportunidad).
 
-## Estados disponibles
+## Estados de una oportunidad
 
+* Detectada;
 * Guardada;
-* Postulado;
-* Entrevista;
-* Prueba técnica;
-* Rechazado;
-* Oferta.
+* Descartada;
+* Archivada.
+
+Los estados de postulación (Postulado, Entrevista, Prueba técnica, Rechazado, Oferta) existen en el modelo de dominio dentro de la clase `Application`, pero todavía no tienen un flujo de trabajo implementado en la interfaz.
 
 ## Tecnologías utilizadas
 
