@@ -448,6 +448,36 @@
   opacity: 0.8;
 }
 
+.button-destructive {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #ffffff;
+}
+
+.button-destructive:hover {
+  background: #991b1b;
+  border-color: #991b1b;
+}
+
+.button-destructive:focus-visible {
+  outline-color: rgba(185, 28, 28, 0.35);
+}
+
+.button-danger-outline {
+  border-color: #fca5a5;
+  background: #ffffff;
+  color: #b91c1c;
+}
+
+.button-danger-outline:hover {
+  background: #fff1f0;
+  border-color: #f87171;
+}
+
+.button-danger-outline:focus-visible {
+  outline-color: rgba(185, 28, 28, 0.25);
+}
+
 .opportunity-filters {
   display: grid;
   gap: 16px;
@@ -665,6 +695,55 @@
   font-size: 0.88rem;
 }
 
+.opportunity-delete-action {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #fee2e2;
+  padding-top: 16px;
+}
+
+.confirm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 24, 39, 0.5);
+  padding: 16px;
+}
+
+.confirm-dialog {
+  display: grid;
+  gap: 16px;
+  width: min(480px, 100%);
+  border: 1px solid #dfe3e8;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 20px 48px rgba(23, 32, 51, 0.18);
+  padding: 28px;
+}
+
+.confirm-dialog-title {
+  margin: 0;
+  color: #172033;
+  font-size: 1.1rem;
+}
+
+.confirm-dialog-message {
+  margin: 0;
+  color: #5d6879;
+  line-height: 1.5;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
 .empty-state {
   margin-top: 0;
   border: 1px dashed #b8c1ce;
@@ -760,7 +839,8 @@
     grid-column: auto;
   }
 
-  .form-actions {
+  .form-actions,
+  .confirm-dialog-actions {
     align-items: stretch;
     flex-direction: column;
   }
@@ -769,7 +849,8 @@
   .header-content .button,
   .opportunity-filter-actions .button,
   .opportunity-card-actions .button,
-  .opportunity-status-actions .button {
+  .opportunity-status-actions .button,
+  .opportunity-delete-action .button {
     width: 100%;
   }
 
@@ -785,7 +866,8 @@
   }
 
   .opportunity-card-actions,
-  .opportunity-status-actions {
+  .opportunity-status-actions,
+  .opportunity-delete-action {
     align-items: stretch;
     flex-direction: column;
   }

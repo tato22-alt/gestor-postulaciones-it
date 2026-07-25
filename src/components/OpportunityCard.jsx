@@ -36,6 +36,7 @@ function OpportunityCard({
   isBeingEdited,
   onEdit,
   onStatusChange,
+  onRequestDelete,
 }) {
   const allowedTargets = getAllowedTargetStatuses(opportunity.status)
   const isArchived = opportunity.status === OPPORTUNITY_STATUSES.ARCHIVED.value
@@ -138,6 +139,17 @@ function OpportunityCard({
           })}
         </div>
       )}
+
+      <div className="opportunity-delete-action">
+        <button
+          className="button button-danger-outline"
+          type="button"
+          aria-label={`Eliminar ${opportunity.title} en ${opportunity.company}`}
+          onClick={() => onRequestDelete(opportunity)}
+        >
+          Eliminar
+        </button>
+      </div>
     </article>
   )
 }

@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import calculateDashboardMetrics from './application/calculateDashboardMetrics.js'
 import changeOpportunityStatus from './application/changeOpportunityStatus.js'
+import deleteOpportunity from './application/deleteOpportunity.js'
 import filterOpportunities from './application/filterOpportunities.js'
 import updateOpportunity from './application/updateOpportunity.js'
 import ApplicationList from './components/ApplicationList.jsx'
+import ConfirmDialog from './components/ConfirmDialog.jsx'
 import FollowUpPanel from './components/FollowUpPanel.jsx'
 import Header from './components/Header.jsx'
 import OpportunityForm from './components/OpportunityForm.jsx'
@@ -39,6 +41,15 @@ const STATUS_CONFLICT_WARNING =
 const STATUS_SAVE_WARNING =
   'El estado se actualizó en esta sesión, pero no pudo guardarse en el navegador. El cambio puede perderse al recargar la página.'
 
+const DELETE_CONFLICT_WARNING =
+  'Esta oportunidad cambió en otra pestaña mientras el diálogo estaba abierto. La eliminación no se aplicó.'
+
+const DELETE_NOT_FOUND_WARNING =
+  'La oportunidad que intentabas eliminar ya no está disponible.'
+
+const DELETE_SAVE_WARNING =
+  'La oportunidad se eliminó de esta sesión, pero el cambio no pudo guardarse en el navegador. Puede reaparecer al recargar la página.'
+
 function getBrowserStorage() {
   if (typeof window === 'undefined') {
     return null
@@ -64,6 +75,7 @@ function App() {
   const [opportunityStatusFilter, setOpportunityStatusFilter] = useState(null)
   const [editingSession, setEditingSession] = useState(null)
   const [editWarning, setEditWarning] = useState(null)
+  const [pendingDeletion, setPendingDeletion] = useState(null)
   const visibleOpportunities = filterOpportunities(opportunities, {
     searchQuery: opportunitySearchQuery,
     status: opportunityStatusFilter,
@@ -143,6 +155,48 @@ function App() {
       setPersistenceWarning(null)
     } else {
       setPersistenceWarning((current) => current ?? STATUS_SAVE_WARNING)
+    }
+  }
+
+  const opportunityToDelete = pendingDeletion
+    ? (opportunities.find((opp) => opp.id === pendingDeletion.id) ?? null)
+    : null
+
+  const requestDeleteOpportunity = (opportunity) => {
+    setPendingDeletion({ id: opportunity.id, expectedUpdatedAt: opportunity.updatedAt })
+  }
+
+  const cancelDelete = () => {
+    setPendingDeletion(null)
+  }
+
+  const confirmDelete = () => {
+    if (!pendingDeletion) return
+
+    const { id, expectedUpdatedAt } = pendingDeletion
+    const result = deleteOpportunity(opportunities, { id, expectedUpdatedAt })
+
+    setPendingDeletion(null)
+
+    if (!result.ok) {
+      setPersistenceWarning(
+        result.status === 'conflict' ? DELETE_CONFLICT_WARNING : DELETE_NOT_FOUND_WARNING,
+      )
+      return
+    }
+
+    if (editingSession?.id === id) {
+      closeOpportunityForm()
+    }
+
+    setOpportunities(result.opportunities)
+
+    const saveResult = opportunityRepository.saveAll(result.opportunities)
+
+    if (saveResult.ok) {
+      setPersistenceWarning(null)
+    } else {
+      setPersistenceWarning((current) => current ?? DELETE_SAVE_WARNING)
     }
   }
 
@@ -256,11 +310,26 @@ function App() {
           isOpportunityFormVisible={isOpportunityFormVisible}
           onEditOpportunity={openOpportunityEditForm}
           onOpportunityStatusChange={applyStatusChange}
+          onRequestDelete={requestDeleteOpportunity}
         />
         <SourceSection />
         <ApplicationList />
         <FollowUpPanel />
       </main>
+      <ConfirmDialog
+        isOpen={pendingDeletion !== null}
+        title="Eliminar oportunidad"
+        message={
+          opportunityToDelete
+            ? `¿Eliminar "${opportunityToDelete.title}" en ${opportunityToDelete.company}? Esta acción es permanente y no se puede deshacer.`
+            : '¿Eliminar esta oportunidad? Esta acción es permanente y no se puede deshacer.'
+        }
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   )
 }
