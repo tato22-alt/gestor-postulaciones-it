@@ -24,6 +24,8 @@ Representa una fuente oficial de empleos de una empresa. Una fuente nueva comien
 
 Representa una oferta detectada o ingresada manualmente. Conserva información como empresa, puesto, URL, publicación, requisitos y fuente de origen. Estos datos podrán colaborar con una futura detección de duplicados, pero esa comparación todavía no existe.
 
+El ciclo de vida de una oportunidad está controlado por cuatro estados: `detected`, `saved`, `dismissed` y `archived`. Las transiciones permitidas están centralizadas en `opportunityStatusPolicy.js`: desde detectada se puede avanzar a guardada, descartada o archivada; desde guardada o descartada se puede cambiar entre sí o archivar; desde archivada se puede restaurar a cualquiera de los otros tres estados. Las auto-transiciones y los retrocesos de guardada o descartada a detectada están siempre bloqueados. Ningún componente visual ni función de aplicación inventa reglas de transición fuera de esa política.
+
 El atributo `salary` puede almacenar por separado `amount`, `currency`, `period` y `condition` cuando la publicación los informa. Todo dato salarial desconocido puede permanecer en `null`; no se realizan conversiones.
 
 ### `MatchResult`
@@ -51,7 +53,7 @@ classDiagram
 
 ## Oportunidad y postulación
 
-`JobOpportunity` existe desde que una oferta entra al sistema. Puede detectarse, guardarse, descartarse o archivarse sin que el usuario se haya postulado.
+`JobOpportunity` existe desde que una oferta entra al sistema. Su estado avanza por una política de transiciones explícita: puede guardarse, descartarse o archivarse desde detectada; puede moverse entre guardada, descartada y archivada; y puede restaurarse desde archivada. El usuario puede cambiar el estado mediante los botones de acción de la tarjeta o a través del formulario de edición.
 
 `Application` existe únicamente después de una postulación efectiva. Por eso `applied` no es un estado de oportunidad y `saved` no es un estado de postulación.
 
@@ -79,7 +81,6 @@ El modelo no almacena DNI, CUIL, pasaporte, domicilio exacto, contraseñas, cred
 Todavía no existen:
 
 - validaciones de campos obligatorios;
-- reglas de transición entre estados;
 - instancias con información de Luciano;
 - persistencia remota o repositorios para otros agregados;
 - monitoreo de fuentes;

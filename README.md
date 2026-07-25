@@ -30,6 +30,7 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 * crear oportunidades;
 * visualizar oportunidades;
 * editar oportunidades;
+* cambiar el estado de una oportunidad con reglas de transición explícitas;
 * buscar por empresa o puesto;
 * filtrar por estado;
 * mostrar estadísticas básicas;
@@ -162,7 +163,9 @@ Las métricas no se persisten por separado: se recalculan desde las oportunidade
 
 La vista de oportunidades permite buscar por empresa o puesto y filtrar por cualquiera de los estados controlados. La búsqueda y el filtro pueden combinarse, no modifican la colección persistida y vuelven a su estado inicial al recargar la página. El dashboard continúa mostrando métricas de la colección completa, aunque la vista esté filtrada.
 
-Las oportunidades existentes pueden editarse sin cambiar su identidad ni su fecha de creación. La edición reutiliza las mismas reglas de validación del alta, actualiza `updatedAt`, persiste la colección completa y recalcula automáticamente la búsqueda, los filtros y el dashboard. Si otra pestaña modifica la misma oportunidad mientras el formulario está abierto, el guardado se bloquea para evitar sobrescribir silenciosamente datos más recientes.
+Las oportunidades existentes pueden editarse sin cambiar su identidad ni su fecha de creación. El formulario de edición incluye un selector de estado que muestra únicamente el estado actual y las transiciones permitidas por la política del dominio. La edición reutiliza las mismas reglas de validación del alta, actualiza `updatedAt`, persiste la colección completa y recalcula automáticamente la búsqueda, los filtros y el dashboard. Si otra pestaña modifica la misma oportunidad mientras el formulario está abierto, el guardado se bloquea para evitar sobrescribir silenciosamente datos más recientes.
+
+El estado de una oportunidad también puede cambiarse directamente desde los botones de acción de la tarjeta, sin abrir el formulario. Las transiciones permitidas son: desde detectada se puede guardar, descartar o archivar; desde guardada o descartada se puede mover entre sí o archivar; desde archivada se puede restaurar a cualquier otro estado. Las auto-transiciones y los retrocesos de guardada o descartada a detectada siempre se rechazan. Las tarjetas descartadas y archivadas tienen tratamiento visual diferenciado para identificarlas rápidamente.
 
 Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen eliminación, sincronización remota, postulaciones funcionales, seguimientos funcionales ni cuentas de usuario.
 

@@ -14,9 +14,9 @@ The actual repository remains the final source of truth.
 
 ## Current Milestone
 
-Manual opportunity creation, local persistence, the data-driven dashboard, same-origin cross-tab synchronization, search, and status filtering are implemented, audited, committed, and published on `main`.
+Manual opportunity creation, local persistence, the data-driven dashboard, same-origin cross-tab synchronization, search, status filtering, and opportunity editing are implemented, audited, committed, and published on `main`.
 
-The current working tree adds opportunity editing with identity preservation, shared validation, immutable collection replacement, persistence, and optimistic-concurrency protection. These changes remain local for final review.
+The current working tree adds explicit opportunity status management: domain-enforced transition rules, card action buttons, an edit-mode status control, a dedicated application function with optimistic-concurrency protection, and visual treatment for inactive cards. These changes remain local for final review.
 
 The application can create and edit opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the complete collection, synchronize valid storage changes between same-origin tabs, and derive a visible subset from temporary search and status criteria.
 
@@ -158,9 +158,9 @@ The current working tree supports:
 
 * opening an existing opportunity in the shared form;
 * preloading an independent temporary draft;
-* editing company, title, URL, location, modality, employment type, publication date, and description;
+* editing company, title, URL, location, modality, employment type, publication date, description, and status when a valid transition is available;
 * canceling without changing React state or persistence;
-* preserving `id`, `createdAt`, `detectedAt`, `status`, source metadata, and non-editable values;
+* preserving `id`, `createdAt`, `detectedAt`, source metadata, and non-editable values;
 * advancing `updatedAt` on every accepted edit;
 * rebuilding a valid `JobOpportunity` instance;
 * replacing only the selected collection element without mutating the source array;
@@ -173,6 +173,21 @@ The current working tree supports:
 The pure `updateOpportunity` application function coordinates validation, identity preservation, immutable replacement, and optimistic-concurrency comparison without depending on React, the DOM, or browser storage.
 
 Create and edit modes share input normalization and validation through `opportunityInput.js`. Visual components remain unaware of localStorage details.
+
+### Opportunity status management
+
+The current working tree supports:
+
+* explicit status transitions through dedicated card action buttons;
+* a status `<select>` in edit mode showing only the current status and the permitted targets;
+* domain-enforced transition policy centralized in `opportunityStatusPolicy.js`: detected may advance to saved, dismissed, or archived; saved may advance to dismissed or archived; dismissed may advance to saved or archived; archived may be restored to detected, saved, or dismissed; self-transitions are always rejected; saved and dismissed cannot return to detected;
+* a pure `changeOpportunityStatus` application function that checks optimistic concurrency, validates the transition against the domain policy, applies a monotonic `updatedAt`, and returns a result object without throwing;
+* stale-write conflict detection on card-button status changes;
+* status transition validation in `updateOpportunity` when the edit form submits a changed status;
+* immediate dashboard and filter recalculation after accepted status changes;
+* persistence of status changes through `LocalStorageOpportunityRepository`;
+* visual de-emphasis of dismissed and archived cards through background, border, and title-color changes — not opacity alone;
+* per-status badge colors that supplement the visible text label.
 
 ### Documentation
 
@@ -188,7 +203,6 @@ Relevant documentation distinguishes:
 The repository does not yet include:
 
 * opportunity deletion;
-* opportunity archiving behavior;
 * duplicate detection;
 * conversion of an opportunity into an application;
 * a functional application workflow;
@@ -219,7 +233,7 @@ They represented an earlier application-centered interface and must not be resto
 
 ### Presentation
 
-React components render the header, statistics, workspace tabs, the shared create/edit opportunity form, opportunity search and status controls, opportunity cards with edit actions, the opportunity section, and the static source, application, and follow-up sections.
+React components render the header, statistics, workspace tabs, the shared create/edit opportunity form, opportunity search and status controls, opportunity cards with status action buttons and visual treatment by status, the opportunity section, and the static source, application, and follow-up sections.
 
 ### State ownership
 
@@ -243,11 +257,15 @@ Visible opportunities are derived from the same collection and the temporary sea
 
 ### Domain coordination
 
-`App` coordinates accepted form data, creates `JobOpportunity` instances, selects the edit target, and persists accepted collection changes.
+`App` coordinates accepted form data, creates `JobOpportunity` instances, selects the edit target, applies status changes from card buttons, and persists accepted collection changes.
 
 `JobOpportunity` owns default identity, timestamps, and initial opportunity status.
 
-`updateOpportunity` validates editable data, compares the expected record version, rebuilds the domain entity while preserving identity, and returns an immutably updated collection.
+`opportunityStatusPolicy` centralizes the allowed transition table and the `canTransitionOpportunityStatus` and `getAllowedTargetStatuses` functions. It is the single source of truth for transition rules.
+
+`changeOpportunityStatus` is a pure application function that applies a single status transition with optimistic-concurrency protection. It does not coordinate with the collection or persistence layer.
+
+`updateOpportunity` validates editable data, compares the expected record version, validates a submitted status change against the domain policy when present, rebuilds the domain entity while preserving identity, and returns an immutably updated collection.
 
 `opportunityInput` centralizes the shared form draft, validation, and normalization rules used by creation and editing.
 
@@ -271,7 +289,7 @@ No remote service is connected.
 
 ## Current Limitations
 
-* Opportunity creation, editing, local search, and status filtering are the functional opportunity workflows.
+* Opportunity creation, editing, explicit status management, local search, and status filtering are the functional opportunity workflows.
 * Application, source, follow-up, and workspace-tab sections remain static.
 * Persistence remains local to one browser origin and device.
 * No remote synchronization exists.
@@ -344,6 +362,12 @@ The manual opportunity and persistence flows have been reviewed through:
 * continued creation behavior after editing;
 * edit-form validation and unsafe URL rejection;
 * responsive edit controls at 1440, 1024, 768, 390, and 320 CSS pixels.
+* 48 deterministic status-management scenarios;
+* all 16 cells of the 4×4 transition matrix (10 allowed, 6 rejected) via `changeOpportunityStatus`;
+* stale-write conflict detection on status change;
+* field preservation and `updatedAt` advancement after a status change via `updateOpportunity`;
+* rejection of an invalid transition (saved→detected) via `updateOpportunity`;
+* edit without a status field preserving the current status unchanged.
 
 Luciano manually approved:
 
