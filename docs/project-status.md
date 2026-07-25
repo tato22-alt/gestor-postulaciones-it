@@ -16,7 +16,7 @@ The actual repository remains the final source of truth.
 
 Manual opportunity creation, local persistence, the data-driven dashboard, same-origin cross-tab synchronization, search, status filtering, opportunity editing, and explicit opportunity status management are implemented, audited, committed, and published on `main`.
 
-The current working tree adds opportunity deletion: permanent removal from any status, protected by an explicit confirmation dialog and optimistic-concurrency detection. These changes remain local for final review.
+Opportunity deletion — permanent removal from any status, protected by an explicit confirmation dialog and optimistic-concurrency detection — is implemented, audited, committed, and published on `main`.
 
 The application can create and edit opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the complete collection, synchronize valid storage changes between same-origin tabs, and derive a visible subset from temporary search and status criteria.
 
@@ -445,6 +445,18 @@ The implemented architecture now:
 * remains replaceable by a future remote repository.
 
 No later milestone is authorized automatically.
+
+## Next Milestone (proposed, not yet approved)
+
+UX pass — polish items identified during the deletion milestone:
+
+* accent-insensitive search (e.g. "gestion" matches "gestión");
+* success feedback after create, edit, and delete (brief confirmation visible to the user);
+* create-under-filter: when the form opens with an active status filter, warn the user that the new card may not be visible in the current view;
+* focus management audit across all interactive flows;
+* Escape closes the opportunity form.
+
+No implementation is authorized until this milestone is explicitly approved.
 
 ## Intentionally Deferred
 
