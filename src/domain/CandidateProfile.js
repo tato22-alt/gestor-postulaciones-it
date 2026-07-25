@@ -1,6 +1,8 @@
+import { generateId } from '../utils/id.js'
+
 class CandidateProfile {
   constructor({
-    id = crypto.randomUUID(),
+    id = generateId(),
     name = '',
     city = '',
     education = [],

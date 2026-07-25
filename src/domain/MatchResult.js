@@ -1,6 +1,8 @@
+import { generateId } from '../utils/id.js'
+
 class MatchResult {
   constructor({
-    id = crypto.randomUUID(),
+    id = generateId(),
     candidateId = null,
     opportunityId = null,
     score = null,

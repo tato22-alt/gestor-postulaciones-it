@@ -1,8 +1,9 @@
 import { APPLICATION_STATUSES } from '../constants/domainOptions.js'
+import { generateId } from '../utils/id.js'
 
 class Application {
   constructor({
-    id = crypto.randomUUID(),
+    id = generateId(),
     opportunityId = null,
     appliedAt = new Date().toISOString(),
     status = APPLICATION_STATUSES.APPLIED.value,

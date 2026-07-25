@@ -1,8 +1,9 @@
 import { SOURCE_STATUSES } from '../constants/domainOptions.js'
+import { generateId } from '../utils/id.js'
 
 class CompanySource {
   constructor({
-    id = crypto.randomUUID(),
+    id = generateId(),
     companyName = '',
     careersUrl = '',
     status = SOURCE_STATUSES.PENDING.value,

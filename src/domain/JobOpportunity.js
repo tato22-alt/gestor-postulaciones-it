@@ -1,8 +1,9 @@
 import { OPPORTUNITY_STATUSES } from '../constants/domainOptions.js'
+import { generateId } from '../utils/id.js'
 
 class JobOpportunity {
   constructor({
-    id = crypto.randomUUID(),
+    id = generateId(),
     sourceId = null,
     company = '',
     title = '',
