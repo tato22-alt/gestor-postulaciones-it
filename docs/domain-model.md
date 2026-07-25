@@ -53,7 +53,7 @@ classDiagram
 
 ## Oportunidad y postulación
 
-`JobOpportunity` existe desde que una oferta entra al sistema. Su estado avanza por una política de transiciones explícita: puede guardarse, descartarse o archivarse desde detectada; puede moverse entre guardada, descartada y archivada; y puede restaurarse desde archivada. El usuario puede cambiar el estado mediante los botones de acción de la tarjeta o a través del formulario de edición.
+`JobOpportunity` existe desde que una oferta entra al sistema. Su estado avanza por una política de transiciones explícita: puede guardarse, descartarse o archivarse desde detectada; puede moverse entre guardada, descartada y archivada; y puede restaurarse desde archivada. El usuario puede cambiar el estado mediante los botones de acción de la tarjeta o a través del formulario de edición. Una oportunidad también puede eliminarse permanentemente desde cualquier estado mediante el botón de eliminación de la tarjeta; la operación requiere confirmación explícita y no puede deshacerse.
 
 `Application` existe únicamente después de una postulación efectiva. Por eso `applied` no es un estado de oportunidad y `saved` no es un estado de postulación.
 

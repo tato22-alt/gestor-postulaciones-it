@@ -31,6 +31,7 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 * visualizar oportunidades;
 * editar oportunidades;
 * cambiar el estado de una oportunidad con reglas de transición explícitas;
+* eliminar oportunidades de forma permanente con confirmación explícita;
 * buscar por empresa o puesto;
 * filtrar por estado;
 * mostrar estadísticas básicas;
@@ -39,8 +40,6 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 * diseño responsive.
 
 ### Planificado
-
-* eliminar postulaciones;
 * identificar próximos seguimientos;
 * publicación online.
 
@@ -167,7 +166,9 @@ Las oportunidades existentes pueden editarse sin cambiar su identidad ni su fech
 
 El estado de una oportunidad también puede cambiarse directamente desde los botones de acción de la tarjeta, sin abrir el formulario. Las transiciones permitidas son: desde detectada se puede guardar, descartar o archivar; desde guardada o descartada se puede mover entre sí o archivar; desde archivada se puede restaurar a cualquier otro estado. Las auto-transiciones y los retrocesos de guardada o descartada a detectada siempre se rechazan. Las tarjetas descartadas y archivadas tienen tratamiento visual diferenciado para identificarlas rápidamente.
 
-Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen eliminación, sincronización remota, postulaciones funcionales, seguimientos funcionales ni cuentas de usuario.
+Una oportunidad puede eliminarse permanentemente desde su tarjeta, independientemente del estado en que se encuentre. La eliminación requiere confirmación explícita en un diálogo y no puede deshacerse. Si otra pestaña modificó la oportunidad mientras el diálogo estaba abierto, la eliminación se bloquea para evitar perder cambios más recientes.
+
+Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen sincronización remota, postulaciones funcionales, seguimientos funcionales ni cuentas de usuario.
 
 ## Autor
 

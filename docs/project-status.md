@@ -14,9 +14,9 @@ The actual repository remains the final source of truth.
 
 ## Current Milestone
 
-Manual opportunity creation, local persistence, the data-driven dashboard, same-origin cross-tab synchronization, search, status filtering, and opportunity editing are implemented, audited, committed, and published on `main`.
+Manual opportunity creation, local persistence, the data-driven dashboard, same-origin cross-tab synchronization, search, status filtering, opportunity editing, and explicit opportunity status management are implemented, audited, committed, and published on `main`.
 
-The current working tree adds explicit opportunity status management: domain-enforced transition rules, card action buttons, an edit-mode status control, a dedicated application function with optimistic-concurrency protection, and visual treatment for inactive cards. These changes remain local for final review.
+The current working tree adds opportunity deletion: permanent removal from any status, protected by an explicit confirmation dialog and optimistic-concurrency detection. These changes remain local for final review.
 
 The application can create and edit opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the complete collection, synchronize valid storage changes between same-origin tabs, and derive a visible subset from temporary search and status criteria.
 
@@ -189,6 +189,21 @@ The current working tree supports:
 * visual de-emphasis of dismissed and archived cards through background, border, and title-color changes — not opacity alone;
 * per-status badge colors that supplement the visible text label.
 
+### Opportunity deletion
+
+The current working tree supports:
+
+* permanent removal of an opportunity from the collection from any status;
+* an explicit `ConfirmDialog` as the sole barrier before removal, focused on the cancel button by default to reduce accidental deletion;
+* a pure `deleteOpportunity` application function that locates the target by identity, applies optimistic-concurrency protection through the expected `updatedAt` value, and returns an immutable result object without throwing;
+* detection of a stale-write conflict when the record was modified in another tab while the confirmation dialog was open;
+* detection of an already-removed record at confirm time;
+* automatic form closure when the record currently open in the edit form is deleted;
+* persistence of the updated collection through `LocalStorageOpportunityRepository` after accepted deletion;
+* distinct persistence-warning messages for conflict, not-found, and save-failure scenarios;
+* `pendingDeletion` state captured at trigger time, not at confirm time, to guarantee conflict detection across the dialog's open duration;
+* focus restored to the trigger element after the dialog closes.
+
 ### Documentation
 
 Relevant documentation distinguishes:
@@ -202,7 +217,6 @@ Relevant documentation distinguishes:
 
 The repository does not yet include:
 
-* opportunity deletion;
 * duplicate detection;
 * conversion of an opportunity into an application;
 * a functional application workflow;
@@ -233,7 +247,7 @@ They represented an earlier application-centered interface and must not be resto
 
 ### Presentation
 
-React components render the header, statistics, workspace tabs, the shared create/edit opportunity form, opportunity search and status controls, opportunity cards with status action buttons and visual treatment by status, the opportunity section, and the static source, application, and follow-up sections.
+React components render the header, statistics, workspace tabs, the shared create/edit opportunity form, opportunity search and status controls, opportunity cards with status action buttons and visual treatment by status, the opportunity section, a confirmation dialog for destructive operations, and the static source, application, and follow-up sections.
 
 ### State ownership
 
@@ -244,7 +258,8 @@ React components render the header, statistics, workspace tabs, the shared creat
 * the selected edit session and expected `updatedAt` version;
 * the current persistence warning;
 * the temporary opportunity search query;
-* the temporary opportunity status filter.
+* the temporary opportunity status filter;
+* the pending deletion target, captured as `{ id, expectedUpdatedAt }` at trigger time.
 
 `OpportunityForm` owns:
 
@@ -257,7 +272,7 @@ Visible opportunities are derived from the same collection and the temporary sea
 
 ### Domain coordination
 
-`App` coordinates accepted form data, creates `JobOpportunity` instances, selects the edit target, applies status changes from card buttons, and persists accepted collection changes.
+`App` coordinates accepted form data, creates `JobOpportunity` instances, selects the edit target, applies status changes from card buttons, orchestrates confirmed deletions, and persists accepted collection changes.
 
 `JobOpportunity` owns default identity, timestamps, and initial opportunity status.
 
@@ -272,6 +287,8 @@ Visible opportunities are derived from the same collection and the temporary sea
 `calculateDashboardMetrics` is a pure application-level calculation that transforms validated opportunities into presentation-ready counts and percentages.
 
 `filterOpportunities` is a pure application-level function that applies search and status predicates to the source collection without mutating it.
+
+`deleteOpportunity` is a pure application function that locates the target by identity, applies optimistic-concurrency protection through the expected `updatedAt` value, and returns an immutably filtered collection. It does not depend on React, the DOM, or browser storage.
 
 Presentation components receive data through props and communicate actions through callbacks.
 
@@ -289,7 +306,7 @@ No remote service is connected.
 
 ## Current Limitations
 
-* Opportunity creation, editing, explicit status management, local search, and status filtering are the functional opportunity workflows.
+* Opportunity creation, editing, explicit status management, permanent deletion, local search, and status filtering are the functional opportunity workflows.
 * Application, source, follow-up, and workspace-tab sections remain static.
 * Persistence remains local to one browser origin and device.
 * No remote synchronization exists.
@@ -368,6 +385,13 @@ The manual opportunity and persistence flows have been reviewed through:
 * field preservation and `updatedAt` advancement after a status change via `updateOpportunity`;
 * rejection of an invalid transition (saved→detected) via `updateOpportunity`;
 * edit without a status field preserving the current status unchanged.
+* 32 deterministic opportunity-deletion scenarios;
+* successful deletion returning a new collection without the target, input collection unmutated;
+* `not_found` result when the target identifier is absent;
+* `conflict` result when `expectedUpdatedAt` does not match, collection unchanged;
+* preservation of non-deleted records by identity when one of several is removed;
+* repository round-trip after deletion: save, reload, verify target absent, survivor rehydrated as a `JobOpportunity` instance;
+* `invalid_collection` guard for null, undefined, plain object, string, and numeric inputs.
 
 Luciano manually approved:
 
@@ -426,7 +450,6 @@ No later milestone is authorized automatically.
 
 The following remain planned for later approved milestones:
 
-* deletion;
 * application conversion and tracking;
 * source approval and monitoring;
 * duplicate detection;
