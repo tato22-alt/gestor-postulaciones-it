@@ -2,13 +2,13 @@
 
 ## Descripción
 
-Aplicación web para registrar, organizar y realizar el seguimiento de postulaciones laborales relacionadas con tecnología.
+Aplicación web para registrar, organizar y realizar el seguimiento de oportunidades laborales relacionadas con tecnología.
 
 ## Problema que resuelve
 
 Las oportunidades laborales pueden quedar distribuidas entre LinkedIn, portales, correos y notas. Esto dificulta saber:
 
-* dónde se realizó cada postulación;
+* dónde se registró cada oportunidad;
 * en qué estado se encuentra;
 * qué acción corresponde realizar;
 * cuándo debe realizarse un seguimiento.
@@ -27,9 +27,9 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 
 ### Implementado
 
-* crear postulaciones;
-* visualizar postulaciones;
-* editar postulaciones;
+* crear oportunidades;
+* visualizar oportunidades;
+* editar oportunidades;
 * buscar por empresa o puesto;
 * filtrar por estado;
 * mostrar estadísticas básicas;
