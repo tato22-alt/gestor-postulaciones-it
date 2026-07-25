@@ -531,6 +531,17 @@
   padding: 22px;
 }
 
+.opportunity-card--dismissed,
+.opportunity-card--archived {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.opportunity-card--dismissed h3,
+.opportunity-card--archived h3 {
+  color: #475467;
+}
+
 .opportunity-card-header {
   display: flex;
   align-items: flex-start;
@@ -565,6 +576,26 @@
   font-size: 0.8rem;
   font-weight: 700;
   padding: 6px 10px;
+}
+
+.status-badge--detected {
+  background: #eaf1ff;
+  color: #1d4ed8;
+}
+
+.status-badge--saved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge--dismissed {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.status-badge--archived {
+  background: #f1f5f9;
+  color: #475467;
 }
 
 .opportunity-details {
@@ -610,6 +641,28 @@
   align-items: center;
   justify-content: flex-start;
   gap: 10px;
+}
+
+.opportunity-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #eef1f5;
+  padding-top: 16px;
+}
+
+.status-action-restore-label {
+  margin-right: 4px;
+  color: #667085;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.status-action-button {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
 }
 
 .empty-state {
@@ -715,7 +768,8 @@
   .form-actions .button,
   .header-content .button,
   .opportunity-filter-actions .button,
-  .opportunity-card-actions .button {
+  .opportunity-card-actions .button,
+  .opportunity-status-actions .button {
     width: 100%;
   }
 
@@ -730,7 +784,8 @@
     flex-direction: column;
   }
 
-  .opportunity-card-actions {
+  .opportunity-card-actions,
+  .opportunity-status-actions {
     align-items: stretch;
     flex-direction: column;
   }

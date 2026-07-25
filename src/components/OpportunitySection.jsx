@@ -14,6 +14,7 @@ function OpportunitySection({
   editingOpportunityId,
   isOpportunityFormVisible,
   onEditOpportunity,
+  onOpportunityStatusChange,
 }) {
   return (
     <section className="panel" aria-labelledby="opportunities-title">
@@ -69,6 +70,7 @@ function OpportunitySection({
               isEditDisabled={isOpportunityFormVisible}
               isBeingEdited={editingOpportunityId === opportunity.id}
               onEdit={onEditOpportunity}
+              onStatusChange={onOpportunityStatusChange}
             />
           ))}
         </div>

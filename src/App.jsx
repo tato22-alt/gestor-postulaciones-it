@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import calculateDashboardMetrics from './application/calculateDashboardMetrics.js'
+import changeOpportunityStatus from './application/changeOpportunityStatus.js'
 import filterOpportunities from './application/filterOpportunities.js'
 import updateOpportunity from './application/updateOpportunity.js'
 import ApplicationList from './components/ApplicationList.jsx'
@@ -31,6 +32,12 @@ const EDIT_CONFLICT_WARNING =
 
 const EDIT_NOT_FOUND_WARNING =
   'La oportunidad que estabas editando ya no está disponible. Tus cambios no se guardaron. Cancelá la edición para continuar.'
+
+const STATUS_CONFLICT_WARNING =
+  'Esta oportunidad cambió en otra pestaña. El cambio de estado no se aplicó.'
+
+const STATUS_SAVE_WARNING =
+  'El estado se actualizó en esta sesión, pero no pudo guardarse en el navegador. El cambio puede perderse al recargar la página.'
 
 function getBrowserStorage() {
   if (typeof window === 'undefined') {
@@ -109,6 +116,34 @@ function App() {
     })
     setEditWarning(null)
     setIsOpportunityFormVisible(true)
+  }
+
+  const applyStatusChange = (opportunity, nextStatus) => {
+    const result = changeOpportunityStatus(opportunity, {
+      nextStatus,
+      expectedUpdatedAt: opportunity.updatedAt,
+    })
+
+    if (!result.ok) {
+      if (result.status === 'conflict') {
+        setPersistenceWarning(STATUS_CONFLICT_WARNING)
+      }
+      return
+    }
+
+    const nextOpportunities = opportunities.map((opp) =>
+      opp.id === result.opportunity.id ? result.opportunity : opp,
+    )
+
+    setOpportunities(nextOpportunities)
+
+    const saveResult = opportunityRepository.saveAll(nextOpportunities)
+
+    if (saveResult.ok) {
+      setPersistenceWarning(null)
+    } else {
+      setPersistenceWarning((current) => current ?? STATUS_SAVE_WARNING)
+    }
   }
 
   const clearOpportunitySearch = () => {
@@ -220,6 +255,7 @@ function App() {
           editingOpportunityId={editingSession?.id ?? null}
           isOpportunityFormVisible={isOpportunityFormVisible}
           onEditOpportunity={openOpportunityEditForm}
+          onOpportunityStatusChange={applyStatusChange}
         />
         <SourceSection />
         <ApplicationList />

@@ -41,6 +41,7 @@ export function createOpportunityDraft(opportunity = {}) {
     publishedAt: opportunity.publishedAt ?? '',
     description:
       typeof opportunity.description === 'string' ? opportunity.description : '',
+    status: typeof opportunity.status === 'string' ? opportunity.status : '',
   }
 }
 
@@ -106,5 +107,6 @@ export function normalizeOpportunityInput(input) {
     employmentType: input.employmentType || null,
     publishedAt: input.publishedAt || null,
     description: normalizeText(input.description),
+    ...(input.status ? { status: input.status } : {}),
   }
 }

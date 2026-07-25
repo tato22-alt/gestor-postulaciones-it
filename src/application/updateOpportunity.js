@@ -1,4 +1,5 @@
 import JobOpportunity from '../domain/JobOpportunity.js'
+import { canTransitionOpportunityStatus } from '../domain/opportunityStatusPolicy.js'
 import {
   normalizeOpportunityInput,
   validateOpportunityInput,
@@ -52,6 +53,17 @@ export default function updateOpportunity(
     }
   }
 
+  const normalizedChanges = normalizeOpportunityInput(changes)
+  const submittedStatus = normalizedChanges.status
+
+  if (submittedStatus !== undefined && submittedStatus !== currentOpportunity.status) {
+    if (!canTransitionOpportunityStatus(currentOpportunity.status, submittedStatus)) {
+      return { ok: false, status: 'invalid_transition' }
+    }
+  }
+
+  const nextStatus = submittedStatus ?? currentOpportunity.status
+
   const updatedAt = createNextUpdatedAt(currentOpportunity.updatedAt, now)
 
   if (updatedAt === null) {
@@ -60,11 +72,11 @@ export default function updateOpportunity(
 
   const updatedOpportunity = new JobOpportunity({
     ...currentOpportunity,
-    ...normalizeOpportunityInput(changes),
+    ...normalizedChanges,
     id: currentOpportunity.id,
     sourceId: currentOpportunity.sourceId,
     detectedAt: currentOpportunity.detectedAt,
-    status: currentOpportunity.status,
+    status: nextStatus,
     createdAt: currentOpportunity.createdAt,
     updatedAt,
   })

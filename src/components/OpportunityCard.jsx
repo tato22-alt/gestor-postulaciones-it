@@ -3,6 +3,13 @@ import {
   MODALITIES,
   OPPORTUNITY_STATUSES,
 } from '../constants/domainOptions.js'
+import { getAllowedTargetStatuses } from '../domain/opportunityStatusPolicy.js'
+
+const ACTION_VERB_LABELS = {
+  [OPPORTUNITY_STATUSES.SAVED.value]: 'Guardar',
+  [OPPORTUNITY_STATUSES.DISMISSED.value]: 'Descartar',
+  [OPPORTUNITY_STATUSES.ARCHIVED.value]: 'Archivar',
+}
 
 function getOptionLabel(options, value) {
   return Object.values(options).find((option) => option.value === value)?.label ?? value
@@ -18,20 +25,32 @@ function formatPublishedDate(value) {
   return new Intl.DateTimeFormat('es-AR').format(date)
 }
 
+const DE_EMPHASIZED_STATUSES = new Set([
+  OPPORTUNITY_STATUSES.DISMISSED.value,
+  OPPORTUNITY_STATUSES.ARCHIVED.value,
+])
+
 function OpportunityCard({
   opportunity,
   isEditDisabled,
   isBeingEdited,
   onEdit,
+  onStatusChange,
 }) {
+  const allowedTargets = getAllowedTargetStatuses(opportunity.status)
+  const isArchived = opportunity.status === OPPORTUNITY_STATUSES.ARCHIVED.value
+  const cardClassName = DE_EMPHASIZED_STATUSES.has(opportunity.status)
+    ? `opportunity-card opportunity-card--${opportunity.status}`
+    : 'opportunity-card'
+
   return (
-    <article className="opportunity-card">
+    <article className={cardClassName}>
       <div className="opportunity-card-header">
         <div>
           <p className="opportunity-company">{opportunity.company}</p>
           <h3>{opportunity.title}</h3>
         </div>
-        <span className="status-badge">
+        <span className={`status-badge status-badge--${opportunity.status}`}>
           {getOptionLabel(OPPORTUNITY_STATUSES, opportunity.status)}
         </span>
       </div>
@@ -91,6 +110,34 @@ function OpportunityCard({
           {isBeingEdited ? 'Editando' : 'Editar'}
         </button>
       </div>
+
+      {allowedTargets.length > 0 && (
+        <div
+          className="opportunity-status-actions"
+          role="group"
+          aria-label={`Cambiar estado: ${opportunity.title} en ${opportunity.company}`}
+        >
+          {isArchived && (
+            <span className="status-action-restore-label">Restaurar como</span>
+          )}
+          {allowedTargets.map((target) => {
+            const label = isArchived
+              ? target.label
+              : ACTION_VERB_LABELS[target.value]
+            return (
+              <button
+                key={target.value}
+                className="button button-secondary status-action-button"
+                type="button"
+                aria-label={`${label}: ${opportunity.title} en ${opportunity.company}`}
+                onClick={() => onStatusChange(opportunity, target.value)}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </article>
   )
 }

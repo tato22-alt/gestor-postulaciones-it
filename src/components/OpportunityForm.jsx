@@ -4,7 +4,8 @@ import {
   normalizeOpportunityInput,
   validateOpportunityInput,
 } from '../application/opportunityInput.js'
-import { EMPLOYMENT_TYPES, MODALITIES } from '../constants/domainOptions.js'
+import { EMPLOYMENT_TYPES, MODALITIES, OPPORTUNITY_STATUSES } from '../constants/domainOptions.js'
+import { getAllowedTargetStatuses } from '../domain/opportunityStatusPolicy.js'
 
 const ERROR_MESSAGES = {
   company: {
@@ -50,6 +51,12 @@ function OpportunityForm({
   )
   const [errors, setErrors] = useState({})
   const isEditMode = mode === 'edit'
+  const currentStatusObject = isEditMode
+    ? (Object.values(OPPORTUNITY_STATUSES).find((s) => s.value === initialValues?.status) ?? null)
+    : null
+  const statusOptions = currentStatusObject
+    ? [currentStatusObject, ...getAllowedTargetStatuses(initialValues.status)]
+    : []
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -313,6 +320,24 @@ function OpportunityForm({
               </p>
             )}
           </div>
+
+          {isEditMode && statusOptions.length > 0 && (
+            <div className="form-field">
+              <label htmlFor="opportunity-status">Estado</label>
+              <select
+                id="opportunity-status"
+                name="status"
+                value={draft.status}
+                onChange={handleChange}
+              >
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="form-actions">
