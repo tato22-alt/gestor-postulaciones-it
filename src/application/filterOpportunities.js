@@ -4,8 +4,18 @@ const VALID_OPPORTUNITY_STATUSES = new Set(
   Object.values(OPPORTUNITY_STATUSES).map((status) => status.value),
 )
 
+const COMBINING_DIACRITICAL_MARKS = /[̀-ͯ]/g
+
 function normalizeSearchText(value) {
-  return typeof value === 'string' ? value.trim().toLocaleLowerCase('es') : ''
+  if (typeof value !== 'string') {
+    return ''
+  }
+
+  return value
+    .trim()
+    .toLocaleLowerCase('es')
+    .normalize('NFD')
+    .replace(COMBINING_DIACRITICAL_MARKS, '')
 }
 
 export default function filterOpportunities(
