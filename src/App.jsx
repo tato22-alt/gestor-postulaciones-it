@@ -7,6 +7,7 @@ import filterOpportunities from './application/filterOpportunities.js'
 import updateOpportunity from './application/updateOpportunity.js'
 import ApplicationList from './components/ApplicationList.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
+import CreatedUnderFilterNotice from './components/CreatedUnderFilterNotice.jsx'
 import FollowUpPanel from './components/FollowUpPanel.jsx'
 import Header from './components/Header.jsx'
 import OpportunityForm from './components/OpportunityForm.jsx'
@@ -87,6 +88,8 @@ function App() {
   const [editWarning, setEditWarning] = useState(null)
   const [pendingDeletion, setPendingDeletion] = useState(null)
   const [successFeedback, setSuccessFeedback] = useState(null)
+  const [isCreatedUnderFilterNoticeVisible, setIsCreatedUnderFilterNoticeVisible] =
+    useState(false)
   const successFeedbackIdRef = useRef(0)
   const successFeedbackTimeoutRef = useRef(null)
   const visibleOpportunities = filterOpportunities(opportunities, {
@@ -244,6 +247,7 @@ function App() {
   const resetOpportunityFilters = () => {
     setOpportunitySearchQuery('')
     setOpportunityStatusFilter(null)
+    setIsCreatedUnderFilterNoticeVisible(false)
   }
 
   const createOpportunity = (opportunityData) => {
@@ -261,6 +265,14 @@ function App() {
 
     setOpportunities(nextOpportunities)
     showSuccessFeedback(CREATE_SUCCESS_MESSAGE)
+
+    const isHiddenByCurrentFilters =
+      filterOpportunities([opportunity], {
+        searchQuery: opportunitySearchQuery,
+        status: opportunityStatusFilter,
+      }).length === 0
+
+    setIsCreatedUnderFilterNoticeVisible(isHiddenByCurrentFilters)
 
     const saveResult = opportunityRepository.saveAll(nextOpportunities)
 
@@ -296,6 +308,7 @@ function App() {
 
     setOpportunities(updateResult.opportunities)
     showSuccessFeedback(EDIT_SUCCESS_MESSAGE)
+    setIsCreatedUnderFilterNoticeVisible(false)
 
     const saveResult = opportunityRepository.saveAll(
       updateResult.opportunities,
@@ -324,6 +337,10 @@ function App() {
           key={successFeedback?.id ?? 'none'}
           message={successFeedback?.message ?? null}
           durationMs={SUCCESS_FEEDBACK_DURATION_MS}
+        />
+        <CreatedUnderFilterNotice
+          isVisible={isCreatedUnderFilterNoticeVisible}
+          onResetFilters={resetOpportunityFilters}
         />
         <PersistenceWarning message={persistenceWarning} />
         {isOpportunityFormVisible && (

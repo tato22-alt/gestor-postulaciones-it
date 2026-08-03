@@ -287,6 +287,26 @@
   }
 }
 
+.created-under-filter-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid #2970ff;
+  border-left-width: 5px;
+  border-radius: 10px;
+  background: #eff4ff;
+  color: #1a3b8b;
+  padding: 12px 18px;
+  overflow-wrap: anywhere;
+}
+
+.created-under-filter-notice p {
+  margin: 0;
+}
+
 .persistence-warning strong,
 .persistence-warning p {
   margin: 0;
