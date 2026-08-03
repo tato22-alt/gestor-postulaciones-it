@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import calculateDashboardMetrics from './application/calculateDashboardMetrics.js'
 import changeOpportunityStatus from './application/changeOpportunityStatus.js'
@@ -14,6 +14,7 @@ import OpportunitySection from './components/OpportunitySection.jsx'
 import PersistenceWarning from './components/PersistenceWarning.jsx'
 import SourceSection from './components/SourceSection.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
+import SuccessFeedback from './components/SuccessFeedback.jsx'
 import WorkspaceTabs from './components/WorkspaceTabs.jsx'
 import JobOpportunity from './domain/JobOpportunity.js'
 import LocalStorageOpportunityRepository, {
@@ -50,6 +51,15 @@ const DELETE_NOT_FOUND_WARNING =
 const DELETE_SAVE_WARNING =
   'La oportunidad se eliminó de esta sesión, pero el cambio no pudo guardarse en el navegador. Puede reaparecer al recargar la página.'
 
+const CREATE_SUCCESS_MESSAGE = 'Oportunidad creada.'
+const EDIT_SUCCESS_MESSAGE = 'Oportunidad editada.'
+const STATUS_SUCCESS_MESSAGE = 'Estado actualizado.'
+const DELETE_SUCCESS_MESSAGE = 'Oportunidad eliminada.'
+
+// Drives both the removal timer below and the CSS fade duration (passed as a prop),
+// so there is a single source of truth for how long the feedback stays visible.
+const SUCCESS_FEEDBACK_DURATION_MS = 4000
+
 function getBrowserStorage() {
   if (typeof window === 'undefined') {
     return null
@@ -76,6 +86,9 @@ function App() {
   const [editingSession, setEditingSession] = useState(null)
   const [editWarning, setEditWarning] = useState(null)
   const [pendingDeletion, setPendingDeletion] = useState(null)
+  const [successFeedback, setSuccessFeedback] = useState(null)
+  const successFeedbackIdRef = useRef(0)
+  const successFeedbackTimeoutRef = useRef(null)
   const visibleOpportunities = filterOpportunities(opportunities, {
     searchQuery: opportunitySearchQuery,
     status: opportunityStatusFilter,
@@ -107,6 +120,28 @@ function App() {
       window.removeEventListener('storage', synchronizeOpportunities)
     }
   }, [])
+
+  useEffect(() => {
+    return () => {
+      if (successFeedbackTimeoutRef.current) {
+        clearTimeout(successFeedbackTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const showSuccessFeedback = (message) => {
+    if (successFeedbackTimeoutRef.current) {
+      clearTimeout(successFeedbackTimeoutRef.current)
+    }
+
+    successFeedbackIdRef.current += 1
+    setSuccessFeedback({ id: successFeedbackIdRef.current, message })
+
+    successFeedbackTimeoutRef.current = setTimeout(() => {
+      setSuccessFeedback(null)
+      successFeedbackTimeoutRef.current = null
+    }, SUCCESS_FEEDBACK_DURATION_MS)
+  }
 
   const openOpportunityForm = () => {
     setEditingSession(null)
@@ -148,6 +183,7 @@ function App() {
     )
 
     setOpportunities(nextOpportunities)
+    showSuccessFeedback(STATUS_SUCCESS_MESSAGE)
 
     const saveResult = opportunityRepository.saveAll(nextOpportunities)
 
@@ -190,6 +226,7 @@ function App() {
     }
 
     setOpportunities(result.opportunities)
+    showSuccessFeedback(DELETE_SUCCESS_MESSAGE)
 
     const saveResult = opportunityRepository.saveAll(result.opportunities)
 
@@ -223,6 +260,7 @@ function App() {
     const nextOpportunities = [...opportunities, opportunity]
 
     setOpportunities(nextOpportunities)
+    showSuccessFeedback(CREATE_SUCCESS_MESSAGE)
 
     const saveResult = opportunityRepository.saveAll(nextOpportunities)
 
@@ -257,6 +295,7 @@ function App() {
     }
 
     setOpportunities(updateResult.opportunities)
+    showSuccessFeedback(EDIT_SUCCESS_MESSAGE)
 
     const saveResult = opportunityRepository.saveAll(
       updateResult.opportunities,
@@ -281,6 +320,11 @@ function App() {
       <main className="app-main">
         <StatsPanel metrics={dashboardMetrics} />
         <WorkspaceTabs />
+        <SuccessFeedback
+          key={successFeedback?.id ?? 'none'}
+          message={successFeedback?.message ?? null}
+          durationMs={SUCCESS_FEEDBACK_DURATION_MS}
+        />
         <PersistenceWarning message={persistenceWarning} />
         {isOpportunityFormVisible && (
           <OpportunityForm

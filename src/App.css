@@ -251,6 +251,42 @@
   overflow-wrap: anywhere;
 }
 
+.success-feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid #12b76a;
+  border-left-width: 5px;
+  border-radius: 10px;
+  background: #ecfdf3;
+  color: #05603a;
+  padding: 12px 18px;
+  overflow-wrap: anywhere;
+  animation: success-feedback-fade var(--success-feedback-duration) ease-out forwards;
+}
+
+.success-feedback__icon {
+  font-weight: 700;
+}
+
+@keyframes success-feedback-fade {
+  0%,
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-feedback {
+    animation: none;
+  }
+}
+
 .persistence-warning strong,
 .persistence-warning p {
   margin: 0;
