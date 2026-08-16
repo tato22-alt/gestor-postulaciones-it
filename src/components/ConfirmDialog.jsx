@@ -9,6 +9,7 @@ function ConfirmDialog({
   destructive = false,
   onConfirm,
   onCancel,
+  fallbackFocusRef,
 }) {
   const titleId = useId()
   const messageId = useId()
@@ -17,11 +18,16 @@ function ConfirmDialog({
   useEffect(() => {
     if (!isOpen) return
     const previouslyFocused = document.activeElement
+    const fallbackElement = fallbackFocusRef?.current
     cancelButtonRef.current?.focus()
     return () => {
-      previouslyFocused?.focus()
+      if (previouslyFocused && document.contains(previouslyFocused)) {
+        previouslyFocused.focus()
+      } else {
+        fallbackElement?.focus()
+      }
     }
-  }, [isOpen])
+  }, [isOpen, fallbackFocusRef])
 
   useEffect(() => {
     if (!isOpen) return

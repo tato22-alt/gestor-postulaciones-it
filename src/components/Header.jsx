@@ -1,4 +1,6 @@
-function Header({ onAddOpportunity }) {
+import { forwardRef } from 'react'
+
+const Header = forwardRef(function Header({ onAddOpportunity }, addOpportunityButtonRef) {
   return (
     <header className="app-header">
       <div className="header-content">
@@ -10,7 +12,12 @@ function Header({ onAddOpportunity }) {
           </p>
         </div>
         <div className="header-actions">
-          <button className="button button-primary" type="button" onClick={onAddOpportunity}>
+          <button
+            ref={addOpportunityButtonRef}
+            className="button button-primary"
+            type="button"
+            onClick={onAddOpportunity}
+          >
             Agregar oportunidad
           </button>
           <button
@@ -25,6 +32,6 @@ function Header({ onAddOpportunity }) {
       </div>
     </header>
   )
-}
+})
 
 export default Header

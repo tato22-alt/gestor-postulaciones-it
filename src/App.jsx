@@ -90,6 +90,8 @@ function App() {
   const [successFeedback, setSuccessFeedback] = useState(null)
   const [isCreatedUnderFilterNoticeVisible, setIsCreatedUnderFilterNoticeVisible] =
     useState(false)
+  const addOpportunityButtonRef = useRef(null)
+  const formTriggerRef = useRef(null)
   const successFeedbackIdRef = useRef(0)
   const successFeedbackTimeoutRef = useRef(null)
   const visibleOpportunities = filterOpportunities(opportunities, {
@@ -132,6 +134,21 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (isOpportunityFormVisible) return
+
+    const trigger = formTriggerRef.current
+    if (!trigger) return
+
+    if (document.contains(trigger)) {
+      trigger.focus()
+    } else {
+      addOpportunityButtonRef.current?.focus()
+    }
+
+    formTriggerRef.current = null
+  }, [isOpportunityFormVisible])
+
   const showSuccessFeedback = (message) => {
     if (successFeedbackTimeoutRef.current) {
       clearTimeout(successFeedbackTimeoutRef.current)
@@ -147,6 +164,7 @@ function App() {
   }
 
   const openOpportunityForm = () => {
+    formTriggerRef.current = document.activeElement
     setEditingSession(null)
     setEditWarning(null)
     setIsOpportunityFormVisible(true)
@@ -159,6 +177,7 @@ function App() {
   }
 
   const openOpportunityEditForm = (opportunity) => {
+    formTriggerRef.current = document.activeElement
     setEditingSession({
       id: opportunity.id,
       expectedUpdatedAt: opportunity.updatedAt,
@@ -328,7 +347,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Header onAddOpportunity={openOpportunityForm} />
+      <Header ref={addOpportunityButtonRef} onAddOpportunity={openOpportunityForm} />
 
       <main className="app-main">
         <StatsPanel metrics={dashboardMetrics} />
@@ -390,6 +409,7 @@ function App() {
         destructive
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
+        fallbackFocusRef={addOpportunityButtonRef}
       />
     </div>
   )
