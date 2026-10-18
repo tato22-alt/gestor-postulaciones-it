@@ -1,6 +1,10 @@
 import { APPLICATION_STATUSES } from '../constants/domainOptions.js'
-import { getAllowedApplicationTargetStatuses } from '../domain/applicationStatusPolicy.js'
+import {
+  getAllowedApplicationTargetStatuses,
+  isFinalApplicationStatus,
+} from '../domain/applicationStatusPolicy.js'
 import EmptyState from './EmptyState.jsx'
+import useStatusChangeFocus from './useStatusChangeFocus.js'
 
 function getStatusLabel(status) {
   return Object.values(APPLICATION_STATUSES).find((option) => option.value === status)?.label ?? status
@@ -18,12 +22,13 @@ function formatAppliedDate(value) {
 
 function ApplicationCard({ application, opportunity, onStatusChange }) {
   const allowedTargets = getAllowedApplicationTargetStatuses(application.status)
+  const { cardRef, markStatusChangeRequested } = useStatusChangeFocus(application.status)
   const company = opportunity?.company ?? 'Oportunidad no disponible'
   const title = opportunity?.title ?? 'La oportunidad original ya no está en la lista.'
   const accessibleName = opportunity ? `${opportunity.title} en ${opportunity.company}` : 'oportunidad no disponible'
 
   return (
-    <article className="opportunity-card">
+    <article className="opportunity-card" ref={cardRef}>
       <div className="opportunity-card-header">
         <div>
           <p className="opportunity-company">{company}</p>
@@ -67,7 +72,13 @@ function ApplicationCard({ application, opportunity, onStatusChange }) {
               className="button button-secondary status-action-button"
               type="button"
               aria-label={`${target.label}: ${accessibleName}`}
-              onClick={() => onStatusChange(application, target.value)}
+              onClick={() => {
+                // Final statuses go through a confirmation dialog, which restores focus itself.
+                if (!isFinalApplicationStatus(target.value)) {
+                  markStatusChangeRequested()
+                }
+                onStatusChange(application, target.value)
+              }}
             >
               {target.label}
             </button>

@@ -6,6 +6,7 @@ function OpportunitySection({
   opportunities,
   visibleOpportunities,
   applications,
+  areStoredApplicationsUnavailable,
   searchQuery,
   statusFilter,
   onSearchChange,
@@ -72,6 +73,7 @@ function OpportunitySection({
               key={opportunity.id}
               opportunity={opportunity}
               application={findApplicationForOpportunity(applications, opportunity.id)}
+              areStoredApplicationsUnavailable={areStoredApplicationsUnavailable}
               isEditDisabled={isOpportunityFormVisible}
               isBeingEdited={editingOpportunityId === opportunity.id}
               onEdit={onEditOpportunity}

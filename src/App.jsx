@@ -64,6 +64,9 @@ const DELETE_SAVE_WARNING =
 const DELETE_HAS_APPLICATION_WARNING =
   'Esta oportunidad tiene una postulación registrada, por eso no se eliminó.'
 
+const APPLICATIONS_UNAVAILABLE_WARNING =
+  'No se pueden eliminar oportunidades ni registrar postulaciones mientras las postulaciones guardadas no puedan leerse de forma segura.'
+
 const APPLICATION_LOAD_WARNING =
   'No pudimos recuperar las postulaciones guardadas de forma segura. Los datos almacenados se conservaron sin sobrescribirse. Las postulaciones de esta sesión no se guardarán permanentemente.'
 
@@ -97,6 +100,12 @@ const STATUS_SUCCESS_MESSAGE = 'Estado actualizado.'
 const DELETE_SUCCESS_MESSAGE = 'Oportunidad eliminada.'
 const APPLICATION_SUCCESS_MESSAGE = 'Postulación registrada.'
 const APPLICATION_STATUS_SUCCESS_MESSAGE = 'Estado de la postulación actualizado.'
+
+// Returns a warning updater: a failed save replaces any older message (for example a stale
+// conflict), except the load warning, which must stay visible while persistence is blocked.
+function keepLoadWarningOr(loadWarning, nextWarning) {
+  return (currentWarning) => (currentWarning === loadWarning ? currentWarning : nextWarning)
+}
 
 function getApplicationStatusLabel(status) {
   return Object.values(APPLICATION_STATUSES).find((option) => option.value === status)?.label ?? status
@@ -132,6 +141,11 @@ function App() {
   const [applications, setApplications] = useState(initialApplicationLoad.applications)
   const [applicationWarning, setApplicationWarning] = useState(
     initialApplicationLoad.ok ? null : APPLICATION_LOAD_WARNING,
+  )
+  // True while stored applications could not be read safely: the app then cannot know which
+  // opportunities already have an application, so deleting or registering would be unsafe.
+  const [areStoredApplicationsUnavailable, setAreStoredApplicationsUnavailable] = useState(
+    !initialApplicationLoad.ok,
   )
   const [pendingApplicationRegistration, setPendingApplicationRegistration] = useState(null)
   const [pendingFinalApplicationStatus, setPendingFinalApplicationStatus] = useState(null)
@@ -177,8 +191,10 @@ function App() {
         if (loadResult.ok) {
           setApplications([...loadResult.applications])
           setApplicationWarning(null)
+          setAreStoredApplicationsUnavailable(false)
         } else {
           setApplicationWarning(APPLICATION_LOAD_WARNING)
+          setAreStoredApplicationsUnavailable(true)
         }
       }
     }
@@ -276,7 +292,7 @@ function App() {
     if (saveResult.ok) {
       setPersistenceWarning(null)
     } else {
-      setPersistenceWarning((current) => current ?? STATUS_SAVE_WARNING)
+      setPersistenceWarning(keepLoadWarningOr(LOAD_WARNING, STATUS_SAVE_WARNING))
     }
   }
 
@@ -285,8 +301,13 @@ function App() {
     : null
 
   const requestDeleteOpportunity = (opportunity) => {
+    if (areStoredApplicationsUnavailable) {
+      setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, APPLICATIONS_UNAVAILABLE_WARNING))
+      return
+    }
+
     if (findApplicationForOpportunity(applications, opportunity.id)) {
-      setPersistenceWarning(DELETE_HAS_APPLICATION_WARNING)
+      setPersistenceWarning(keepLoadWarningOr(LOAD_WARNING, DELETE_HAS_APPLICATION_WARNING))
       return
     }
 
@@ -304,9 +325,15 @@ function App() {
 
     setPendingDeletion(null)
 
-    // Another tab may have registered an application while the dialog was open.
+    // Another tab may have registered an application, or broken the stored applications,
+    // while the dialog was open.
+    if (areStoredApplicationsUnavailable) {
+      setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, APPLICATIONS_UNAVAILABLE_WARNING))
+      return
+    }
+
     if (findApplicationForOpportunity(applications, id)) {
-      setPersistenceWarning(DELETE_HAS_APPLICATION_WARNING)
+      setPersistenceWarning(keepLoadWarningOr(LOAD_WARNING, DELETE_HAS_APPLICATION_WARNING))
       return
     }
 
@@ -331,7 +358,7 @@ function App() {
     if (saveResult.ok) {
       setPersistenceWarning(null)
     } else {
-      setPersistenceWarning((current) => current ?? DELETE_SAVE_WARNING)
+      setPersistenceWarning(keepLoadWarningOr(LOAD_WARNING, DELETE_SAVE_WARNING))
     }
   }
 
@@ -340,6 +367,11 @@ function App() {
     : null
 
   const requestApplicationRegistration = (opportunity) => {
+    if (areStoredApplicationsUnavailable) {
+      setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, APPLICATIONS_UNAVAILABLE_WARNING))
+      return
+    }
+
     setPendingApplicationRegistration({
       opportunityId: opportunity.id,
       expectedUpdatedAt: opportunity.updatedAt,
@@ -352,6 +384,12 @@ function App() {
 
   const confirmApplicationRegistration = () => {
     if (!pendingApplicationRegistration) return
+
+    if (areStoredApplicationsUnavailable) {
+      setPendingApplicationRegistration(null)
+      setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, APPLICATIONS_UNAVAILABLE_WARNING))
+      return
+    }
 
     const result = registerApplication(opportunities, applications, {
       ...pendingApplicationRegistration,
@@ -375,7 +413,7 @@ function App() {
     if (saveResult.ok) {
       setApplicationWarning(null)
     } else {
-      setApplicationWarning((current) => current ?? APPLICATION_SAVE_WARNING)
+      setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, APPLICATION_SAVE_WARNING))
     }
   }
 
@@ -402,7 +440,7 @@ function App() {
     if (saveResult.ok) {
       setApplicationWarning(null)
     } else {
-      setApplicationWarning((current) => current ?? APPLICATION_STATUS_SAVE_WARNING)
+      setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, APPLICATION_STATUS_SAVE_WARNING))
     }
   }
 
@@ -474,7 +512,7 @@ function App() {
     if (saveResult.ok) {
       setPersistenceWarning(null)
     } else {
-      setPersistenceWarning((currentWarning) => currentWarning ?? SAVE_WARNING)
+      setPersistenceWarning(keepLoadWarningOr(LOAD_WARNING, SAVE_WARNING))
     }
 
     closeOpportunityForm()
@@ -513,7 +551,7 @@ function App() {
       setPersistenceWarning(null)
     } else {
       setPersistenceWarning(
-        (currentWarning) => currentWarning ?? EDIT_SAVE_WARNING,
+        keepLoadWarningOr(LOAD_WARNING, EDIT_SAVE_WARNING),
       )
     }
 
@@ -560,6 +598,7 @@ function App() {
           opportunities={opportunities}
           visibleOpportunities={visibleOpportunities}
           applications={applications}
+          areStoredApplicationsUnavailable={areStoredApplicationsUnavailable}
           searchQuery={opportunitySearchQuery}
           statusFilter={opportunityStatusFilter}
           onSearchChange={setOpportunitySearchQuery}

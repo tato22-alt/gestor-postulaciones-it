@@ -259,6 +259,8 @@ The current working tree supports:
 * `calculateApplicationMetrics` derives total, in-progress, and per-status counts; the dashboard shows them instead of the previous "No implementado" placeholders for applications;
 * `LocalStorageApplicationRepository` with its own key `it-job-search-assistant.applications`, a versioned envelope (`schemaVersion: 1`), strict record validation, rejection of duplicated identifiers or duplicated opportunity references, preservation of corrupted data, and same-origin tab synchronization;
 * after a registration or final-status confirmation, focus moves to the "Postulaciones" heading, because the triggering button no longer exists.
+* after a status button is used on an opportunity or application card, focus moves to the first status action that now exists on the same card; changes received from another tab never move focus;
+* a failed save replaces any older warning (for example, a stale conflict message) so the user always learns that the change was not persisted; only the load warning is kept, because it explains why persistence is blocked.
 
 Supporting refactors:
 
@@ -373,7 +375,7 @@ No remote service is connected.
 * Source, follow-up, and workspace-tab sections remain static.
 * The registration date is the moment the user confirms; it cannot yet be edited to an earlier date.
 * Opportunities with an application cannot be deleted; the long-term rule is a pending product decision.
-* If application storage is corrupted, the application collection starts empty in memory, so opportunity cards cannot know about stored applications and their deletion is not blocked; the corrupted value itself is preserved.
+* If application storage cannot be read safely, the corrupted value is preserved and the app cannot know which opportunities already have an application, so opportunity deletion and application registration are disabled until a valid load succeeds.
 * Two tabs registering different applications at the same moment, before the `storage` event arrives, follow last-write-wins for the whole collection, as opportunities already do.
 * Persistence remains local to one browser origin and device.
 * No remote synchronization exists.
@@ -463,7 +465,7 @@ The manual opportunity and persistence flows have been reviewed through:
 * `invalid_collection` guard for null, undefined, plain object, string, and numeric inputs.
 
 * 150 automated unit tests through `npm test`, including the full 5×5 application transition matrix, registration eligibility, application status changes, application metrics, and the application repository;
-* 57 automated browser checks for application tracking: eligibility by status, confirmation and cancellation, Escape and focus containment, persistence, final-status confirmation, orphan applications, corrupted and duplicated stored data, cross-tab synchronization, cross-tab conflicts for registration, deletion, and final status, malicious-looking text, horizontal overflow at five widths, and absence of console errors;
+* 62 automated browser checks for application tracking: eligibility by status, confirmation and cancellation, Escape and focus containment, persistence, final-status confirmation, orphan applications, corrupted and duplicated stored data, cross-tab synchronization, cross-tab conflicts for registration, deletion, and final status, malicious-looking text, horizontal overflow at five widths, and absence of console errors;
 * 58 automated browser checks with Playwright on Chromium: validation, unsafe URL rejection, create, edit, status change, search, filters, created-under-filter notice, delete confirmation, Escape behavior, focus return and fallback, dialog focus containment, malicious-looking text, external-link attributes, reload persistence, corrupted and unsafe stored data, cross-tab synchronization, horizontal overflow at 1440, 1024, 768, 390, and 320 CSS pixels, and absence of console errors or warnings.
 
 Luciano manually approved:

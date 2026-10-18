@@ -6,6 +6,7 @@ import {
 } from '../constants/domainOptions.js'
 import { getApplicationRegistrationBlocker } from '../domain/applicationRegistrationPolicy.js'
 import { getAllowedTargetStatuses } from '../domain/opportunityStatusPolicy.js'
+import useStatusChangeFocus from './useStatusChangeFocus.js'
 
 const ACTION_VERB_LABELS = {
   [OPPORTUNITY_STATUSES.SAVED.value]: 'Guardar',
@@ -35,6 +36,7 @@ const DE_EMPHASIZED_STATUSES = new Set([
 function OpportunityCard({
   opportunity,
   application,
+  areStoredApplicationsUnavailable,
   isEditDisabled,
   isBeingEdited,
   onEdit,
@@ -43,15 +45,18 @@ function OpportunityCard({
   onRequestApplicationRegistration,
 }) {
   const allowedTargets = getAllowedTargetStatuses(opportunity.status)
+  const { cardRef, markStatusChangeRequested } = useStatusChangeFocus(opportunity.status)
   const canRegisterApplication =
-    !application && getApplicationRegistrationBlocker(opportunity, []) === null
+    !areStoredApplicationsUnavailable &&
+    !application &&
+    getApplicationRegistrationBlocker(opportunity, []) === null
   const isArchived = opportunity.status === OPPORTUNITY_STATUSES.ARCHIVED.value
   const cardClassName = DE_EMPHASIZED_STATUSES.has(opportunity.status)
     ? `opportunity-card opportunity-card--${opportunity.status}`
     : 'opportunity-card'
 
   return (
-    <article className={cardClassName}>
+    <article className={cardClassName} ref={cardRef}>
       <div className="opportunity-card-header">
         <div>
           <p className="opportunity-company">{opportunity.company}</p>
@@ -154,7 +159,10 @@ function OpportunityCard({
                 className="button button-secondary status-action-button"
                 type="button"
                 aria-label={`${label}: ${opportunity.title} en ${opportunity.company}`}
-                onClick={() => onStatusChange(opportunity, target.value)}
+                onClick={() => {
+                  markStatusChangeRequested()
+                  onStatusChange(opportunity, target.value)
+                }}
               >
                 {label}
               </button>
@@ -167,6 +175,10 @@ function OpportunityCard({
         {application ? (
           <p className="opportunity-delete-blocked">
             No se puede eliminar porque tiene una postulación registrada.
+          </p>
+        ) : areStoredApplicationsUnavailable ? (
+          <p className="opportunity-delete-blocked">
+            No se puede eliminar mientras las postulaciones guardadas no puedan leerse.
           </p>
         ) : (
           <button
