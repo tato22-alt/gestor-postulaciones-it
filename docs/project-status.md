@@ -22,7 +22,7 @@ The application tracking milestone (explicit application registration from an op
 
 The follow-ups milestone (suggested and editable follow-up dates, application detail editing, and a follow-up agenda) is implemented, verified, and merged into `main`.
 
-Public deployment to GitHub Pages is configured. The site is live once the repository's Pages source is set to "GitHub Actions".
+Public deployment to GitHub Pages is configured and live at `https://tato22-alt.github.io/gestor-postulaciones-it/`. The first successful deployment ran after the repository's Pages source was set to "GitHub Actions". With it, every item of the local MVP definition is implemented.
 
 The UX pass milestone (accent-insensitive search, success feedback, created-under-filter notice, focus management, and Escape to close the form) is implemented and verified. An automated unit-test suite based on the native `node:test` runner was added without new dependencies.
 
