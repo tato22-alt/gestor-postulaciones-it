@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import changeApplicationStatus from '../src/application/changeApplicationStatus.js'
 import Application from '../src/domain/Application.js'
+import { addDaysToDateString, toLocalDateString } from '../src/utils/date.js'
 import { BASE_TIMESTAMP, createApplication } from './helpers.js'
 
 const NOW = '2026-01-06T10:00:00.000Z'
@@ -28,6 +29,25 @@ describe('changeApplicationStatus', () => {
     assert.equal(result.applications[1], other)
     assert.notEqual(result.applications, applications)
     assert.equal(application.status, 'applied')
+  })
+
+  it('re-suggests the follow-up for the new status and clears it for final statuses', () => {
+    const application = createApplication({ followUpAt: '2026-01-01' })
+    const request = { id: application.id, expectedUpdatedAt: BASE_TIMESTAMP, now: NOW }
+    const today = toLocalDateString(NOW)
+
+    assert.equal(
+      changeApplicationStatus([application], { ...request, nextStatus: 'interview' }).application.followUpAt,
+      addDaysToDateString(today, 3),
+    )
+    assert.equal(
+      changeApplicationStatus([application], { ...request, nextStatus: 'technical_test' }).application.followUpAt,
+      addDaysToDateString(today, 5),
+    )
+    assert.equal(
+      changeApplicationStatus([application], { ...request, nextStatus: 'rejected' }).application.followUpAt,
+      null,
+    )
   })
 
   it('keeps updatedAt monotonic when the clock is behind', () => {

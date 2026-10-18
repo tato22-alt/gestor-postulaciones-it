@@ -1,5 +1,9 @@
 import { APPLICATION_STATUSES } from '../constants/domainOptions.js'
-import Application from '../domain/Application.js'
+import Application, {
+  APPLICATION_NEXT_ACTION_MAX_LENGTH,
+  APPLICATION_NOTES_MAX_LENGTH,
+} from '../domain/Application.js'
+import { isValidDateString } from '../utils/date.js'
 import {
   hasExactFields,
   isNonEmptyString,
@@ -35,9 +39,11 @@ function isValidStoredApplication(value) {
     isNonEmptyString(value.opportunityId) &&
     isValidTimestamp(value.appliedAt) &&
     VALID_APPLICATION_STATUSES.has(value.status) &&
-    (value.followUpAt === null || isValidTimestamp(value.followUpAt)) &&
+    (value.followUpAt === null || isValidDateString(value.followUpAt)) &&
     typeof value.nextAction === 'string' &&
+    value.nextAction.length <= APPLICATION_NEXT_ACTION_MAX_LENGTH &&
     typeof value.notes === 'string' &&
+    value.notes.length <= APPLICATION_NOTES_MAX_LENGTH &&
     isValidTimestamp(value.createdAt) &&
     isValidTimestamp(value.updatedAt)
   )

@@ -1,5 +1,7 @@
+import { APPLICATION_STATUSES } from '../constants/domainOptions.js'
 import Application from '../domain/Application.js'
 import { getApplicationRegistrationBlocker } from '../domain/applicationRegistrationPolicy.js'
+import { getSuggestedFollowUpDate } from '../domain/followUpPolicy.js'
 
 export default function registerApplication(
   opportunities,
@@ -35,6 +37,7 @@ export default function registerApplication(
   const application = new Application({
     opportunityId: opportunity.id,
     appliedAt: appliedTime.toISOString(),
+    followUpAt: getSuggestedFollowUpDate(APPLICATION_STATUSES.APPLIED.value, appliedTime),
   })
 
   return {

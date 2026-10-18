@@ -32,7 +32,12 @@ describe('LocalStorageApplicationRepository', () => {
 
   it('round-trips applications as real domain instances', () => {
     const storage = new MemoryStorage()
-    const original = createApplication({ status: 'interview', notes: 'Notas' })
+    const original = createApplication({
+      status: 'interview',
+      notes: 'Notas',
+      nextAction: 'Escribir',
+      followUpAt: '2026-01-12',
+    })
 
     assert.equal(new LocalStorageApplicationRepository(storage).saveAll([original]).ok, true)
 
@@ -78,6 +83,10 @@ describe('LocalStorageApplicationRepository', () => {
     'a non-string note': { notes: 5 },
     'an invalid follow-up date': { followUpAt: 'tomorrow' },
     'an extra field': { salaryExpectation: 1000 },
+    'a follow-up timestamp instead of a calendar date': { followUpAt: '2026-01-12T00:00:00.000Z' },
+    'an impossible follow-up date': { followUpAt: '2026-02-30' },
+    'a next action over the size limit': { nextAction: 'a'.repeat(201) },
+    'notes over the size limit': { notes: 'a'.repeat(2001) },
   }
 
   for (const [description, override] of Object.entries(invalidRecordCases)) {

@@ -1,6 +1,10 @@
 import { APPLICATION_STATUSES } from '../constants/domainOptions.js'
 import { generateId } from '../utils/id.js'
 
+// Size limits keep free text reviewable and protect browser storage from oversized values.
+export const APPLICATION_NEXT_ACTION_MAX_LENGTH = 200
+export const APPLICATION_NOTES_MAX_LENGTH = 2000
+
 class Application {
   constructor({
     id = generateId(),

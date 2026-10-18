@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import registerApplication from '../src/application/registerApplication.js'
 import Application from '../src/domain/Application.js'
+import { addDaysToDateString, toLocalDateString } from '../src/utils/date.js'
 import { BASE_TIMESTAMP, createApplication, createOpportunity } from './helpers.js'
 
 const NOW = '2026-01-06T10:00:00.000Z'
@@ -24,7 +25,10 @@ describe('registerApplication', () => {
     assert.equal(result.application.appliedAt, NOW)
     assert.equal(result.application.createdAt, NOW)
     assert.equal(result.application.updatedAt, NOW)
-    assert.equal(result.application.followUpAt, null)
+    assert.equal(
+      result.application.followUpAt,
+      addDaysToDateString(toLocalDateString(NOW), 7),
+    )
     assert.deepEqual(result.applications, [result.application])
     assert.equal(applications.length, 0)
   })

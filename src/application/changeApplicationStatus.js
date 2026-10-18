@@ -1,5 +1,6 @@
 import Application from '../domain/Application.js'
 import { canTransitionApplicationStatus } from '../domain/applicationStatusPolicy.js'
+import { getSuggestedFollowUpDate } from '../domain/followUpPolicy.js'
 import createNextUpdatedAt from './createNextUpdatedAt.js'
 
 export default function changeApplicationStatus(
@@ -32,9 +33,12 @@ export default function changeApplicationStatus(
     return { ok: false, status: 'invalid_timestamp' }
   }
 
+  // A new status starts a new waiting period, so the follow-up is re-suggested from today.
+  // Final statuses clear it. The user can still edit the suggested date afterwards.
   const updatedApplication = new Application({
     ...currentApplication,
     status: nextStatus,
+    followUpAt: getSuggestedFollowUpDate(nextStatus, now),
     updatedAt,
   })
   const nextApplications = [...applications]
