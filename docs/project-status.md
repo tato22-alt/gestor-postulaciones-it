@@ -18,6 +18,8 @@ Manual opportunity creation, local persistence, the data-driven dashboard, same-
 
 Opportunity deletion — permanent removal from any status, protected by an explicit confirmation dialog and optimistic-concurrency detection — is implemented, audited, committed, and published on `main`.
 
+The UX pass milestone (accent-insensitive search, success feedback, created-under-filter notice, focus management, and Escape to close the form) is implemented and verified. An automated unit-test suite based on the native `node:test` runner was added without new dependencies.
+
 The application can create and edit opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the complete collection, synchronize valid storage changes between same-origin tabs, and derive a visible subset from temporary search and status criteria.
 
 ## Implemented
@@ -204,6 +206,33 @@ The current working tree supports:
 * `pendingDeletion` state captured at trigger time, not at confirm time, to guarantee conflict detection across the dialog's open duration;
 * focus restored to the trigger element after the dialog closes.
 
+### UX pass
+
+The current working tree supports:
+
+* accent-insensitive and case-insensitive search (`gestion` matches `Gestión`);
+* a brief success message after create, edit, status change, and delete, announced through a polite live region;
+* a notice when a newly created opportunity is hidden by the active search or status filter, with an action to reset the filters;
+* Escape closes the opportunity form with the same effect as Cancel: the draft is discarded and nothing is saved; the handler is attached to the form section, so it only reacts while focus is inside the form and never competes with the confirmation dialog;
+* focus returns to the control that opened the form (header button, empty-state button, or the card's edit button) after create, edit, cancel, or Escape;
+* when that control no longer exists (for example, the edited opportunity was deleted), focus falls back to the header "Agregar oportunidad" button;
+* the confirmation dialog keeps keyboard focus inside itself with Tab and Shift+Tab, restores focus to its trigger on close, and falls back to the header button when the trigger was removed;
+* long unbroken location values wrap inside the opportunity card instead of causing horizontal overflow.
+
+### Automated tests
+
+`npm test` runs `node --test`, which discovers `tests/**/*.test.js`. No testing dependency was installed. The suite covers:
+
+* the complete 4×4 status-transition matrix and unknown statuses;
+* HTTP/HTTPS URL validation, including `javascript:`, `data:`, `file:`, and other rejected schemes;
+* form input validation, normalization, and draft creation;
+* accent-insensitive search, literal handling of regular-expression characters, status filtering, and non-mutation;
+* dashboard metrics, percentages, and the local-week boundary;
+* `changeOpportunityStatus`, `updateOpportunity`, and `deleteOpportunity`, including conflicts, not-found, invalid input, and immutability;
+* `LocalStorageOpportunityRepository` round-trips, corrupted envelopes, invalid records, unsafe stored URLs, read and write failures, blocked persistence, and preservation of the original stored value.
+
+React components are not covered by automated tests. Browser behavior is verified with a Playwright script executed outside the repository using the browser tooling available in the development environment; it is not a project dependency.
+
 ### Documentation
 
 Relevant documentation distinguishes:
@@ -232,7 +261,7 @@ The repository does not yet include:
 * authorization;
 * artificial intelligence;
 * production deployment;
-* an automated test framework.
+* automated component or browser tests inside the repository.
 
 ## Removed Legacy Files
 
@@ -313,7 +342,9 @@ No remote service is connected.
 * No multi-device data sharing exists.
 * Tabs using `localhost`, `127.0.0.1`, or different ports do not share data.
 * Corrupted data is preserved and reported, but there is no user-facing repair or export workflow yet.
-* Automated tests have not been introduced.
+* Automated tests cover pure domain, application, and repository logic only; React components are verified manually or with external browser scripts.
+* Escape closes the form only while keyboard focus is inside it.
+* Clearing `localStorage` from another tab (`storage` event with a `null` key) is not synchronized; the current tab keeps its collection and writes it back on the next save.
 
 ## Security State
 
@@ -393,6 +424,9 @@ The manual opportunity and persistence flows have been reviewed through:
 * repository round-trip after deletion: save, reload, verify target absent, survivor rehydrated as a `JobOpportunity` instance;
 * `invalid_collection` guard for null, undefined, plain object, string, and numeric inputs.
 
+* 86 automated unit tests through `npm test`;
+* 58 automated browser checks with Playwright on Chromium: validation, unsafe URL rejection, create, edit, status change, search, filters, created-under-filter notice, delete confirmation, Escape behavior, focus return and fallback, dialog focus containment, malicious-looking text, external-link attributes, reload persistence, corrupted and unsafe stored data, cross-tab synchronization, horizontal overflow at 1440, 1024, 768, 390, and 320 CSS pixels, and absence of console errors or warnings.
+
 Luciano manually approved:
 
 * keyboard controls;
@@ -405,7 +439,9 @@ Luciano manually approved:
 
 No blocking source defect is currently known. The reload report was conclusively traced to browser-origin isolation rather than a same-origin persistence failure.
 
-The repository does not yet have an automated test framework or automated component tests. Persistence behavior is currently covered by deterministic repository checks executed without adding dependencies, plus browser validation.
+The repository has deterministic unit tests for pure logic but no automated component or browser tests inside the repository. Adding them would require a testing dependency and explicit approval.
+
+`npm audit` reports advisories in development-only build tooling (`nanoid`, `postcss`, `source-map-js`, pulled in by Vite). They do not ship in the production bundle. Updating them changes `package-lock.json` and requires approval.
 
 These gaps should be addressed only when the corresponding approved milestone requires them.
 
@@ -448,13 +484,7 @@ No later milestone is authorized automatically.
 
 ## Next Milestone (proposed, not yet approved)
 
-UX pass — polish items identified during the deletion milestone:
-
-* accent-insensitive search (e.g. "gestion" matches "gestión");
-* success feedback after create, edit, and delete (brief confirmation visible to the user);
-* create-under-filter: when the form opens with an active status filter, warn the user that the new card may not be visible in the current view;
-* focus management audit across all interactive flows;
-* Escape closes the opportunity form.
+Application conversion: explicitly record that the user applied to an opportunity, creating an `Application` linked to its `JobOpportunity`, persisted through its own repository, and visible in the applications section. The required product decisions (which opportunity statuses allow conversion, whether one opportunity may have more than one application, application status transitions, and the opportunity status after conversion) must be confirmed before implementation.
 
 No implementation is authorized until this milestone is explicitly approved.
 

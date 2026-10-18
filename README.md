@@ -100,6 +100,16 @@ http://127.0.0.1:5173/
 
 `localStorage` está aislado por origen, es decir, por la combinación de protocolo, nombre del host y puerto. Por eso `http://127.0.0.1:5173` y `http://localhost:5173` almacenan colecciones independientes, aunque muestren la misma aplicación. Tampoco comparten datos dos puertos diferentes.
 
+### Verificación
+
+```bash
+npm run lint
+npm test
+npm run build
+```
+
+`npm test` ejecuta las pruebas unitarias de la carpeta `tests/` con el ejecutor nativo de Node.js (`node:test`), sin dependencias adicionales. Cubren las reglas de dominio, la validación de formularios, la búsqueda, las métricas, la edición, los cambios de estado, la eliminación y el repositorio de `localStorage`, incluidos los datos corruptos.
+
 ## Funcionalidades fuera del alcance actual
 
 * TypeScript;
@@ -167,6 +177,8 @@ Las oportunidades existentes pueden editarse sin cambiar su identidad ni su fech
 El estado de una oportunidad también puede cambiarse directamente desde los botones de acción de la tarjeta, sin abrir el formulario. Las transiciones permitidas son: desde detectada se puede guardar, descartar o archivar; desde guardada o descartada se puede mover entre sí o archivar; desde archivada se puede restaurar a cualquier otro estado. Las auto-transiciones y los retrocesos de guardada o descartada a detectada siempre se rechazan. Las tarjetas descartadas y archivadas tienen tratamiento visual diferenciado para identificarlas rápidamente.
 
 Una oportunidad puede eliminarse permanentemente desde su tarjeta, independientemente del estado en que se encuentre. La eliminación requiere confirmación explícita en un diálogo y no puede deshacerse. Si otra pestaña modificó la oportunidad mientras el diálogo estaba abierto, la eliminación se bloquea para evitar perder cambios más recientes.
+
+El formulario de oportunidad se cierra con la tecla Escape, con el mismo efecto que el botón Cancelar: el borrador se descarta sin guardarse. Al cerrar el formulario o el diálogo de confirmación, el foco del teclado vuelve al botón que los abrió o, si ese botón ya no existe, al botón «Agregar oportunidad». Mientras el diálogo de confirmación está abierto, el foco del teclado queda contenido dentro de él. La búsqueda ignora los acentos, cada acción exitosa muestra una confirmación breve y, si una oportunidad nueva queda oculta por la búsqueda o el filtro activos, se muestra un aviso con la opción de restablecerlos.
 
 Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen sincronización remota, postulaciones funcionales, seguimientos funcionales ni cuentas de usuario.
 
