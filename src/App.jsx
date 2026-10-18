@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
+import calculateApplicationMetrics from './application/calculateApplicationMetrics.js'
 import calculateDashboardMetrics from './application/calculateDashboardMetrics.js'
+import changeApplicationStatus from './application/changeApplicationStatus.js'
 import changeOpportunityStatus from './application/changeOpportunityStatus.js'
 import deleteOpportunity from './application/deleteOpportunity.js'
 import filterOpportunities from './application/filterOpportunities.js'
+import registerApplication from './application/registerApplication.js'
 import updateOpportunity from './application/updateOpportunity.js'
 import ApplicationList from './components/ApplicationList.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
@@ -17,7 +20,13 @@ import SourceSection from './components/SourceSection.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import SuccessFeedback from './components/SuccessFeedback.jsx'
 import WorkspaceTabs from './components/WorkspaceTabs.jsx'
+import { APPLICATION_STATUSES } from './constants/domainOptions.js'
+import { findApplicationForOpportunity } from './domain/applicationRegistrationPolicy.js'
+import { isFinalApplicationStatus } from './domain/applicationStatusPolicy.js'
 import JobOpportunity from './domain/JobOpportunity.js'
+import LocalStorageApplicationRepository, {
+  APPLICATION_STORAGE_KEY,
+} from './infrastructure/LocalStorageApplicationRepository.js'
 import LocalStorageOpportunityRepository, {
   OPPORTUNITY_STORAGE_KEY,
 } from './infrastructure/LocalStorageOpportunityRepository.js'
@@ -52,10 +61,46 @@ const DELETE_NOT_FOUND_WARNING =
 const DELETE_SAVE_WARNING =
   'La oportunidad se eliminó de esta sesión, pero el cambio no pudo guardarse en el navegador. Puede reaparecer al recargar la página.'
 
+const DELETE_HAS_APPLICATION_WARNING =
+  'Esta oportunidad tiene una postulación registrada, por eso no se eliminó.'
+
+const APPLICATION_LOAD_WARNING =
+  'No pudimos recuperar las postulaciones guardadas de forma segura. Los datos almacenados se conservaron sin sobrescribirse. Las postulaciones de esta sesión no se guardarán permanentemente.'
+
+const APPLICATION_SAVE_WARNING =
+  'La postulación se registró en esta sesión, pero no pudo guardarse en el navegador. Puede perderse al recargar la página.'
+
+const APPLICATION_STATUS_SAVE_WARNING =
+  'El estado de la postulación se actualizó en esta sesión, pero no pudo guardarse en el navegador. El cambio puede perderse al recargar la página.'
+
+const APPLICATION_REGISTRATION_WARNINGS = {
+  conflict:
+    'Esta oportunidad cambió en otra pestaña mientras el diálogo estaba abierto. La postulación no se registró.',
+  not_found: 'La oportunidad ya no está disponible. La postulación no se registró.',
+  already_applied: 'Esta oportunidad ya tiene una postulación registrada.',
+  opportunity_status_not_allowed:
+    'Solo se puede registrar una postulación para oportunidades detectadas o guardadas.',
+}
+
+const APPLICATION_STATUS_WARNINGS = {
+  conflict: 'Esta postulación cambió en otra pestaña. El cambio de estado no se aplicó.',
+  not_found: 'La postulación ya no está disponible. El cambio de estado no se aplicó.',
+  invalid_transition: 'Ese cambio de estado ya no está permitido para esta postulación.',
+}
+
+const UNEXPECTED_APPLICATION_WARNING =
+  'No pudimos completar la acción sobre la postulación. Intentá nuevamente.'
+
 const CREATE_SUCCESS_MESSAGE = 'Oportunidad creada.'
 const EDIT_SUCCESS_MESSAGE = 'Oportunidad editada.'
 const STATUS_SUCCESS_MESSAGE = 'Estado actualizado.'
 const DELETE_SUCCESS_MESSAGE = 'Oportunidad eliminada.'
+const APPLICATION_SUCCESS_MESSAGE = 'Postulación registrada.'
+const APPLICATION_STATUS_SUCCESS_MESSAGE = 'Estado de la postulación actualizado.'
+
+function getApplicationStatusLabel(status) {
+  return Object.values(APPLICATION_STATUSES).find((option) => option.value === status)?.label ?? status
+}
 
 // Drives both the removal timer below and the CSS fade duration (passed as a prop),
 // so there is a single source of truth for how long the feedback stays visible.
@@ -75,6 +120,8 @@ function getBrowserStorage() {
 
 const opportunityRepository = new LocalStorageOpportunityRepository(getBrowserStorage())
 const initialOpportunityLoad = opportunityRepository.loadAll()
+const applicationRepository = new LocalStorageApplicationRepository(getBrowserStorage())
+const initialApplicationLoad = applicationRepository.loadAll()
 
 function App() {
   const [opportunities, setOpportunities] = useState(initialOpportunityLoad.opportunities)
@@ -82,6 +129,12 @@ function App() {
   const [persistenceWarning, setPersistenceWarning] = useState(
     initialOpportunityLoad.ok ? null : LOAD_WARNING,
   )
+  const [applications, setApplications] = useState(initialApplicationLoad.applications)
+  const [applicationWarning, setApplicationWarning] = useState(
+    initialApplicationLoad.ok ? null : APPLICATION_LOAD_WARNING,
+  )
+  const [pendingApplicationRegistration, setPendingApplicationRegistration] = useState(null)
+  const [pendingFinalApplicationStatus, setPendingFinalApplicationStatus] = useState(null)
   const [opportunitySearchQuery, setOpportunitySearchQuery] = useState('')
   const [opportunityStatusFilter, setOpportunityStatusFilter] = useState(null)
   const [editingSession, setEditingSession] = useState(null)
@@ -92,6 +145,7 @@ function App() {
     useState(false)
   const addOpportunityButtonRef = useRef(null)
   const formTriggerRef = useRef(null)
+  const applicationsHeadingRef = useRef(null)
   const successFeedbackIdRef = useRef(0)
   const successFeedbackTimeoutRef = useRef(null)
   const visibleOpportunities = filterOpportunities(opportunities, {
@@ -102,27 +156,37 @@ function App() {
     opportunities,
     now: new Date(),
   })
+  const applicationMetrics = calculateApplicationMetrics({ applications })
 
   useEffect(() => {
-    const synchronizeOpportunities = (event) => {
-      if (event.key !== OPPORTUNITY_STORAGE_KEY) {
-        return
+    const synchronizeStoredCollections = (event) => {
+      if (event.key === OPPORTUNITY_STORAGE_KEY) {
+        const loadResult = opportunityRepository.loadAll()
+
+        if (loadResult.ok) {
+          setOpportunities([...loadResult.opportunities])
+          setPersistenceWarning(null)
+        } else {
+          setPersistenceWarning(LOAD_WARNING)
+        }
       }
 
-      const loadResult = opportunityRepository.loadAll()
+      if (event.key === APPLICATION_STORAGE_KEY) {
+        const loadResult = applicationRepository.loadAll()
 
-      if (loadResult.ok) {
-        setOpportunities([...loadResult.opportunities])
-        setPersistenceWarning(null)
-      } else {
-        setPersistenceWarning(LOAD_WARNING)
+        if (loadResult.ok) {
+          setApplications([...loadResult.applications])
+          setApplicationWarning(null)
+        } else {
+          setApplicationWarning(APPLICATION_LOAD_WARNING)
+        }
       }
     }
 
-    window.addEventListener('storage', synchronizeOpportunities)
+    window.addEventListener('storage', synchronizeStoredCollections)
 
     return () => {
-      window.removeEventListener('storage', synchronizeOpportunities)
+      window.removeEventListener('storage', synchronizeStoredCollections)
     }
   }, [])
 
@@ -221,6 +285,11 @@ function App() {
     : null
 
   const requestDeleteOpportunity = (opportunity) => {
+    if (findApplicationForOpportunity(applications, opportunity.id)) {
+      setPersistenceWarning(DELETE_HAS_APPLICATION_WARNING)
+      return
+    }
+
     setPendingDeletion({ id: opportunity.id, expectedUpdatedAt: opportunity.updatedAt })
   }
 
@@ -232,9 +301,16 @@ function App() {
     if (!pendingDeletion) return
 
     const { id, expectedUpdatedAt } = pendingDeletion
-    const result = deleteOpportunity(opportunities, { id, expectedUpdatedAt })
 
     setPendingDeletion(null)
+
+    // Another tab may have registered an application while the dialog was open.
+    if (findApplicationForOpportunity(applications, id)) {
+      setPersistenceWarning(DELETE_HAS_APPLICATION_WARNING)
+      return
+    }
+
+    const result = deleteOpportunity(opportunities, { id, expectedUpdatedAt })
 
     if (!result.ok) {
       setPersistenceWarning(
@@ -258,6 +334,106 @@ function App() {
       setPersistenceWarning((current) => current ?? DELETE_SAVE_WARNING)
     }
   }
+
+  const opportunityToRegister = pendingApplicationRegistration
+    ? (opportunities.find((opp) => opp.id === pendingApplicationRegistration.opportunityId) ?? null)
+    : null
+
+  const requestApplicationRegistration = (opportunity) => {
+    setPendingApplicationRegistration({
+      opportunityId: opportunity.id,
+      expectedUpdatedAt: opportunity.updatedAt,
+    })
+  }
+
+  const cancelApplicationRegistration = () => {
+    setPendingApplicationRegistration(null)
+  }
+
+  const confirmApplicationRegistration = () => {
+    if (!pendingApplicationRegistration) return
+
+    const result = registerApplication(opportunities, applications, {
+      ...pendingApplicationRegistration,
+      now: new Date(),
+    })
+
+    setPendingApplicationRegistration(null)
+
+    if (!result.ok) {
+      setApplicationWarning(
+        APPLICATION_REGISTRATION_WARNINGS[result.status] ?? UNEXPECTED_APPLICATION_WARNING,
+      )
+      return
+    }
+
+    setApplications(result.applications)
+    showSuccessFeedback(APPLICATION_SUCCESS_MESSAGE)
+
+    const saveResult = applicationRepository.saveAll(result.applications)
+
+    if (saveResult.ok) {
+      setApplicationWarning(null)
+    } else {
+      setApplicationWarning((current) => current ?? APPLICATION_SAVE_WARNING)
+    }
+  }
+
+  const applyApplicationStatusChange = (application, nextStatus) => {
+    const result = changeApplicationStatus(applications, {
+      id: application.id,
+      nextStatus,
+      expectedUpdatedAt: application.updatedAt,
+      now: new Date(),
+    })
+
+    if (!result.ok) {
+      setApplicationWarning(
+        APPLICATION_STATUS_WARNINGS[result.status] ?? UNEXPECTED_APPLICATION_WARNING,
+      )
+      return
+    }
+
+    setApplications(result.applications)
+    showSuccessFeedback(APPLICATION_STATUS_SUCCESS_MESSAGE)
+
+    const saveResult = applicationRepository.saveAll(result.applications)
+
+    if (saveResult.ok) {
+      setApplicationWarning(null)
+    } else {
+      setApplicationWarning((current) => current ?? APPLICATION_STATUS_SAVE_WARNING)
+    }
+  }
+
+  // Final statuses cannot be left again, so a misclick would be permanent: ask first.
+  const requestApplicationStatusChange = (application, nextStatus) => {
+    if (isFinalApplicationStatus(nextStatus)) {
+      setPendingFinalApplicationStatus({ application, nextStatus })
+      return
+    }
+
+    applyApplicationStatusChange(application, nextStatus)
+  }
+
+  const cancelFinalApplicationStatus = () => {
+    setPendingFinalApplicationStatus(null)
+  }
+
+  const confirmFinalApplicationStatus = () => {
+    if (!pendingFinalApplicationStatus) return
+
+    const { application, nextStatus } = pendingFinalApplicationStatus
+
+    setPendingFinalApplicationStatus(null)
+    applyApplicationStatusChange(application, nextStatus)
+  }
+
+  const finalStatusOpportunity = pendingFinalApplicationStatus
+    ? (opportunities.find(
+        (opp) => opp.id === pendingFinalApplicationStatus.application.opportunityId,
+      ) ?? null)
+    : null
 
   const clearOpportunitySearch = () => {
     setOpportunitySearchQuery('')
@@ -353,7 +529,7 @@ function App() {
       />
 
       <main className="app-main">
-        <StatsPanel metrics={dashboardMetrics} />
+        <StatsPanel metrics={dashboardMetrics} applicationMetrics={applicationMetrics} />
         <WorkspaceTabs />
         <SuccessFeedback
           key={successFeedback?.id ?? 'none'}
@@ -365,6 +541,7 @@ function App() {
           onResetFilters={resetOpportunityFilters}
         />
         <PersistenceWarning message={persistenceWarning} />
+        <PersistenceWarning message={applicationWarning} />
         {isOpportunityFormVisible && (
           <OpportunityForm
             key={
@@ -382,6 +559,7 @@ function App() {
         <OpportunitySection
           opportunities={opportunities}
           visibleOpportunities={visibleOpportunities}
+          applications={applications}
           searchQuery={opportunitySearchQuery}
           statusFilter={opportunityStatusFilter}
           onSearchChange={setOpportunitySearchQuery}
@@ -394,9 +572,15 @@ function App() {
           onEditOpportunity={openOpportunityEditForm}
           onOpportunityStatusChange={applyStatusChange}
           onRequestDelete={requestDeleteOpportunity}
+          onRequestApplicationRegistration={requestApplicationRegistration}
         />
         <SourceSection />
-        <ApplicationList />
+        <ApplicationList
+          applications={applications}
+          opportunities={opportunities}
+          onStatusChange={requestApplicationStatusChange}
+          headingRef={applicationsHeadingRef}
+        />
         <FollowUpPanel />
       </main>
       <ConfirmDialog
@@ -413,6 +597,38 @@ function App() {
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
         fallbackFocusRef={addOpportunityButtonRef}
+      />
+      <ConfirmDialog
+        isOpen={pendingApplicationRegistration !== null}
+        title="Registrar postulación"
+        message={
+          opportunityToRegister
+            ? `¿Confirmás que ya te postulaste a "${opportunityToRegister.title}" en ${opportunityToRegister.company}? Esta acción solo registra la postulación en la aplicación: no envía nada a la empresa.`
+            : '¿Confirmás que ya te postulaste a esta oportunidad? Esta acción solo registra la postulación en la aplicación: no envía nada a la empresa.'
+        }
+        confirmLabel="Sí, ya me postulé"
+        cancelLabel="Cancelar"
+        onConfirm={confirmApplicationRegistration}
+        onCancel={cancelApplicationRegistration}
+        fallbackFocusRef={applicationsHeadingRef}
+      />
+      <ConfirmDialog
+        isOpen={pendingFinalApplicationStatus !== null}
+        title="Finalizar postulación"
+        message={
+          pendingFinalApplicationStatus
+            ? `¿Marcar la postulación${
+                finalStatusOpportunity
+                  ? ` a "${finalStatusOpportunity.title}" en ${finalStatusOpportunity.company}`
+                  : ''
+              } como "${getApplicationStatusLabel(pendingFinalApplicationStatus.nextStatus)}"? Es un estado final y no se puede cambiar después.`
+            : ''
+        }
+        confirmLabel="Confirmar"
+        cancelLabel="Cancelar"
+        onConfirm={confirmFinalApplicationStatus}
+        onCancel={cancelFinalApplicationStatus}
+        fallbackFocusRef={applicationsHeadingRef}
       />
     </div>
   )

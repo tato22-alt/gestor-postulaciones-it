@@ -1,17 +1,114 @@
+import { APPLICATION_STATUSES } from '../constants/domainOptions.js'
+import { getAllowedApplicationTargetStatuses } from '../domain/applicationStatusPolicy.js'
 import EmptyState from './EmptyState.jsx'
 
-function ApplicationList() {
+function getStatusLabel(status) {
+  return Object.values(APPLICATION_STATUSES).find((option) => option.value === status)?.label ?? status
+}
+
+function formatAppliedDate(value) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('es-AR').format(date)
+}
+
+function ApplicationCard({ application, opportunity, onStatusChange }) {
+  const allowedTargets = getAllowedApplicationTargetStatuses(application.status)
+  const company = opportunity?.company ?? 'Oportunidad no disponible'
+  const title = opportunity?.title ?? 'La oportunidad original ya no está en la lista.'
+  const accessibleName = opportunity ? `${opportunity.title} en ${opportunity.company}` : 'oportunidad no disponible'
+
+  return (
+    <article className="opportunity-card">
+      <div className="opportunity-card-header">
+        <div>
+          <p className="opportunity-company">{company}</p>
+          <h3>{title}</h3>
+        </div>
+        <span className={`status-badge status-badge--${application.status}`}>
+          {getStatusLabel(application.status)}
+        </span>
+      </div>
+
+      <dl className="opportunity-details">
+        <div>
+          <dt>Postulación registrada</dt>
+          <dd>{formatAppliedDate(application.appliedAt)}</dd>
+        </div>
+      </dl>
+
+      {opportunity && (
+        <div className="opportunity-card-actions">
+          <a
+            className="button button-secondary opportunity-link"
+            href={opportunity.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Abrir publicación
+          </a>
+        </div>
+      )}
+
+      {allowedTargets.length > 0 ? (
+        <div
+          className="opportunity-status-actions"
+          role="group"
+          aria-label={`Cambiar estado de la postulación: ${accessibleName}`}
+        >
+          <span className="status-action-restore-label">Avanzar a</span>
+          {allowedTargets.map((target) => (
+            <button
+              key={target.value}
+              className="button button-secondary status-action-button"
+              type="button"
+              aria-label={`${target.label}: ${accessibleName}`}
+              onClick={() => onStatusChange(application, target.value)}
+            >
+              {target.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="application-final-note">Proceso finalizado. Este estado ya no cambia.</p>
+      )}
+    </article>
+  )
+}
+
+function ApplicationList({ applications, opportunities, onStatusChange, headingRef }) {
+  const opportunitiesById = new Map(opportunities.map((opportunity) => [opportunity.id, opportunity]))
+
   return (
     <section className="panel" aria-labelledby="applications-title">
       <div className="section-heading">
         <div>
           <p className="section-kicker">Procesos</p>
-          <h2 id="applications-title">Postulaciones activas</h2>
+          <h2 id="applications-title" ref={headingRef} tabIndex={-1}>
+            Postulaciones
+          </h2>
         </div>
         <p>Procesos en los que ya enviaste tu solicitud.</p>
       </div>
 
-      <EmptyState />
+      {applications.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="opportunity-list">
+          {applications.map((application) => (
+            <ApplicationCard
+              key={application.id}
+              application={application}
+              opportunity={opportunitiesById.get(application.opportunityId) ?? null}
+              onStatusChange={onStatusChange}
+            />
+          ))}
+        </div>
+      )}
     </section>
   )
 }

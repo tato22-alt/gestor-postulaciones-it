@@ -684,6 +684,47 @@
   color: #475467;
 }
 
+.status-badge--applied {
+  background: #eaf1ff;
+  color: #1d4ed8;
+}
+
+.status-badge--interview,
+.status-badge--technical_test {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge--offer {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge--rejected {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.opportunity-application-note,
+.application-final-note,
+.opportunity-delete-blocked {
+  margin: 0;
+  color: #475467;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.opportunity-application-note {
+  border-left: 3px solid #12b76a;
+  padding-left: 10px;
+  font-weight: 650;
+}
+
+.application-final-note {
+  border-top: 1px solid #eef1f5;
+  padding-top: 16px;
+}
+
 .opportunity-details {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

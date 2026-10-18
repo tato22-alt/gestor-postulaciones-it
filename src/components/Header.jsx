@@ -18,14 +18,6 @@ function Header({ onAddOpportunity, addOpportunityButtonRef }) {
           >
             Agregar oportunidad
           </button>
-          <button
-            className="button button-secondary"
-            type="button"
-            title="Disponible en una etapa posterior"
-            disabled
-          >
-            Registrar postulación
-          </button>
         </div>
       </div>
     </header>

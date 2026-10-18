@@ -1,8 +1,10 @@
 import {
+  APPLICATION_STATUSES,
   EMPLOYMENT_TYPES,
   MODALITIES,
   OPPORTUNITY_STATUSES,
 } from '../constants/domainOptions.js'
+import { getApplicationRegistrationBlocker } from '../domain/applicationRegistrationPolicy.js'
 import { getAllowedTargetStatuses } from '../domain/opportunityStatusPolicy.js'
 
 const ACTION_VERB_LABELS = {
@@ -32,13 +34,17 @@ const DE_EMPHASIZED_STATUSES = new Set([
 
 function OpportunityCard({
   opportunity,
+  application,
   isEditDisabled,
   isBeingEdited,
   onEdit,
   onStatusChange,
   onRequestDelete,
+  onRequestApplicationRegistration,
 }) {
   const allowedTargets = getAllowedTargetStatuses(opportunity.status)
+  const canRegisterApplication =
+    !application && getApplicationRegistrationBlocker(opportunity, []) === null
   const isArchived = opportunity.status === OPPORTUNITY_STATUSES.ARCHIVED.value
   const cardClassName = DE_EMPHASIZED_STATUSES.has(opportunity.status)
     ? `opportunity-card opportunity-card--${opportunity.status}`
@@ -110,7 +116,24 @@ function OpportunityCard({
         >
           {isBeingEdited ? 'Editando' : 'Editar'}
         </button>
+        {canRegisterApplication && (
+          <button
+            className="button button-primary"
+            type="button"
+            aria-label={`Registrar postulación: ${opportunity.title} en ${opportunity.company}`}
+            onClick={() => onRequestApplicationRegistration(opportunity)}
+          >
+            Registrar postulación
+          </button>
+        )}
       </div>
+
+      {application && (
+        <p className="opportunity-application-note">
+          Postulación registrada · Estado:{' '}
+          {getOptionLabel(APPLICATION_STATUSES, application.status)}
+        </p>
+      )}
 
       {allowedTargets.length > 0 && (
         <div
@@ -141,14 +164,20 @@ function OpportunityCard({
       )}
 
       <div className="opportunity-delete-action">
-        <button
-          className="button button-danger-outline"
-          type="button"
-          aria-label={`Eliminar ${opportunity.title} en ${opportunity.company}`}
-          onClick={() => onRequestDelete(opportunity)}
-        >
-          Eliminar
-        </button>
+        {application ? (
+          <p className="opportunity-delete-blocked">
+            No se puede eliminar porque tiene una postulación registrada.
+          </p>
+        ) : (
+          <button
+            className="button button-danger-outline"
+            type="button"
+            aria-label={`Eliminar ${opportunity.title} en ${opportunity.company}`}
+            onClick={() => onRequestDelete(opportunity)}
+          >
+            Eliminar
+          </button>
+        )}
       </div>
     </article>
   )

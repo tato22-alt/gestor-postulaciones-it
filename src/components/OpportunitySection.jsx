@@ -1,9 +1,11 @@
+import { findApplicationForOpportunity } from '../domain/applicationRegistrationPolicy.js'
 import OpportunityCard from './OpportunityCard.jsx'
 import OpportunityFilters from './OpportunityFilters.jsx'
 
 function OpportunitySection({
   opportunities,
   visibleOpportunities,
+  applications,
   searchQuery,
   statusFilter,
   onSearchChange,
@@ -16,6 +18,7 @@ function OpportunitySection({
   onEditOpportunity,
   onOpportunityStatusChange,
   onRequestDelete,
+  onRequestApplicationRegistration,
 }) {
   return (
     <section className="panel" aria-labelledby="opportunities-title">
@@ -68,11 +71,13 @@ function OpportunitySection({
             <OpportunityCard
               key={opportunity.id}
               opportunity={opportunity}
+              application={findApplicationForOpportunity(applications, opportunity.id)}
               isEditDisabled={isOpportunityFormVisible}
               isBeingEdited={editingOpportunityId === opportunity.id}
               onEdit={onEditOpportunity}
               onStatusChange={onOpportunityStatusChange}
               onRequestDelete={onRequestDelete}
+              onRequestApplicationRegistration={onRequestApplicationRegistration}
             />
           ))}
         </div>

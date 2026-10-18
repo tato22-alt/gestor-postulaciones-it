@@ -1,4 +1,5 @@
 import {
+  APPLICATION_STATUSES,
   EMPLOYMENT_TYPES,
   MODALITIES,
   OPPORTUNITY_STATUSES,
@@ -48,7 +49,11 @@ function mapControlledMetrics(options, metrics) {
   }))
 }
 
-function StatsPanel({ metrics }) {
+function StatsPanel({ metrics, applicationMetrics }) {
+  const applicationStatusMetrics = mapControlledMetrics(
+    APPLICATION_STATUSES,
+    applicationMetrics.applicationsByStatus,
+  )
   const statusMetrics = mapControlledMetrics(
     OPPORTUNITY_STATUSES,
     metrics.opportunitiesByStatus,
@@ -132,26 +137,23 @@ function StatsPanel({ metrics }) {
           description="Jornada registrada para las oportunidades actuales."
           metrics={employmentTypeMetrics}
         />
+        <MetricBreakdown
+          title="Estados de postulaciones"
+          description={`${applicationMetrics.activeApplications} en curso de ${applicationMetrics.totalApplications} registradas. Oferta y Rechazado son estados finales.`}
+          metrics={applicationStatusMetrics}
+        />
 
         <article className="dashboard-group dashboard-group-wide">
           <div className="dashboard-group-heading">
             <h3>Procesos todavía no disponibles</h3>
             <p>
               Estas métricas necesitan flujos que aún no fueron implementados y no se
-              calculan a partir de oportunidades.
+              calculan a partir de oportunidades ni de postulaciones.
             </p>
           </div>
           <dl className="unsupported-metrics">
             <div>
               <dt>Recomendaciones</dt>
-              <dd>No implementado</dd>
-            </div>
-            <div>
-              <dt>Postulaciones activas</dt>
-              <dd>No implementado</dd>
-            </div>
-            <div>
-              <dt>Entrevistas y ofertas</dt>
               <dd>No implementado</dd>
             </div>
             <div>
