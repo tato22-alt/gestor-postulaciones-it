@@ -347,7 +347,10 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Header ref={addOpportunityButtonRef} onAddOpportunity={openOpportunityForm} />
+      <Header
+        addOpportunityButtonRef={addOpportunityButtonRef}
+        onAddOpportunity={openOpportunityForm}
+      />
 
       <main className="app-main">
         <StatsPanel metrics={dashboardMetrics} />

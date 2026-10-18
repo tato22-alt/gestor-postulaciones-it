@@ -100,8 +100,24 @@ function OpportunityForm({
     setErrors({})
   }
 
+  // Escape behaves exactly like the Cancel button: the draft is discarded without saving.
+  // The handler lives on the form section, so it only reacts while focus is inside the form
+  // and never competes with the confirmation dialog, which moves focus out of the form.
+  const handleKeyDown = (event) => {
+    if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing) {
+      return
+    }
+
+    event.preventDefault()
+    onCancel()
+  }
+
   return (
-    <section className="panel" aria-labelledby="opportunity-form-title">
+    <section
+      className="panel"
+      aria-labelledby="opportunity-form-title"
+      onKeyDown={handleKeyDown}
+    >
       <div className="section-heading">
         <div>
           <p className="section-kicker">

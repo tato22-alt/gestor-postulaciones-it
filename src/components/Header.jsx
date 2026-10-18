@@ -1,6 +1,4 @@
-import { forwardRef } from 'react'
-
-const Header = forwardRef(function Header({ onAddOpportunity }, addOpportunityButtonRef) {
+function Header({ onAddOpportunity, addOpportunityButtonRef }) {
   return (
     <header className="app-header">
       <div className="header-content">
@@ -32,6 +30,6 @@ const Header = forwardRef(function Header({ onAddOpportunity }, addOpportunityBu
       </div>
     </header>
   )
-})
+}
 
 export default Header
