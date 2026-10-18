@@ -36,6 +36,12 @@ Representa el resultado ya producido por una futura evaluación entre un perfil,
 
 Representa una postulación efectivamente realizada. Referencia la oportunidad original y conserva el estado del proceso, las fechas de postulación y seguimiento, la próxima acción y las notas.
 
+Las reglas de registro están centralizadas en `applicationRegistrationPolicy.js`: solo puede registrarse una postulación para una oportunidad en estado `detected` o `saved`, y cada oportunidad puede tener como máximo una postulación. Registrar una postulación no modifica el estado de la oportunidad.
+
+El ciclo de vida de una postulación está controlado por `applicationStatusPolicy.js`: desde `applied` se puede avanzar a `interview`, `technical_test` o `rejected`; `interview` y `technical_test` pueden alternarse entre sí y avanzar a `offer` o `rejected`; `offer` y `rejected` son estados finales sin transiciones de salida.
+
+Una oportunidad que tiene una postulación registrada no puede eliminarse. Qué debería ocurrir con la postulación si en el futuro se permite esa eliminación es una decisión de producto pendiente.
+
 ## Relaciones
 
 ```mermaid
@@ -55,7 +61,7 @@ classDiagram
 
 `JobOpportunity` existe desde que una oferta entra al sistema. Su estado avanza por una política de transiciones explícita: puede guardarse, descartarse o archivarse desde detectada; puede moverse entre guardada, descartada y archivada; y puede restaurarse desde archivada. El usuario puede cambiar el estado mediante los botones de acción de la tarjeta o a través del formulario de edición. Una oportunidad también puede eliminarse permanentemente desde cualquier estado mediante el botón de eliminación de la tarjeta; la operación requiere confirmación explícita y no puede deshacerse.
 
-`Application` existe únicamente después de una postulación efectiva. Por eso `applied` no es un estado de oportunidad y `saved` no es un estado de postulación.
+`Application` existe únicamente después de una postulación efectiva y de una confirmación explícita del usuario en la interfaz. La aplicación nunca envía postulaciones a empresas: solo registra una acción que el usuario ya realizó. Por eso `applied` no es un estado de oportunidad y `saved` no es un estado de postulación.
 
 ## Perfil y preferencias
 
@@ -82,7 +88,8 @@ Todavía no existen:
 
 - validaciones de campos obligatorios;
 - instancias con información de Luciano;
-- persistencia remota o repositorios para otros agregados;
+- persistencia remota o repositorios para perfiles, preferencias, fuentes o resultados de compatibilidad;
+- seguimientos funcionales (`followUpAt` y `nextAction` existen en `Application`, pero todavía no se editan ni se calculan);
 - monitoreo de fuentes;
 - scraping o consumo de APIs;
 - detección de duplicados;
@@ -93,6 +100,6 @@ Todavía no existen:
 - autenticación;
 - inteligencia artificial.
 
-La interfaz React ya utiliza `JobOpportunity` para representar las oportunidades cargadas manualmente. La infraestructura local persiste estas oportunidades mediante `LocalStorageOpportunityRepository`, valida el formato almacenado y rehidrata instancias reales de la clase. El modelo de dominio continúa sin depender de React, `localStorage` ni del repositorio.
+La interfaz React ya utiliza `JobOpportunity` para representar las oportunidades cargadas manualmente y `Application` para las postulaciones registradas. La infraestructura local persiste cada colección con su propio repositorio (`LocalStorageOpportunityRepository` y `LocalStorageApplicationRepository`), valida el formato almacenado y rehidrata instancias reales de las clases. El modelo de dominio continúa sin depender de React, `localStorage` ni de los repositorios.
 
 Los valores `null` representan información no disponible o aún no configurada; no constituyen una categoría de negocio adicional.

@@ -18,6 +18,8 @@ Manual opportunity creation, local persistence, the data-driven dashboard, same-
 
 Opportunity deletion — permanent removal from any status, protected by an explicit confirmation dialog and optimistic-concurrency detection — is implemented, audited, committed, and published on `main`.
 
+The application tracking milestone (explicit application registration from an opportunity and application status management) is implemented and verified on the `feature/application-tracking` branch, pending Luciano's review before merging into `main`.
+
 The UX pass milestone (accent-insensitive search, success feedback, created-under-filter notice, focus management, and Escape to close the form) is implemented and verified. An automated unit-test suite based on the native `node:test` runner was added without new dependencies.
 
 The application can create and edit opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the complete collection, synchronize valid storage changes between same-origin tabs, and derive a visible subset from temporary search and status criteria.
@@ -233,6 +235,38 @@ The current working tree supports:
 
 React components are not covered by automated tests. Browser behavior is verified with a Playwright script executed outside the repository using the browser tooling available in the development environment; it is not a project dependency.
 
+### Application tracking
+
+Approved product decisions:
+
+* an application can be registered only for an opportunity in `detected` or `saved` status;
+* an opportunity can have at most one application;
+* registering an application does not change the opportunity status;
+* application transitions: `applied` → `interview` | `technical_test` | `rejected`; `interview` ↔ `technical_test`; `interview` and `technical_test` → `offer` | `rejected`; `offer` and `rejected` are final.
+
+The current working tree supports:
+
+* a "Registrar postulación" button on eligible opportunity cards;
+* an explicit confirmation dialog stating that the action only records an application already submitted and sends nothing to the company;
+* `registerApplication`, a pure function that checks the opportunity exists, detects a stale opportunity version through `expectedUpdatedAt`, applies the registration policy, and returns a new collection;
+* `changeApplicationStatus`, a pure function with optimistic-concurrency protection and a monotonic `updatedAt`;
+* domain policies in `applicationRegistrationPolicy.js` and `applicationStatusPolicy.js`;
+* a confirmation dialog before entering a final status, because a misclick could not be undone;
+* a real applications section with company, title, registration date, publication link, status badge, and allowed status actions;
+* applications whose opportunity is missing are shown as "Oportunidad no disponible" instead of being hidden or deleted;
+* opportunity cards show the current application status and replace the delete button with an explanation when an application exists;
+* deletion is also re-checked at confirm time, so an application registered in another tab while the dialog was open blocks the deletion;
+* `calculateApplicationMetrics` derives total, in-progress, and per-status counts; the dashboard shows them instead of the previous "No implementado" placeholders for applications;
+* `LocalStorageApplicationRepository` with its own key `it-job-search-assistant.applications`, a versioned envelope (`schemaVersion: 1`), strict record validation, rejection of duplicated identifiers or duplicated opportunity references, preservation of corrupted data, and same-origin tab synchronization;
+* after a registration or final-status confirmation, focus moves to the "Postulaciones" heading, because the triggering button no longer exists.
+
+Supporting refactors:
+
+* `createNextUpdatedAt` is shared by the opportunity and application use cases;
+* shape validators shared by both repositories live in `src/infrastructure/storageValidation.js`.
+
+The disabled header button "Registrar postulación" was removed: registration now happens from each opportunity card, and the placeholder claimed the feature was unavailable.
+
 ### Documentation
 
 Relevant documentation distinguishes:
@@ -247,8 +281,8 @@ Relevant documentation distinguishes:
 The repository does not yet include:
 
 * duplicate detection;
-* conversion of an opportunity into an application;
-* a functional application workflow;
+* editing application dates, notes, or next actions;
+* deleting applications;
 * functional follow-ups;
 * source approval behavior;
 * source monitoring;
@@ -336,7 +370,11 @@ No remote service is connected.
 ## Current Limitations
 
 * Opportunity creation, editing, explicit status management, permanent deletion, local search, and status filtering are the functional opportunity workflows.
-* Application, source, follow-up, and workspace-tab sections remain static.
+* Source, follow-up, and workspace-tab sections remain static.
+* The registration date is the moment the user confirms; it cannot yet be edited to an earlier date.
+* Opportunities with an application cannot be deleted; the long-term rule is a pending product decision.
+* If application storage is corrupted, the application collection starts empty in memory, so opportunity cards cannot know about stored applications and their deletion is not blocked; the corrupted value itself is preserved.
+* Two tabs registering different applications at the same moment, before the `storage` event arrives, follow last-write-wins for the whole collection, as opportunities already do.
 * Persistence remains local to one browser origin and device.
 * No remote synchronization exists.
 * No multi-device data sharing exists.
@@ -424,7 +462,8 @@ The manual opportunity and persistence flows have been reviewed through:
 * repository round-trip after deletion: save, reload, verify target absent, survivor rehydrated as a `JobOpportunity` instance;
 * `invalid_collection` guard for null, undefined, plain object, string, and numeric inputs.
 
-* 86 automated unit tests through `npm test`;
+* 150 automated unit tests through `npm test`, including the full 5×5 application transition matrix, registration eligibility, application status changes, application metrics, and the application repository;
+* 57 automated browser checks for application tracking: eligibility by status, confirmation and cancellation, Escape and focus containment, persistence, final-status confirmation, orphan applications, corrupted and duplicated stored data, cross-tab synchronization, cross-tab conflicts for registration, deletion, and final status, malicious-looking text, horizontal overflow at five widths, and absence of console errors;
 * 58 automated browser checks with Playwright on Chromium: validation, unsafe URL rejection, create, edit, status change, search, filters, created-under-filter notice, delete confirmation, Escape behavior, focus return and fallback, dialog focus containment, malicious-looking text, external-link attributes, reload persistence, corrupted and unsafe stored data, cross-tab synchronization, horizontal overflow at 1440, 1024, 768, 390, and 320 CSS pixels, and absence of console errors or warnings.
 
 Luciano manually approved:
@@ -484,7 +523,9 @@ No later milestone is authorized automatically.
 
 ## Next Milestone (proposed, not yet approved)
 
-Application conversion: explicitly record that the user applied to an opportunity, creating an `Application` linked to its `JobOpportunity`, persisted through its own repository, and visible in the applications section. The required product decisions (which opportunity statuses allow conversion, whether one opportunity may have more than one application, application status transitions, and the opportunity status after conversion) must be confirmed before implementation.
+Follow-ups: identify applications that need an action. Required product decisions: whether `followUpAt` is entered manually or suggested, the default delay after each status, which statuses need follow-up, and how overdue items are shown.
+
+AI-assisted compatibility analysis remains deferred. It requires a backend or Edge Function, an approved provider and budget, a secret API key stored outside the frontend, a candidate profile entered by Luciano, and approved matching criteria.
 
 No implementation is authorized until this milestone is explicitly approved.
 

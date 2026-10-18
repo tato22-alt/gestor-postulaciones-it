@@ -32,6 +32,8 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 * editar oportunidades;
 * cambiar el estado de una oportunidad con reglas de transición explícitas;
 * eliminar oportunidades de forma permanente con confirmación explícita;
+* registrar una postulación a partir de una oportunidad, con confirmación explícita;
+* gestionar el estado de cada postulación con reglas de transición explícitas;
 * buscar por empresa o puesto;
 * filtrar por estado;
 * mostrar estadísticas básicas;
@@ -72,7 +74,15 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 * Descartada;
 * Archivada.
 
-Los estados de postulación (Postulado, Entrevista, Prueba técnica, Rechazado, Oferta) existen en el modelo de dominio dentro de la clase `Application`, pero todavía no tienen un flujo de trabajo implementado en la interfaz.
+## Estados de una postulación
+
+* Postulado;
+* Entrevista;
+* Prueba técnica;
+* Oferta (final);
+* Rechazado (final).
+
+Desde Postulado se puede avanzar a Entrevista, Prueba técnica o Rechazado. Entrevista y Prueba técnica pueden alternarse entre sí y avanzar a Oferta o Rechazado. Oferta y Rechazado son estados finales: no se pueden cambiar y la aplicación pide confirmación antes de aplicarlos.
 
 ## Tecnologías utilizadas
 
@@ -108,7 +118,7 @@ npm test
 npm run build
 ```
 
-`npm test` ejecuta las pruebas unitarias de la carpeta `tests/` con el ejecutor nativo de Node.js (`node:test`), sin dependencias adicionales. Cubren las reglas de dominio, la validación de formularios, la búsqueda, las métricas, la edición, los cambios de estado, la eliminación y el repositorio de `localStorage`, incluidos los datos corruptos.
+`npm test` ejecuta las pruebas unitarias de la carpeta `tests/` con el ejecutor nativo de Node.js (`node:test`), sin dependencias adicionales. Cubren las reglas de dominio de oportunidades y postulaciones, la validación de formularios, la búsqueda, las métricas, la edición, los cambios de estado, la eliminación, el registro de postulaciones y los repositorios de `localStorage`, incluidos los datos corruptos.
 
 ## Funcionalidades fuera del alcance actual
 
@@ -180,7 +190,9 @@ Una oportunidad puede eliminarse permanentemente desde su tarjeta, independiente
 
 El formulario de oportunidad se cierra con la tecla Escape, con el mismo efecto que el botón Cancelar: el borrador se descarta sin guardarse. Al cerrar el formulario o el diálogo de confirmación, el foco del teclado vuelve al botón que los abrió o, si ese botón ya no existe, al botón «Agregar oportunidad». Mientras el diálogo de confirmación está abierto, el foco del teclado queda contenido dentro de él. La búsqueda ignora los acentos, cada acción exitosa muestra una confirmación breve y, si una oportunidad nueva queda oculta por la búsqueda o el filtro activos, se muestra un aviso con la opción de restablecerlos.
 
-Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen sincronización remota, postulaciones funcionales, seguimientos funcionales ni cuentas de usuario.
+Cada oportunidad detectada o guardada ofrece el botón «Registrar postulación». Al presionarlo, la aplicación pregunta si ya te postulaste; solo después de confirmar crea una `Application` vinculada a la oportunidad. La aplicación no envía nada a la empresa: únicamente registra una acción que ya realizaste. Cada oportunidad puede tener como máximo una postulación, y registrarla no cambia el estado de la oportunidad. Una oportunidad con postulación registrada no puede eliminarse. Las postulaciones se guardan con una clave propia de `localStorage`, con el mismo formato versionado y la misma validación estricta que las oportunidades.
+
+Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen sincronización remota, seguimientos funcionales ni cuentas de usuario.
 
 ## Autor
 
