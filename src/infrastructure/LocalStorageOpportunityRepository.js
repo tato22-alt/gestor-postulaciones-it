@@ -6,6 +6,12 @@ import {
 } from '../constants/domainOptions.js'
 import JobOpportunity from '../domain/JobOpportunity.js'
 import { isValidHttpUrl } from '../utils/url.js'
+import {
+  hasExactFields,
+  isNonEmptyString,
+  isPlainObject,
+  isValidTimestamp,
+} from './storageValidation.js'
 
 export const OPPORTUNITY_STORAGE_KEY = 'it-job-search-assistant.opportunities'
 
@@ -44,45 +50,12 @@ const VALID_EMPLOYMENT_TYPES = getControlledValues(EMPLOYMENT_TYPES)
 const VALID_OPPORTUNITY_STATUSES = getControlledValues(OPPORTUNITY_STATUSES)
 const VALID_SALARY_PERIODS = getControlledValues(SALARY_PERIODS)
 
-function isPlainObject(value) {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-
-  const prototype = Object.getPrototypeOf(value)
-  return prototype === Object.prototype || prototype === null
-}
-
-function hasExactFields(value, fields) {
-  const keys = Object.keys(value)
-  return keys.length === fields.length && fields.every((field) => Object.hasOwn(value, field))
-}
-
-function isNonEmptyString(value) {
-  return typeof value === 'string' && value.trim().length > 0
-}
-
 function isNullableNonEmptyString(value) {
   return value === null || isNonEmptyString(value)
 }
 
 function isStringArray(value) {
   return Array.isArray(value) && value.every((entry) => typeof entry === 'string')
-}
-
-function isValidTimestamp(value) {
-  if (typeof value !== 'string') {
-    return false
-  }
-
-  const isoTimestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-  const parsedTimestamp = new Date(value)
-
-  return (
-    isoTimestampPattern.test(value) &&
-    !Number.isNaN(parsedTimestamp.getTime()) &&
-    parsedTimestamp.toISOString() === value
-  )
 }
 
 function isValidPublishedDate(value) {

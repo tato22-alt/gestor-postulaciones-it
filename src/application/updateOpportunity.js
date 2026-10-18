@@ -4,17 +4,7 @@ import {
   normalizeOpportunityInput,
   validateOpportunityInput,
 } from './opportunityInput.js'
-
-function createNextUpdatedAt(currentUpdatedAt, now) {
-  const currentTime = new Date(currentUpdatedAt).getTime()
-  const requestedTime = new Date(now).getTime()
-
-  if (Number.isNaN(currentTime) || Number.isNaN(requestedTime)) {
-    return null
-  }
-
-  return new Date(Math.max(requestedTime, currentTime + 1)).toISOString()
-}
+import createNextUpdatedAt from './createNextUpdatedAt.js'
 
 export default function updateOpportunity(
   opportunities,
