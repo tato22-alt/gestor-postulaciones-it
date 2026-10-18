@@ -5,6 +5,7 @@ import {
   SALARY_PERIODS,
 } from '../constants/domainOptions.js'
 import JobOpportunity from '../domain/JobOpportunity.js'
+import { isValidDateString } from '../utils/date.js'
 import { isValidHttpUrl } from '../utils/url.js'
 import {
   hasExactFields,
@@ -59,16 +60,7 @@ function isStringArray(value) {
 }
 
 function isValidPublishedDate(value) {
-  if (value === null) {
-    return true
-  }
-
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false
-  }
-
-  const parsedDate = new Date(`${value}T00:00:00.000Z`)
-  return !Number.isNaN(parsedDate.getTime()) && parsedDate.toISOString().slice(0, 10) === value
+  return value === null || isValidDateString(value)
 }
 
 function isJsonCompatible(value, depth = 0, visited = new Set()) {

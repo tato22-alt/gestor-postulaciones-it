@@ -1,4 +1,5 @@
 import { EMPLOYMENT_TYPES, MODALITIES } from '../constants/domainOptions.js'
+import { isValidDateString } from '../utils/date.js'
 import { isValidHttpUrl, normalizeHttpUrl } from '../utils/url.js'
 
 const VALID_MODALITIES = new Set(
@@ -18,16 +19,7 @@ function isValidPublishedDate(value) {
     return true
   }
 
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false
-  }
-
-  const parsedDate = new Date(`${value}T00:00:00.000Z`)
-
-  return (
-    !Number.isNaN(parsedDate.getTime()) &&
-    parsedDate.toISOString().slice(0, 10) === value
-  )
+  return isValidDateString(value)
 }
 
 export function createOpportunityDraft(opportunity = {}) {
