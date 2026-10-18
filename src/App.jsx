@@ -4,9 +4,12 @@ import calculateApplicationMetrics from './application/calculateApplicationMetri
 import calculateDashboardMetrics from './application/calculateDashboardMetrics.js'
 import changeApplicationStatus from './application/changeApplicationStatus.js'
 import changeOpportunityStatus from './application/changeOpportunityStatus.js'
+import completeFollowUp from './application/completeFollowUp.js'
 import deleteOpportunity from './application/deleteOpportunity.js'
 import filterOpportunities from './application/filterOpportunities.js'
+import getPendingFollowUps from './application/getPendingFollowUps.js'
 import registerApplication from './application/registerApplication.js'
+import updateApplicationDetails from './application/updateApplicationDetails.js'
 import updateOpportunity from './application/updateOpportunity.js'
 import ApplicationList from './components/ApplicationList.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
@@ -23,6 +26,7 @@ import WorkspaceTabs from './components/WorkspaceTabs.jsx'
 import { APPLICATION_STATUSES } from './constants/domainOptions.js'
 import { findApplicationForOpportunity } from './domain/applicationRegistrationPolicy.js'
 import { isFinalApplicationStatus } from './domain/applicationStatusPolicy.js'
+import { FOLLOW_UP_URGENCY } from './domain/followUpPolicy.js'
 import JobOpportunity from './domain/JobOpportunity.js'
 import LocalStorageApplicationRepository, {
   APPLICATION_STORAGE_KEY,
@@ -91,6 +95,25 @@ const APPLICATION_STATUS_WARNINGS = {
   invalid_transition: 'Ese cambio de estado ya no está permitido para esta postulación.',
 }
 
+const APPLICATION_EDIT_WARNINGS = {
+  conflict:
+    'Esta postulación cambió en otra pestaña mientras la editabas. Tus cambios no se guardaron. Cancelá y volvé a abrirla para trabajar con la versión más reciente.',
+  not_found: 'La postulación que estabas editando ya no está disponible. Tus cambios no se guardaron.',
+  invalid_input: 'Revisá los datos ingresados. Tus cambios no se guardaron.',
+}
+
+const APPLICATION_EDIT_SAVE_WARNING =
+  'La postulación se actualizó en esta sesión, pero no pudo guardarse en el navegador. El cambio puede perderse al recargar la página.'
+
+const FOLLOW_UP_WARNINGS = {
+  conflict: 'Esta postulación cambió en otra pestaña. El seguimiento no se marcó como hecho.',
+  not_found: 'La postulación ya no está disponible.',
+  no_follow_up: 'Este seguimiento ya se había marcado como hecho.',
+}
+
+const FOLLOW_UP_SAVE_WARNING =
+  'El seguimiento se marcó como hecho en esta sesión, pero no pudo guardarse en el navegador. El cambio puede perderse al recargar la página.'
+
 const UNEXPECTED_APPLICATION_WARNING =
   'No pudimos completar la acción sobre la postulación. Intentá nuevamente.'
 
@@ -100,6 +123,9 @@ const STATUS_SUCCESS_MESSAGE = 'Estado actualizado.'
 const DELETE_SUCCESS_MESSAGE = 'Oportunidad eliminada.'
 const APPLICATION_SUCCESS_MESSAGE = 'Postulación registrada.'
 const APPLICATION_STATUS_SUCCESS_MESSAGE = 'Estado de la postulación actualizado.'
+const APPLICATION_EDIT_SUCCESS_MESSAGE = 'Postulación actualizada.'
+const FOLLOW_UP_SUCCESS_MESSAGE =
+  'Seguimiento marcado como hecho. Si necesitás otro, programalo con «Editar postulación».'
 
 // Returns a warning updater: a failed save replaces any older message (for example a stale
 // conflict), except the load warning, which must stay visible while persistence is blocked.
@@ -149,6 +175,8 @@ function App() {
   )
   const [pendingApplicationRegistration, setPendingApplicationRegistration] = useState(null)
   const [pendingFinalApplicationStatus, setPendingFinalApplicationStatus] = useState(null)
+  const [applicationEditSession, setApplicationEditSession] = useState(null)
+  const [applicationEditWarning, setApplicationEditWarning] = useState(null)
   const [opportunitySearchQuery, setOpportunitySearchQuery] = useState('')
   const [opportunityStatusFilter, setOpportunityStatusFilter] = useState(null)
   const [editingSession, setEditingSession] = useState(null)
@@ -160,6 +188,7 @@ function App() {
   const addOpportunityButtonRef = useRef(null)
   const formTriggerRef = useRef(null)
   const applicationsHeadingRef = useRef(null)
+  const followUpsHeadingRef = useRef(null)
   const successFeedbackIdRef = useRef(0)
   const successFeedbackTimeoutRef = useRef(null)
   const visibleOpportunities = filterOpportunities(opportunities, {
@@ -171,6 +200,14 @@ function App() {
     now: new Date(),
   })
   const applicationMetrics = calculateApplicationMetrics({ applications })
+  const pendingFollowUps = getPendingFollowUps({
+    applications,
+    opportunities,
+    now: new Date(),
+  })
+  const dueFollowUpCount = pendingFollowUps.filter(
+    (followUp) => followUp.urgency !== FOLLOW_UP_URGENCY.UPCOMING,
+  ).length
 
   useEffect(() => {
     const synchronizeStoredCollections = (event) => {
@@ -467,6 +504,76 @@ function App() {
     applyApplicationStatusChange(application, nextStatus)
   }
 
+  const openApplicationEdit = (application) => {
+    setApplicationEditSession({
+      id: application.id,
+      expectedUpdatedAt: application.updatedAt,
+    })
+    setApplicationEditWarning(null)
+  }
+
+  const cancelApplicationEdit = () => {
+    setApplicationEditSession(null)
+    setApplicationEditWarning(null)
+  }
+
+  const submitApplicationEdit = (changes) => {
+    if (!applicationEditSession) return
+
+    const result = updateApplicationDetails(applications, {
+      ...applicationEditSession,
+      changes,
+      now: new Date(),
+    })
+
+    if (!result.ok) {
+      setApplicationEditWarning(
+        APPLICATION_EDIT_WARNINGS[result.status] ?? UNEXPECTED_APPLICATION_WARNING,
+      )
+      return
+    }
+
+    setApplications(result.applications)
+    setApplicationEditSession(null)
+    setApplicationEditWarning(null)
+    showSuccessFeedback(APPLICATION_EDIT_SUCCESS_MESSAGE)
+
+    const saveResult = applicationRepository.saveAll(result.applications)
+
+    if (saveResult.ok) {
+      setApplicationWarning(null)
+    } else {
+      setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, APPLICATION_EDIT_SAVE_WARNING))
+    }
+  }
+
+  const completeApplicationFollowUp = (application) => {
+    const result = completeFollowUp(applications, {
+      id: application.id,
+      expectedUpdatedAt: application.updatedAt,
+      now: new Date(),
+    })
+
+    // The completed item leaves the agenda, so focus moves to the agenda heading.
+    followUpsHeadingRef.current?.focus()
+
+    if (!result.ok) {
+      setApplicationWarning(FOLLOW_UP_WARNINGS[result.status] ?? UNEXPECTED_APPLICATION_WARNING)
+      return
+    }
+
+    setApplications(result.applications)
+    showSuccessFeedback(FOLLOW_UP_SUCCESS_MESSAGE)
+
+    const saveResult = applicationRepository.saveAll(result.applications)
+
+    if (saveResult.ok) {
+      setApplicationWarning(null)
+    } else {
+      setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, FOLLOW_UP_SAVE_WARNING))
+    }
+  }
+
   const finalStatusOpportunity = pendingFinalApplicationStatus
     ? (opportunities.find(
         (opp) => opp.id === pendingFinalApplicationStatus.application.opportunityId,
@@ -567,7 +674,11 @@ function App() {
       />
 
       <main className="app-main">
-        <StatsPanel metrics={dashboardMetrics} applicationMetrics={applicationMetrics} />
+        <StatsPanel
+          metrics={dashboardMetrics}
+          applicationMetrics={applicationMetrics}
+          dueFollowUpCount={dueFollowUpCount}
+        />
         <WorkspaceTabs />
         <SuccessFeedback
           key={successFeedback?.id ?? 'none'}
@@ -617,10 +728,19 @@ function App() {
         <ApplicationList
           applications={applications}
           opportunities={opportunities}
+          editingApplicationId={applicationEditSession?.id ?? null}
+          editWarning={applicationEditWarning}
           onStatusChange={requestApplicationStatusChange}
+          onEdit={openApplicationEdit}
+          onCancelEdit={cancelApplicationEdit}
+          onSubmitEdit={submitApplicationEdit}
           headingRef={applicationsHeadingRef}
         />
-        <FollowUpPanel />
+        <FollowUpPanel
+          followUps={pendingFollowUps}
+          onComplete={completeApplicationFollowUp}
+          headingRef={followUpsHeadingRef}
+        />
       </main>
       <ConfirmDialog
         isOpen={pendingDeletion !== null}

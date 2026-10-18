@@ -1,8 +1,11 @@
+import { useEffect, useRef } from 'react'
 import { APPLICATION_STATUSES } from '../constants/domainOptions.js'
 import {
   getAllowedApplicationTargetStatuses,
   isFinalApplicationStatus,
 } from '../domain/applicationStatusPolicy.js'
+import { formatDateString } from '../utils/date.js'
+import ApplicationDetailsForm from './ApplicationDetailsForm.jsx'
 import EmptyState from './EmptyState.jsx'
 import useStatusChangeFocus from './useStatusChangeFocus.js'
 
@@ -20,9 +23,30 @@ function formatAppliedDate(value) {
   return new Intl.DateTimeFormat('es-AR').format(date)
 }
 
-function ApplicationCard({ application, opportunity, onStatusChange }) {
+function ApplicationCard({
+  application,
+  opportunity,
+  isEditing,
+  isEditDisabled,
+  editWarning,
+  onStatusChange,
+  onEdit,
+  onCancelEdit,
+  onSubmitEdit,
+}) {
   const allowedTargets = getAllowedApplicationTargetStatuses(application.status)
   const { cardRef, markStatusChangeRequested } = useStatusChangeFocus(application.status)
+  const editButtonRef = useRef(null)
+  const wasEditingRef = useRef(isEditing)
+
+  // When the inline form closes, return focus to the button that opened it.
+  useEffect(() => {
+    if (wasEditingRef.current && !isEditing) {
+      editButtonRef.current?.focus()
+    }
+
+    wasEditingRef.current = isEditing
+  }, [isEditing])
   const company = opportunity?.company ?? 'Oportunidad no disponible'
   const title = opportunity?.title ?? 'La oportunidad original ya no está en la lista.'
   const accessibleName = opportunity ? `${opportunity.title} en ${opportunity.company}` : 'oportunidad no disponible'
@@ -44,22 +68,56 @@ function ApplicationCard({ application, opportunity, onStatusChange }) {
           <dt>Postulación registrada</dt>
           <dd>{formatAppliedDate(application.appliedAt)}</dd>
         </div>
+        {application.followUpAt && (
+          <div>
+            <dt>Próximo seguimiento</dt>
+            <dd>{formatDateString(application.followUpAt)}</dd>
+          </div>
+        )}
+        {application.nextAction && (
+          <div>
+            <dt>Próxima acción</dt>
+            <dd>{application.nextAction}</dd>
+          </div>
+        )}
       </dl>
 
-      {opportunity && (
+      {application.notes && <p className="opportunity-description">{application.notes}</p>}
+
+      {isEditing ? (
+        <ApplicationDetailsForm
+          key={application.id}
+          application={application}
+          submissionWarning={editWarning}
+          onSubmit={onSubmitEdit}
+          onCancel={onCancelEdit}
+        />
+      ) : (
         <div className="opportunity-card-actions">
-          <a
-            className="button button-secondary opportunity-link"
-            href={opportunity.url}
-            target="_blank"
-            rel="noreferrer"
+          {opportunity && (
+            <a
+              className="button button-secondary opportunity-link"
+              href={opportunity.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Abrir publicación
+            </a>
+          )}
+          <button
+            ref={editButtonRef}
+            className="button button-secondary"
+            type="button"
+            disabled={isEditDisabled}
+            aria-label={`Editar postulación: ${accessibleName}`}
+            onClick={() => onEdit(application)}
           >
-            Abrir publicación
-          </a>
+            Editar postulación
+          </button>
         </div>
       )}
 
-      {allowedTargets.length > 0 ? (
+      {isEditing ? null : allowedTargets.length > 0 ? (
         <div
           className="opportunity-status-actions"
           role="group"
@@ -91,7 +149,17 @@ function ApplicationCard({ application, opportunity, onStatusChange }) {
   )
 }
 
-function ApplicationList({ applications, opportunities, onStatusChange, headingRef }) {
+function ApplicationList({
+  applications,
+  opportunities,
+  editingApplicationId,
+  editWarning,
+  onStatusChange,
+  onEdit,
+  onCancelEdit,
+  onSubmitEdit,
+  headingRef,
+}) {
   const opportunitiesById = new Map(opportunities.map((opportunity) => [opportunity.id, opportunity]))
 
   return (
@@ -115,7 +183,13 @@ function ApplicationList({ applications, opportunities, onStatusChange, headingR
               key={application.id}
               application={application}
               opportunity={opportunitiesById.get(application.opportunityId) ?? null}
+              isEditing={editingApplicationId === application.id}
+              isEditDisabled={editingApplicationId !== null}
+              editWarning={editWarning}
               onStatusChange={onStatusChange}
+              onEdit={onEdit}
+              onCancelEdit={onCancelEdit}
+              onSubmitEdit={onSubmitEdit}
             />
           ))}
         </div>

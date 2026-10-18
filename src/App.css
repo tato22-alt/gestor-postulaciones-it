@@ -376,6 +376,94 @@
   color: #667085;
 }
 
+.follow-up-panel--with-list {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.follow-up-list {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.follow-up-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #dfe3e8;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.follow-up-item-content {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.follow-up-item-content p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.follow-up-item-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: #344054;
+  font-weight: 650;
+}
+
+.follow-up-item-title {
+  color: #172033;
+}
+
+.follow-up-item-action {
+  color: #5d6879;
+  font-size: 0.9rem;
+}
+
+.follow-up-urgency {
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+
+.follow-up-urgency--overdue {
+  background: #fee4e2;
+  color: #b42318;
+}
+
+.follow-up-urgency--today {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.follow-up-urgency--upcoming {
+  background: #eaf1ff;
+  color: #1d4ed8;
+}
+
+.application-details-form {
+  display: grid;
+  gap: 18px;
+  border-top: 1px solid #eef1f5;
+  padding-top: 16px;
+}
+
+.form-hint {
+  margin: 0;
+  color: #667085;
+  font-size: 0.85rem;
+}
+
 .application-form,
 .opportunity-form {
   display: grid;
@@ -734,6 +822,7 @@
 
 .opportunity-details div {
   display: grid;
+  align-content: start;
   gap: 3px;
   min-width: 0;
 }
@@ -978,6 +1067,15 @@
   .opportunity-card-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .follow-up-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .follow-up-item .button {
+    width: 100%;
   }
 
   .status-badge {

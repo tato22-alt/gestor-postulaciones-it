@@ -49,7 +49,7 @@ function mapControlledMetrics(options, metrics) {
   }))
 }
 
-function StatsPanel({ metrics, applicationMetrics }) {
+function StatsPanel({ metrics, applicationMetrics, dueFollowUpCount }) {
   const applicationStatusMetrics = mapControlledMetrics(
     APPLICATION_STATUSES,
     applicationMetrics.applicationsByStatus,
@@ -139,7 +139,7 @@ function StatsPanel({ metrics, applicationMetrics }) {
         />
         <MetricBreakdown
           title="Estados de postulaciones"
-          description={`${applicationMetrics.activeApplications} en curso de ${applicationMetrics.totalApplications} registradas. Oferta y Rechazado son estados finales.`}
+          description={`${applicationMetrics.activeApplications} en curso de ${applicationMetrics.totalApplications} registradas · ${dueFollowUpCount} ${dueFollowUpCount === 1 ? 'seguimiento vencido o para hoy' : 'seguimientos vencidos o para hoy'}. Oferta y Rechazado son estados finales.`}
           metrics={applicationStatusMetrics}
         />
 
@@ -147,17 +147,13 @@ function StatsPanel({ metrics, applicationMetrics }) {
           <div className="dashboard-group-heading">
             <h3>Procesos todavía no disponibles</h3>
             <p>
-              Estas métricas necesitan flujos que aún no fueron implementados y no se
-              calculan a partir de oportunidades ni de postulaciones.
+              Esta métrica necesita un flujo que aún no fue implementado y no se calcula a
+              partir de oportunidades ni de postulaciones.
             </p>
           </div>
           <dl className="unsupported-metrics">
             <div>
               <dt>Recomendaciones</dt>
-              <dd>No implementado</dd>
-            </div>
-            <div>
-              <dt>Seguimientos pendientes</dt>
               <dd>No implementado</dd>
             </div>
           </dl>
