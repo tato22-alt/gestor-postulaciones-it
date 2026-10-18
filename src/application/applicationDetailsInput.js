@@ -30,10 +30,10 @@ export function validateApplicationDetailsInput(input = {}, { status, today }) {
     errors.appliedDate = 'future_date'
   }
 
-  if (input.followUpDate) {
-    if (!canHaveFollowUp(status)) {
-      errors.followUpDate = 'not_allowed'
-    } else if (!isValidDateString(input.followUpDate)) {
+  // Final statuses never keep a follow-up, so any submitted date is ignored for them
+  // (see normalizeApplicationDetailsInput) instead of blocking the rest of the edit.
+  if (input.followUpDate && canHaveFollowUp(status)) {
+    if (!isValidDateString(input.followUpDate)) {
       errors.followUpDate = 'invalid_date'
     } else if (!errors.appliedDate && input.followUpDate < input.appliedDate) {
       errors.followUpDate = 'before_applied_date'
@@ -55,10 +55,10 @@ export function validateApplicationDetailsInput(input = {}, { status, today }) {
   return errors
 }
 
-export function normalizeApplicationDetailsInput(input) {
+export function normalizeApplicationDetailsInput(input, { status }) {
   return {
     appliedDate: input.appliedDate,
-    followUpDate: input.followUpDate || null,
+    followUpDate: canHaveFollowUp(status) ? input.followUpDate || null : null,
     nextAction: normalizeText(input.nextAction),
     notes: normalizeText(input.notes),
   }

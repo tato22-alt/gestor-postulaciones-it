@@ -21,6 +21,10 @@ describe('date utilities', () => {
     assert.equal(addDaysToDateString('2024-02-27', 3), '2024-03-01')
   })
 
+  it('keeps years below 100 instead of mapping them to 19xx', () => {
+    assert.equal(toLocalDateString(localDateStringToTimestamp('0050-03-01')), '0050-03-01')
+  })
+
   it('converts between local calendar days and timestamps', () => {
     const timestamp = localDateStringToTimestamp('2026-03-15')
 

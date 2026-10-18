@@ -40,9 +40,10 @@ describe('validateApplicationDetailsInput', () => {
     assert.deepEqual(validate(valid({ followUpDate: '2026-01-06' })), {})
   })
 
-  it('rejects a follow-up for final statuses but allows other edits', () => {
-    assert.deepEqual(validate(valid(), 'offer'), { followUpDate: 'not_allowed' })
-    assert.deepEqual(validate(valid({ followUpDate: '', notes: 'ok' }), 'rejected'), {})
+  it('ignores a follow-up for final statuses so other edits are not blocked', () => {
+    assert.deepEqual(validate(valid({ followUpDate: 'not-a-date' }), 'offer'), {})
+    assert.equal(normalizeApplicationDetailsInput(valid(), { status: 'offer' }).followUpDate, null)
+    assert.equal(normalizeApplicationDetailsInput(valid(), { status: 'applied' }).followUpDate, '2026-01-12')
   })
 
   it('enforces text limits after trimming', () => {
@@ -56,7 +57,10 @@ describe('validateApplicationDetailsInput', () => {
 describe('normalizeApplicationDetailsInput', () => {
   it('trims text and converts an empty follow-up to null', () => {
     assert.deepEqual(
-      normalizeApplicationDetailsInput(valid({ followUpDate: '', nextAction: '  Escribir  ', notes: ' n ' })),
+      normalizeApplicationDetailsInput(
+        valid({ followUpDate: '', nextAction: '  Escribir  ', notes: ' n ' }),
+        { status: 'applied' },
+      ),
       { appliedDate: '2026-01-05', followUpDate: null, nextAction: 'Escribir', notes: 'n' },
     )
   })

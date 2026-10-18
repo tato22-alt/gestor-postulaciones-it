@@ -97,7 +97,7 @@ const APPLICATION_STATUS_WARNINGS = {
 
 const APPLICATION_EDIT_WARNINGS = {
   conflict:
-    'Esta postulación cambió en otra pestaña mientras la editabas. Tus cambios no se guardaron. Cancelá y volvé a abrirla para trabajar con la versión más reciente.',
+    'Esta postulación cambió mientras la editabas, por ejemplo en otra pestaña. Tus cambios no se guardaron. Cancelá y volvé a abrirla para trabajar con la versión más reciente.',
   not_found: 'La postulación que estabas editando ya no está disponible. Tus cambios no se guardaron.',
   invalid_input: 'Revisá los datos ingresados. Tus cambios no se guardaron.',
 }
@@ -739,6 +739,7 @@ function App() {
         <FollowUpPanel
           followUps={pendingFollowUps}
           onComplete={completeApplicationFollowUp}
+          editingApplicationId={applicationEditSession?.id ?? null}
           headingRef={followUpsHeadingRef}
         />
       </main>

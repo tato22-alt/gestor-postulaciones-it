@@ -34,15 +34,21 @@ export function addDaysToDateString(dateString, days) {
   return date.toISOString().slice(0, 10)
 }
 
+// new Date(year, month, day) maps years 0-99 to 1900-1999, so the year is set explicitly.
+function createLocalDate(dateString) {
+  const [year, month, day] = dateString.split('-').map(Number)
+  const date = new Date(0)
+
+  date.setFullYear(year, month - 1, day)
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
 // Start of the given calendar day in the user's local time zone, as an ISO timestamp.
 export function localDateStringToTimestamp(dateString) {
-  const [year, month, day] = dateString.split('-').map(Number)
-
-  return new Date(year, month - 1, day).toISOString()
+  return createLocalDate(dateString).toISOString()
 }
 
 export function formatDateString(dateString) {
-  const [year, month, day] = dateString.split('-').map(Number)
-
-  return new Intl.DateTimeFormat('es-AR').format(new Date(year, month - 1, day))
+  return new Intl.DateTimeFormat('es-AR').format(createLocalDate(dateString))
 }

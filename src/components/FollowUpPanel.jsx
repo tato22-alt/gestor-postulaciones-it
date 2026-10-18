@@ -7,7 +7,7 @@ const URGENCY_LABELS = {
   [FOLLOW_UP_URGENCY.UPCOMING]: 'Próximo',
 }
 
-function FollowUpPanel({ followUps, onComplete, headingRef }) {
+function FollowUpPanel({ followUps, onComplete, editingApplicationId, headingRef }) {
   return (
     <section
       className={`panel follow-up-panel${followUps.length > 0 ? ' follow-up-panel--with-list' : ''}`}
@@ -50,6 +50,12 @@ function FollowUpPanel({ followUps, onComplete, headingRef }) {
                 <button
                   className="button button-secondary"
                   type="button"
+                  disabled={editingApplicationId === application.id}
+                  title={
+                    editingApplicationId === application.id
+                      ? 'Terminá o cancelá la edición de esta postulación primero.'
+                      : undefined
+                  }
                   aria-label={`Marcar seguimiento como hecho: ${accessibleName}`}
                   onClick={() => onComplete(application)}
                 >

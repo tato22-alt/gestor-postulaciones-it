@@ -65,7 +65,7 @@ function ApplicationCard({
 
       <dl className="opportunity-details">
         <div>
-          <dt>Postulación registrada</dt>
+          <dt>Fecha de postulación</dt>
           <dd>{formatAppliedDate(application.appliedAt)}</dd>
         </div>
         {application.followUpAt && (

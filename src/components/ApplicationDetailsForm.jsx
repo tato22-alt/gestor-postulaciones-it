@@ -20,7 +20,6 @@ const ERROR_MESSAGES = {
   followUpDate: {
     invalid_date: 'Ingresá una fecha válida.',
     before_applied_date: 'El seguimiento no puede ser anterior a la fecha de postulación.',
-    not_allowed: 'Una postulación finalizada no tiene seguimiento.',
   },
   nextAction: {
     too_long: `Usá como máximo ${APPLICATION_NEXT_ACTION_MAX_LENGTH} caracteres.`,
@@ -39,12 +38,17 @@ function ApplicationDetailsForm({ application, submissionWarning, onSubmit, onCa
   const [draft, setDraft] = useState(() => createApplicationDetailsDraft(application))
   const [errors, setErrors] = useState({})
   const allowsFollowUp = canHaveFollowUp(application.status)
+  // Recalculated on every render and again on submit, so a form left open past midnight
+  // does not reject the new day as a future date.
   const today = toLocalDateString(new Date())
   const fieldId = (name) => `${fieldIdPrefix}-${name}`
   const errorId = (name) => `${fieldIdPrefix}-${name}-error`
 
   const validate = (nextDraft) =>
-    validateApplicationDetailsInput(nextDraft, { status: application.status, today })
+    validateApplicationDetailsInput(nextDraft, {
+      status: application.status,
+      today: toLocalDateString(new Date()),
+    })
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -66,7 +70,7 @@ function ApplicationDetailsForm({ application, submissionWarning, onSubmit, onCa
       return
     }
 
-    onSubmit(normalizeApplicationDetailsInput(draft))
+    onSubmit(normalizeApplicationDetailsInput(draft, { status: application.status }))
   }
 
   // Escape behaves like Cancel while focus is inside this form.

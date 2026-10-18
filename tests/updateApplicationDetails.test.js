@@ -78,15 +78,22 @@ describe('updateApplicationDetails', () => {
     assert.equal(updateApplicationDetails(null).status, 'invalid_collection')
   })
 
-  it('rejects a follow-up on a final application', () => {
-    const offer = createApplication({ status: 'offer', appliedAt: APPLIED_AT, updatedAt: APPLIED_AT })
+  it('saves notes on a final application and never keeps a follow-up', () => {
+    const offer = createApplication({
+      status: 'offer',
+      appliedAt: APPLIED_AT,
+      updatedAt: APPLIED_AT,
+      followUpAt: '2026-01-12',
+    })
     const result = updateApplicationDetails([offer], {
       id: offer.id,
       expectedUpdatedAt: APPLIED_AT,
-      changes: changes(),
+      changes: changes({ notes: 'Cerrado' }),
       now: NOW,
     })
 
-    assert.deepEqual(result.errors, { followUpDate: 'not_allowed' })
+    assert.equal(result.ok, true)
+    assert.equal(result.application.notes, 'Cerrado')
+    assert.equal(result.application.followUpAt, null)
   })
 })

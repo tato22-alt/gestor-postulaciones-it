@@ -41,7 +41,9 @@ export default function updateApplicationDetails(
     return { ok: false, status: 'invalid_input', errors }
   }
 
-  const normalizedChanges = normalizeApplicationDetailsInput(changes)
+  const normalizedChanges = normalizeApplicationDetailsInput(changes, {
+    status: currentApplication.status,
+  })
   const updatedAt = createNextUpdatedAt(currentApplication.updatedAt, now)
 
   if (updatedAt === null) {
