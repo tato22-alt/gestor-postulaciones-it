@@ -1,3 +1,4 @@
+import Application from '../src/domain/Application.js'
 import JobOpportunity from '../src/domain/JobOpportunity.js'
 
 export const BASE_TIMESTAMP = '2026-01-05T10:00:00.000Z'
@@ -9,6 +10,15 @@ export function createOpportunity(overrides = {}) {
     title: 'Desarrollador trainee',
     url: 'https://example.com/jobs/1',
     detectedAt: BASE_TIMESTAMP,
+    ...overrides,
+  })
+}
+
+export function createApplication(overrides = {}) {
+  return new Application({
+    id: 'application-1',
+    opportunityId: 'opportunity-1',
+    appliedAt: BASE_TIMESTAMP,
     ...overrides,
   })
 }
