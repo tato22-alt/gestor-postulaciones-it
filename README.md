@@ -34,6 +34,8 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 * eliminar oportunidades de forma permanente con confirmación explícita;
 * registrar una postulación a partir de una oportunidad, con confirmación explícita;
 * gestionar el estado de cada postulación con reglas de transición explícitas;
+* editar la fecha de postulación, el próximo seguimiento, la próxima acción y las notas;
+* identificar próximos seguimientos (vencidos, para hoy y próximos) y marcarlos como hechos;
 * buscar por empresa o puesto;
 * filtrar por estado;
 * mostrar estadísticas básicas;
@@ -42,7 +44,6 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 * diseño responsive.
 
 ### Planificado
-* identificar próximos seguimientos;
 * publicación online.
 
 ## Datos de una oportunidad
@@ -192,7 +193,9 @@ El formulario de oportunidad se cierra con la tecla Escape, con el mismo efecto 
 
 Cada oportunidad detectada o guardada ofrece el botón «Registrar postulación». Al presionarlo, la aplicación pregunta si ya te postulaste; solo después de confirmar crea una `Application` vinculada a la oportunidad. La aplicación no envía nada a la empresa: únicamente registra una acción que ya realizaste. Cada oportunidad puede tener como máximo una postulación, y registrarla no cambia el estado de la oportunidad. Una oportunidad con postulación registrada no puede eliminarse. Las postulaciones se guardan con una clave propia de `localStorage`, con el mismo formato versionado y la misma validación estricta que las oportunidades.
 
-Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen sincronización remota, seguimientos funcionales ni cuentas de usuario.
+Cada postulación puede tener un próximo seguimiento. Al registrarla, la aplicación sugiere una fecha 7 días después; al pasar a Entrevista, 3 días después; y al pasar a Prueba técnica, 5 días después. Oferta y Rechazado no tienen seguimiento. La fecha sugerida siempre puede cambiarse o borrarse con «Editar postulación», donde también se corrigen la fecha de postulación (que no puede ser futura), la próxima acción y las notas. El panel «Próximos seguimientos» ordena los seguimientos por fecha y los marca como «Vencido», «Hoy» o «Próximo» con texto, no solo con color. «Marcar como hecho» quita el seguimiento; si necesitás otro, lo programás editando la postulación.
+
+Esta persistencia es exclusivamente local al navegador, origen y dispositivo actuales. Todavía no existen sincronización remota ni cuentas de usuario.
 
 ## Autor
 

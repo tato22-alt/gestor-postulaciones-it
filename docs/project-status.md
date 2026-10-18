@@ -18,7 +18,9 @@ Manual opportunity creation, local persistence, the data-driven dashboard, same-
 
 Opportunity deletion — permanent removal from any status, protected by an explicit confirmation dialog and optimistic-concurrency detection — is implemented, audited, committed, and published on `main`.
 
-The application tracking milestone (explicit application registration from an opportunity and application status management) is implemented and verified on the `feature/application-tracking` branch, pending Luciano's review before merging into `main`.
+The application tracking milestone (explicit application registration from an opportunity and application status management) is implemented, verified, and merged into `main`.
+
+The follow-ups milestone (suggested and editable follow-up dates, application detail editing, and a follow-up agenda) is implemented and verified on the `feature/follow-ups` branch, pending Luciano's review before merging into `main`.
 
 The UX pass milestone (accent-insensitive search, success feedback, created-under-filter notice, focus management, and Escape to close the form) is implemented and verified. An automated unit-test suite based on the native `node:test` runner was added without new dependencies.
 
@@ -269,6 +271,33 @@ Supporting refactors:
 
 The disabled header button "Registrar postulación" was removed: registration now happens from each opportunity card, and the placeholder claimed the feature was unavailable.
 
+### Follow-ups and application details
+
+Approved product decisions:
+
+* a follow-up date is suggested and always editable: 7 days after registration, 3 days after entering `interview`, 5 days after entering `technical_test`; `offer` and `rejected` have no follow-up;
+* the agenda is sorted by date and labels each item as "Vencido", "Hoy", or "Próximo" in text, not only color;
+* "Marcar como hecho" clears the follow-up; another one is scheduled explicitly through "Editar postulación";
+* the applied date, follow-up date, next action, and notes are editable; the applied date cannot be in the future;
+* opportunities with an application still cannot be deleted.
+
+The current working tree supports:
+
+* `followUpPolicy.js` with the suggested delays, `canHaveFollowUp`, `getSuggestedFollowUpDate`, and `getFollowUpUrgency`;
+* suggested follow-ups set by `registerApplication` and re-suggested by `changeApplicationStatus` from the day of the change; final statuses clear them;
+* `updateApplicationDetails` and `applicationDetailsInput.js`: validation of a real, non-future applied date, a follow-up not earlier than the applied date, no follow-up for final statuses, 200-character next actions and 2000-character notes, trimming, optimistic concurrency, and preservation of the exact `appliedAt` timestamp when its calendar day does not change;
+* `completeFollowUp`, which clears the follow-up with optimistic concurrency;
+* `getPendingFollowUps`, which derives the agenda from applications, opportunities, and the current date without storing anything;
+* an inline edit form inside each application card, with associated labels, hints, `aria-invalid`, `aria-describedby`, Escape to cancel, focus on the first field when it opens, and focus back to "Editar postulación" when it closes;
+* other cards' edit buttons are disabled and the card's status actions are hidden while a form is open;
+* a draft is preserved when another tab changes the same application, and saving then reports a conflict instead of overwriting newer data;
+* the "Próximos seguimientos" panel with urgency labels, the related opportunity, the next action, and "Marcar como hecho"; after completion, focus moves to the panel heading;
+* the dashboard shows how many follow-ups are overdue or due today instead of the "No implementado" placeholder.
+
+Implementation decision (reversible, documented): `followUpAt` is stored as a `YYYY-MM-DD` calendar date, like `publishedAt`, so a follow-up for "today" never shifts to another day because of time zones. Before this milestone no stored application could contain a non-null `followUpAt`, so no migration was needed. The repository now rejects timestamp-shaped follow-ups and oversized text.
+
+Shared calendar helpers live in `src/utils/date.js`; the previous duplicated `YYYY-MM-DD` validators in `opportunityInput.js` and `LocalStorageOpportunityRepository.js` now use it.
+
 ### Documentation
 
 Relevant documentation distinguishes:
@@ -283,9 +312,9 @@ Relevant documentation distinguishes:
 The repository does not yet include:
 
 * duplicate detection;
-* editing application dates, notes, or next actions;
 * deleting applications;
-* functional follow-ups;
+* follow-up history (completed follow-ups are cleared, not archived);
+* reminders or notifications outside the application;
 * source approval behavior;
 * source monitoring;
 * opportunity discovery;
@@ -372,8 +401,8 @@ No remote service is connected.
 ## Current Limitations
 
 * Opportunity creation, editing, explicit status management, permanent deletion, local search, and status filtering are the functional opportunity workflows.
-* Source, follow-up, and workspace-tab sections remain static.
-* The registration date is the moment the user confirms; it cannot yet be edited to an earlier date.
+* Source and workspace-tab sections remain static.
+* The agenda's "Vencido" and "Hoy" labels are calculated when the page renders; a page left open past midnight updates them on the next interaction or reload.
 * Opportunities with an application cannot be deleted; the long-term rule is a pending product decision.
 * If application storage cannot be read safely, the corrupted value is preserved and the app cannot know which opportunities already have an application, so opportunity deletion and application registration are disabled until a valid load succeeds.
 * Two tabs registering different applications at the same moment, before the `storage` event arrives, follow last-write-wins for the whole collection, as opportunities already do.
@@ -464,7 +493,8 @@ The manual opportunity and persistence flows have been reviewed through:
 * repository round-trip after deletion: save, reload, verify target absent, survivor rehydrated as a `JobOpportunity` instance;
 * `invalid_collection` guard for null, undefined, plain object, string, and numeric inputs.
 
-* 150 automated unit tests through `npm test`, including the full 5×5 application transition matrix, registration eligibility, application status changes, application metrics, and the application repository;
+* 179 automated unit tests through `npm test`, also passing under the `America/Argentina/Buenos_Aires`, `Pacific/Kiritimati` (UTC+14), and `Pacific/Pago_Pago` (UTC−11) time zones, including follow-up suggestions, urgency, calendar-date helpers, application detail validation and editing, follow-up completion, the derived agenda, and the full 5×5 application transition matrix, registration eligibility, application status changes, application metrics, and the application repository;
+* 46 automated browser checks for follow-ups with a fixed browser clock in the Buenos Aires time zone: suggested dates after registration and each status, agenda order and "Vencido"/"Hoy"/"Próximo" labels, applied-date and follow-up validation, Escape and focus return, trimming, malicious-looking notes rendered as text, mark as done and focus, persistence after reload, final statuses without follow-up, cross-tab edit conflict with the draft preserved, rejection of timestamp-shaped stored follow-ups, horizontal overflow at five widths with long content, and absence of console errors;
 * 62 automated browser checks for application tracking: eligibility by status, confirmation and cancellation, Escape and focus containment, persistence, final-status confirmation, orphan applications, corrupted and duplicated stored data, cross-tab synchronization, cross-tab conflicts for registration, deletion, and final status, malicious-looking text, horizontal overflow at five widths, and absence of console errors;
 * 58 automated browser checks with Playwright on Chromium: validation, unsafe URL rejection, create, edit, status change, search, filters, created-under-filter notice, delete confirmation, Escape behavior, focus return and fallback, dialog focus containment, malicious-looking text, external-link attributes, reload persistence, corrupted and unsafe stored data, cross-tab synchronization, horizontal overflow at 1440, 1024, 768, 390, and 320 CSS pixels, and absence of console errors or warnings.
 
@@ -525,7 +555,7 @@ No later milestone is authorized automatically.
 
 ## Next Milestone (proposed, not yet approved)
 
-Follow-ups: identify applications that need an action. Required product decisions: whether `followUpAt` is entered manually or suggested, the default delay after each status, which statuses need follow-up, and how overdue items are shown.
+Public deployment of the local MVP (item 15 of the local MVP definition). Required decisions: hosting platform (for example GitHub Pages or Vercel), public URL, and confirmation that only static code is published while user data stays in each visitor's browser.
 
 AI-assisted compatibility analysis remains deferred. It requires a backend or Edge Function, an approved provider and budget, a secret API key stored outside the frontend, a candidate profile entered by Luciano, and approved matching criteria.
 

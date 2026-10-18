@@ -40,6 +40,8 @@ Las reglas de registro están centralizadas en `applicationRegistrationPolicy.js
 
 El ciclo de vida de una postulación está controlado por `applicationStatusPolicy.js`: desde `applied` se puede avanzar a `interview`, `technical_test` o `rejected`; `interview` y `technical_test` pueden alternarse entre sí y avanzar a `offer` o `rejected`; `offer` y `rejected` son estados finales sin transiciones de salida.
 
+Los seguimientos están centralizados en `followUpPolicy.js`. Al registrar una postulación se sugiere un seguimiento 7 días después; al pasar a `interview`, 3 días después; al pasar a `technical_test`, 5 días después. Los estados finales no tienen seguimiento y lo borran. La sugerencia es editable. `followUpAt` se almacena como fecha de calendario `YYYY-MM-DD` para que represente el mismo día en cualquier zona horaria; `appliedAt` sigue siendo un instante ISO. `nextAction` admite hasta 200 caracteres y `notes` hasta 2000.
+
 Una oportunidad que tiene una postulación registrada no puede eliminarse. Qué debería ocurrir con la postulación si en el futuro se permite esa eliminación es una decisión de producto pendiente.
 
 ## Relaciones
@@ -89,7 +91,6 @@ Todavía no existen:
 - validaciones de campos obligatorios;
 - instancias con información de Luciano;
 - persistencia remota o repositorios para perfiles, preferencias, fuentes o resultados de compatibilidad;
-- seguimientos funcionales (`followUpAt` y `nextAction` existen en `Application`, pero todavía no se editan ni se calculan);
 - monitoreo de fuentes;
 - scraping o consumo de APIs;
 - detección de duplicados;
