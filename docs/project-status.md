@@ -20,7 +20,9 @@ Opportunity deletion — permanent removal from any status, protected by an expl
 
 The application tracking milestone (explicit application registration from an opportunity and application status management) is implemented, verified, and merged into `main`.
 
-The follow-ups milestone (suggested and editable follow-up dates, application detail editing, and a follow-up agenda) is implemented and verified on the `feature/follow-ups` branch, pending Luciano's review before merging into `main`.
+The follow-ups milestone (suggested and editable follow-up dates, application detail editing, and a follow-up agenda) is implemented, verified, and merged into `main`.
+
+Public deployment to GitHub Pages is configured. The site is live once the repository's Pages source is set to "GitHub Actions".
 
 The UX pass milestone (accent-insensitive search, success feedback, created-under-filter notice, focus management, and Escape to close the form) is implemented and verified. An automated unit-test suite based on the native `node:test` runner was added without new dependencies.
 
@@ -299,6 +301,23 @@ Implementation decision (reversible, documented): `followUpAt` is stored as a `Y
 
 Shared calendar helpers live in `src/utils/date.js`; the previous duplicated `YYYY-MM-DD` validators in `opportunityInput.js` and `LocalStorageOpportunityRepository.js` now use it.
 
+### Public deployment
+
+Approved by Luciano with a $0 budget:
+
+* platform: GitHub Pages on the public repository;
+* URL: `https://tato22-alt.github.io/gestor-postulaciones-it/`;
+* workflow: `.github/workflows/deploy.yml` runs on every push to `main` (and manually), with `npm ci`, `npm run lint`, `npm test`, and `npm run build`; it publishes `dist` only when every step passes;
+* least-privilege workflow permissions (`contents: read`, `pages: write`, `id-token: write`) and a non-cancelling `pages` concurrency group;
+* `vite.config.js` uses the `/gestor-postulaciones-it/` base path only for production builds, so the dev server keeps `http://127.0.0.1:5173/`;
+* no environment variables, secrets, backend, or paid services;
+* user data stays in each visitor's browser storage for the published origin and is never uploaded;
+* the production build contains no source maps.
+
+The production build was verified by serving `dist` statically under `/gestor-postulaciones-it/`: the page loads without failed requests or console errors, the favicon resolves, and an opportunity, its application, and its follow-up survive a reload.
+
+Rollback: revert the deployment commit or disable GitHub Pages in the repository settings.
+
 ### Documentation
 
 Relevant documentation distinguishes:
@@ -326,7 +345,6 @@ The repository does not yet include:
 * authentication;
 * authorization;
 * artificial intelligence;
-* production deployment;
 * automated component or browser tests inside the repository.
 
 ## Removed Legacy Files
@@ -556,7 +574,7 @@ No later milestone is authorized automatically.
 
 ## Next Milestone (proposed, not yet approved)
 
-Public deployment of the local MVP (item 15 of the local MVP definition). Required decisions: hosting platform (for example GitHub Pages or Vercel), public URL, and confirmation that only static code is published while user data stays in each visitor's browser.
+Rule-based compatibility analysis with a $0 budget: compare each opportunity with a candidate profile and search preferences entered by Luciano, and show strengths, warnings, missing skills, and missing information without AI. Required decisions: which criteria matter, their weights or priority, which mismatches are warnings versus exclusions, how missing data is treated, and the recommendation thresholds. AI-assisted analysis remains deferred until a budget exists.
 
 AI-assisted compatibility analysis remains deferred. It requires a backend or Edge Function, an approved provider and budget, a secret API key stored outside the frontend, a candidate profile entered by Luciano, and approved matching criteria.
 

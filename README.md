@@ -44,7 +44,7 @@ Estudiante o candidato trainee que busca pasantías o puestos relacionados con:
 * diseño responsive.
 
 ### Planificado
-* publicación online.
+* compatibilidad entre oportunidades y perfil basada en reglas explicables (sin costo).
 
 ## Datos de una oportunidad
 
@@ -120,6 +120,20 @@ npm run build
 ```
 
 `npm test` ejecuta las pruebas unitarias de la carpeta `tests/` con el ejecutor nativo de Node.js (`node:test`), sin dependencias adicionales. Cubren las reglas de dominio de oportunidades y postulaciones, la validación de formularios, la búsqueda, las métricas, la edición, los cambios de estado, la eliminación, el registro de postulaciones y los repositorios de `localStorage`, incluidos los datos corruptos.
+
+## Publicación
+
+La aplicación se publica en GitHub Pages:
+
+```text
+https://tato22-alt.github.io/gestor-postulaciones-it/
+```
+
+Cada push a `main` ejecuta el workflow `.github/workflows/deploy.yml`, que instala dependencias con `npm ci`, corre `npm run lint` y `npm test`, compila con `npm run build` y publica la carpeta `dist`. Si el lint o las pruebas fallan, no se publica nada.
+
+Solo se publica código estático. No hay variables de entorno, secretos ni servidor. Los datos que cargues en la versión publicada quedan en el `localStorage` de tu navegador para ese sitio; no se envían a ningún lado y no se comparten con la versión local (`http://127.0.0.1:5173`), porque son orígenes distintos.
+
+Requisito de una sola vez: en GitHub, *Settings → Pages → Build and deployment → Source* debe estar en **GitHub Actions**.
 
 ## Funcionalidades fuera del alcance actual
 
