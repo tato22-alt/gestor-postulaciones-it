@@ -14,6 +14,7 @@ function ConfirmDialog({
   const titleId = useId()
   const messageId = useId()
   const cancelButtonRef = useRef(null)
+  const dialogRef = useRef(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -32,7 +33,29 @@ function ConfirmDialog({
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') onCancel()
+      if (event.key === 'Escape') {
+        onCancel()
+        return
+      }
+
+      if (event.key !== 'Tab') return
+
+      // aria-modal only informs assistive technology; keyboard focus must be kept
+      // inside the dialog explicitly so Tab cannot reach the page behind it.
+      const buttons = dialogRef.current?.querySelectorAll('button:not([disabled])')
+      if (!buttons || buttons.length === 0) return
+
+      const first = buttons[0]
+      const last = buttons[buttons.length - 1]
+      const isFocusInside = dialogRef.current.contains(document.activeElement)
+
+      if (event.shiftKey && (document.activeElement === first || !isFocusInside)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || !isFocusInside)) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
@@ -43,6 +66,7 @@ function ConfirmDialog({
   return (
     <div className="confirm-dialog-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
