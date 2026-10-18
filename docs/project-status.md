@@ -301,6 +301,17 @@ Implementation decision (reversible, documented): `followUpAt` is stored as a `Y
 
 Shared calendar helpers live in `src/utils/date.js`; the previous duplicated `YYYY-MM-DD` validators in `opportunityInput.js` and `LocalStorageOpportunityRepository.js` now use it.
 
+### Workspace tabs
+
+The "Oportunidades" and "Postulaciones" tabs are functional. Previously the "Postulaciones" tab was a disabled placeholder whose hover style made it look selected without changing anything.
+
+* "Oportunidades" shows the opportunity form, search, list, and sources; "Postulaciones (N)" shows the applications and the follow-up agenda; the statistics summary and messages stay above both;
+* WAI-ARIA tabs pattern: `role="tablist"`, `tab`, and `tabpanel`, `aria-selected`, `aria-controls`, `aria-labelledby`, roving `tabIndex`, and ArrowLeft, ArrowRight, Home, and End;
+* both panels stay mounted and the inactive one is hidden, so drafts survive switching tabs;
+* "Agregar oportunidad" switches to the opportunities tab before opening the form;
+* after registering an application, the user stays on the opportunities tab, focus moves to the opportunities heading, and the success message points to the applications tab;
+* the active tab is temporary presentation state in `App` and resets to "Oportunidades" after a reload.
+
 ### Public deployment
 
 Approved by Luciano with a $0 budget:
@@ -420,7 +431,7 @@ No remote service is connected.
 ## Current Limitations
 
 * Opportunity creation, editing, explicit status management, permanent deletion, local search, and status filtering are the functional opportunity workflows.
-* Source and workspace-tab sections remain static.
+* The source section remains static.
 * The agenda's "Vencido" and "Hoy" labels are calculated when the page renders; a page left open past midnight updates them on the next interaction or reload.
 * Opportunities with an application cannot be deleted; the long-term rule is a pending product decision.
 * If application storage cannot be read safely, the corrupted value is preserved and the app cannot know which opportunities already have an application, so opportunity deletion and application registration are disabled until a valid load succeeds.

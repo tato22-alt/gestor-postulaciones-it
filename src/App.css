@@ -355,7 +355,21 @@
   cursor: pointer;
 }
 
-.workspace-tab:hover,
+.workspace-panel {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* display: grid would otherwise override the hidden attribute. */
+.workspace-panel[hidden] {
+  display: none;
+}
+
+.workspace-tab:hover {
+  color: #1d4ed8;
+}
+
 .workspace-tab-active {
   border-bottom-color: #2563eb;
   color: #2563eb;

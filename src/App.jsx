@@ -23,6 +23,11 @@ import SourceSection from './components/SourceSection.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import SuccessFeedback from './components/SuccessFeedback.jsx'
 import WorkspaceTabs from './components/WorkspaceTabs.jsx'
+import {
+  WORKSPACE_TABS,
+  getWorkspacePanelId,
+  getWorkspaceTabId,
+} from './components/workspaceTabIds.js'
 import { APPLICATION_STATUSES } from './constants/domainOptions.js'
 import { findApplicationForOpportunity } from './domain/applicationRegistrationPolicy.js'
 import { isFinalApplicationStatus } from './domain/applicationStatusPolicy.js'
@@ -121,7 +126,8 @@ const CREATE_SUCCESS_MESSAGE = 'Oportunidad creada.'
 const EDIT_SUCCESS_MESSAGE = 'Oportunidad editada.'
 const STATUS_SUCCESS_MESSAGE = 'Estado actualizado.'
 const DELETE_SUCCESS_MESSAGE = 'Oportunidad eliminada.'
-const APPLICATION_SUCCESS_MESSAGE = 'Postulación registrada.'
+const APPLICATION_SUCCESS_MESSAGE =
+  'Postulación registrada. La encontrás en la pestaña «Postulaciones».'
 const APPLICATION_STATUS_SUCCESS_MESSAGE = 'Estado de la postulación actualizado.'
 const APPLICATION_EDIT_SUCCESS_MESSAGE = 'Postulación actualizada.'
 const FOLLOW_UP_SUCCESS_MESSAGE =
@@ -177,6 +183,7 @@ function App() {
   const [pendingFinalApplicationStatus, setPendingFinalApplicationStatus] = useState(null)
   const [applicationEditSession, setApplicationEditSession] = useState(null)
   const [applicationEditWarning, setApplicationEditWarning] = useState(null)
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState(WORKSPACE_TABS.OPPORTUNITIES)
   const [opportunitySearchQuery, setOpportunitySearchQuery] = useState('')
   const [opportunityStatusFilter, setOpportunityStatusFilter] = useState(null)
   const [editingSession, setEditingSession] = useState(null)
@@ -188,6 +195,7 @@ function App() {
   const addOpportunityButtonRef = useRef(null)
   const formTriggerRef = useRef(null)
   const applicationsHeadingRef = useRef(null)
+  const opportunitiesHeadingRef = useRef(null)
   const followUpsHeadingRef = useRef(null)
   const successFeedbackIdRef = useRef(0)
   const successFeedbackTimeoutRef = useRef(null)
@@ -281,6 +289,7 @@ function App() {
   }
 
   const openOpportunityForm = () => {
+    setActiveWorkspaceTab(WORKSPACE_TABS.OPPORTUNITIES)
     formTriggerRef.current = document.activeElement
     setEditingSession(null)
     setEditWarning(null)
@@ -679,7 +688,11 @@ function App() {
           applicationMetrics={applicationMetrics}
           dueFollowUpCount={dueFollowUpCount}
         />
-        <WorkspaceTabs />
+        <WorkspaceTabs
+          activeTab={activeWorkspaceTab}
+          applicationCount={applications.length}
+          onChange={setActiveWorkspaceTab}
+        />
         <SuccessFeedback
           key={successFeedback?.id ?? 'none'}
           message={successFeedback?.message ?? null}
@@ -691,57 +704,74 @@ function App() {
         />
         <PersistenceWarning message={persistenceWarning} />
         <PersistenceWarning message={applicationWarning} />
-        {isOpportunityFormVisible && (
-          <OpportunityForm
-            key={
-              editingSession
-                ? `edit-${editingSession.id}-${editingSession.expectedUpdatedAt}`
-                : 'create'
-            }
-            mode={editingSession ? 'edit' : 'create'}
-            initialValues={editingSession?.initialValues}
-            submissionWarning={editWarning}
-            onSubmit={editingSession ? editOpportunity : createOpportunity}
-            onCancel={closeOpportunityForm}
+        <div
+          className="workspace-panel"
+          role="tabpanel"
+          id={getWorkspacePanelId(WORKSPACE_TABS.OPPORTUNITIES)}
+          aria-labelledby={getWorkspaceTabId(WORKSPACE_TABS.OPPORTUNITIES)}
+          hidden={activeWorkspaceTab !== WORKSPACE_TABS.OPPORTUNITIES}
+        >
+          {isOpportunityFormVisible && (
+            <OpportunityForm
+              key={
+                editingSession
+                  ? `edit-${editingSession.id}-${editingSession.expectedUpdatedAt}`
+                  : 'create'
+              }
+              mode={editingSession ? 'edit' : 'create'}
+              initialValues={editingSession?.initialValues}
+              submissionWarning={editWarning}
+              onSubmit={editingSession ? editOpportunity : createOpportunity}
+              onCancel={closeOpportunityForm}
+            />
+          )}
+          <OpportunitySection
+            opportunities={opportunities}
+            visibleOpportunities={visibleOpportunities}
+            applications={applications}
+            areStoredApplicationsUnavailable={areStoredApplicationsUnavailable}
+            searchQuery={opportunitySearchQuery}
+            statusFilter={opportunityStatusFilter}
+            onSearchChange={setOpportunitySearchQuery}
+            onStatusChange={setOpportunityStatusFilter}
+            onClearSearch={clearOpportunitySearch}
+            onResetFilters={resetOpportunityFilters}
+            onAddOpportunity={openOpportunityForm}
+            editingOpportunityId={editingSession?.id ?? null}
+            isOpportunityFormVisible={isOpportunityFormVisible}
+            onEditOpportunity={openOpportunityEditForm}
+            onOpportunityStatusChange={applyStatusChange}
+            onRequestDelete={requestDeleteOpportunity}
+            onRequestApplicationRegistration={requestApplicationRegistration}
+            headingRef={opportunitiesHeadingRef}
           />
-        )}
-        <OpportunitySection
-          opportunities={opportunities}
-          visibleOpportunities={visibleOpportunities}
-          applications={applications}
-          areStoredApplicationsUnavailable={areStoredApplicationsUnavailable}
-          searchQuery={opportunitySearchQuery}
-          statusFilter={opportunityStatusFilter}
-          onSearchChange={setOpportunitySearchQuery}
-          onStatusChange={setOpportunityStatusFilter}
-          onClearSearch={clearOpportunitySearch}
-          onResetFilters={resetOpportunityFilters}
-          onAddOpportunity={openOpportunityForm}
-          editingOpportunityId={editingSession?.id ?? null}
-          isOpportunityFormVisible={isOpportunityFormVisible}
-          onEditOpportunity={openOpportunityEditForm}
-          onOpportunityStatusChange={applyStatusChange}
-          onRequestDelete={requestDeleteOpportunity}
-          onRequestApplicationRegistration={requestApplicationRegistration}
-        />
-        <SourceSection />
-        <ApplicationList
-          applications={applications}
-          opportunities={opportunities}
-          editingApplicationId={applicationEditSession?.id ?? null}
-          editWarning={applicationEditWarning}
-          onStatusChange={requestApplicationStatusChange}
-          onEdit={openApplicationEdit}
-          onCancelEdit={cancelApplicationEdit}
-          onSubmitEdit={submitApplicationEdit}
-          headingRef={applicationsHeadingRef}
-        />
-        <FollowUpPanel
-          followUps={pendingFollowUps}
-          onComplete={completeApplicationFollowUp}
-          editingApplicationId={applicationEditSession?.id ?? null}
-          headingRef={followUpsHeadingRef}
-        />
+          <SourceSection />
+        </div>
+        <div
+          className="workspace-panel"
+          role="tabpanel"
+          id={getWorkspacePanelId(WORKSPACE_TABS.APPLICATIONS)}
+          aria-labelledby={getWorkspaceTabId(WORKSPACE_TABS.APPLICATIONS)}
+          hidden={activeWorkspaceTab !== WORKSPACE_TABS.APPLICATIONS}
+        >
+          <ApplicationList
+            applications={applications}
+            opportunities={opportunities}
+            editingApplicationId={applicationEditSession?.id ?? null}
+            editWarning={applicationEditWarning}
+            onStatusChange={requestApplicationStatusChange}
+            onEdit={openApplicationEdit}
+            onCancelEdit={cancelApplicationEdit}
+            onSubmitEdit={submitApplicationEdit}
+            headingRef={applicationsHeadingRef}
+          />
+          <FollowUpPanel
+            followUps={pendingFollowUps}
+            onComplete={completeApplicationFollowUp}
+            editingApplicationId={applicationEditSession?.id ?? null}
+            headingRef={followUpsHeadingRef}
+          />
+        </div>
       </main>
       <ConfirmDialog
         isOpen={pendingDeletion !== null}
@@ -770,7 +800,7 @@ function App() {
         cancelLabel="Cancelar"
         onConfirm={confirmApplicationRegistration}
         onCancel={cancelApplicationRegistration}
-        fallbackFocusRef={applicationsHeadingRef}
+        fallbackFocusRef={opportunitiesHeadingRef}
       />
       <ConfirmDialog
         isOpen={pendingFinalApplicationStatus !== null}

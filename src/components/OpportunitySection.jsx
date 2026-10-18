@@ -20,13 +20,16 @@ function OpportunitySection({
   onOpportunityStatusChange,
   onRequestDelete,
   onRequestApplicationRegistration,
+  headingRef,
 }) {
   return (
     <section className="panel" aria-labelledby="opportunities-title">
       <div className="section-heading">
         <div>
           <p className="section-kicker">Búsqueda laboral</p>
-          <h2 id="opportunities-title">Oportunidades</h2>
+          <h2 id="opportunities-title" ref={headingRef} tabIndex={-1}>
+            Oportunidades
+          </h2>
         </div>
         <p>Ofertas detectadas o agregadas manualmente para revisar.</p>
       </div>
