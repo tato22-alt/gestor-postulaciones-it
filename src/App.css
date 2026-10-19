@@ -85,6 +85,7 @@
 
 .source-count {
   flex: 0 0 auto;
+  align-self: flex-start;
   border-radius: 999px;
   background: #f2f4f7;
   color: #344054;
@@ -414,6 +415,8 @@
 
 .workspace-tabs {
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
   gap: 8px;
   border-bottom: 1px solid #dfe3e8;
 }
