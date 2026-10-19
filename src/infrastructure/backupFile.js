@@ -1,9 +1,5 @@
 import Application from '../domain/Application.js'
-import JobOpportunity, {
-  OPPORTUNITY_COMPANY_MAX_LENGTH,
-  OPPORTUNITY_DESCRIPTION_MAX_LENGTH,
-  OPPORTUNITY_TITLE_MAX_LENGTH,
-} from '../domain/JobOpportunity.js'
+import JobOpportunity from '../domain/JobOpportunity.js'
 import {
   hasUniqueApplicationIdentities,
   isValidStoredApplication,
@@ -40,16 +36,6 @@ export function createBackupText({ opportunities, applications, sources, now = n
   }
 
   return JSON.stringify(backup, null, 2)
-}
-
-// Imported text must respect the same limits as typed text. Browser storage does not
-// enforce them, so data saved before the limits existed can still be loaded.
-function isWithinOpportunityLimits(record) {
-  return (
-    record.company.length <= OPPORTUNITY_COMPANY_MAX_LENGTH &&
-    record.title.length <= OPPORTUNITY_TITLE_MAX_LENGTH &&
-    record.description.length <= OPPORTUNITY_DESCRIPTION_MAX_LENGTH
-  )
 }
 
 function hasUniqueIds(records) {
@@ -90,7 +76,11 @@ export function parseBackupText(text) {
     return { ok: false, status: 'unknown_format' }
   }
 
-  const fields = BACKUP_FIELDS_BY_VERSION[backup.schemaVersion]
+  const version = backup.schemaVersion
+  const fields =
+    Number.isInteger(version) && Object.hasOwn(BACKUP_FIELDS_BY_VERSION, version)
+      ? BACKUP_FIELDS_BY_VERSION[version]
+      : null
 
   if (!fields) {
     return { ok: false, status: 'unsupported_version' }
@@ -107,7 +97,6 @@ export function parseBackupText(text) {
     !Array.isArray(backup.opportunities) ||
     !Array.isArray(backup.applications) ||
     !backup.opportunities.every(isValidStoredOpportunity) ||
-    !backup.opportunities.every(isWithinOpportunityLimits) ||
     !hasUniqueIds(backup.opportunities) ||
     !backup.applications.every(isValidStoredApplication) ||
     !hasUniqueApplicationIdentities(backup.applications)

@@ -43,6 +43,20 @@ describe('backup file', () => {
     assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 3 })).status, 'unsupported_version')
   })
 
+  it('accepts long descriptions saved before the text limits existed', () => {
+    const text = backupOf([createOpportunity({ description: 'd'.repeat(12000) })], [])
+
+    assert.equal(parseBackupText(text).ok, true)
+  })
+
+  it('accepts only integer, known schema versions', () => {
+    const valid = backupOf([], [])
+
+    for (const version of ['1', 'toString', '__proto__', 1.5]) {
+      assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = version })).ok, false, String(version))
+    }
+  })
+
   it('still accepts version 1 backups without sources', () => {
     const v1 = tamper(backupOf([createOpportunity()], []), (b) => {
       b.schemaVersion = 1
@@ -73,7 +87,6 @@ describe('backup file', () => {
     'duplicated opportunity ids': (b) => { b.opportunities.push({ ...b.opportunities[0] }) },
     'two applications for one opportunity': (b) => { b.applications.push({ ...b.applications[0], id: 'other' }) },
     'notes over the limit': (b) => { b.applications[0].notes = 'n'.repeat(2001) },
-    'a description over the limit': (b) => { b.opportunities[0].description = 'd'.repeat(10001) },
     'an extra envelope field': (b) => { b.extra = true },
   }
 
@@ -133,10 +146,21 @@ describe('planBackupImport', () => {
     assert.deepEqual(result.skipped, {
       existingSources: 0,
       existingOpportunities: 0,
+      opportunitiesWithoutSource: 0,
       existingApplications: 1,
       applicationsWithoutOpportunity: 1,
       applicationsAlreadyApplied: 1,
     })
+  })
+
+  it('imports an opportunity without its source when the source is missing', () => {
+    const result = plan(
+      { opportunities: [], applications: [] },
+      { opportunities: [createOpportunity({ id: 'o1', sourceId: 'gone' })], applications: [] },
+    )
+
+    assert.equal(result.opportunitiesToAdd[0].sourceId, null)
+    assert.equal(result.skipped.opportunitiesWithoutSource, 1)
   })
 
   it('reports no changes when re-importing the same data', () => {

@@ -182,7 +182,13 @@ const SOURCE_DELETE_WARNINGS = {
   conflict: 'Esta fuente cambió mientras el diálogo estaba abierto. No se eliminó.',
   not_found: 'La fuente que intentabas eliminar ya no está disponible.',
   has_opportunities: 'La fuente tiene oportunidades asociadas, por eso no se eliminó.',
+  form_open: 'Hay una oportunidad abierta para cargar desde esta fuente. Guardala o cancelala antes de eliminar la fuente.',
+  opportunities_unavailable:
+    'No se pueden eliminar fuentes mientras las oportunidades guardadas no puedan leerse.',
 }
+
+const OPPORTUNITY_SOURCE_MISSING_WARNING =
+  'La fuente de esta oportunidad ya no existe. Tus datos no se guardaron: cancelá y cargá la oportunidad otra vez.'
 
 const CREATE_SUCCESS_MESSAGE = 'Oportunidad creada.'
 const EDIT_SUCCESS_MESSAGE = 'Oportunidad editada.'
@@ -225,6 +231,8 @@ function describeBackupImport(plan) {
       `${pluralize(skipped.existingSources, 'fuente que ya existe', 'fuentes que ya existen')}`,
     skipped.existingOpportunities > 0 &&
       `${pluralize(skipped.existingOpportunities, 'oportunidad que ya existe', 'oportunidades que ya existen')}`,
+    skipped.opportunitiesWithoutSource > 0 &&
+      `${pluralize(skipped.opportunitiesWithoutSource, 'oportunidad se importa sin su fuente porque la fuente no está', 'oportunidades se importan sin su fuente porque la fuente no está')}`,
     skipped.existingApplications > 0 &&
       `${pluralize(skipped.existingApplications, 'postulación que ya existe', 'postulaciones que ya existen')}`,
     skipped.applicationsAlreadyApplied > 0 &&
@@ -310,6 +318,7 @@ function App() {
   const formTriggerRef = useRef(null)
   const applicationsHeadingRef = useRef(null)
   const opportunitiesHeadingRef = useRef(null)
+  const sourcesHeadingRef = useRef(null)
   const followUpsHeadingRef = useRef(null)
   const successFeedbackIdRef = useRef(0)
   const dataPanelMessageIdRef = useRef(0)
@@ -996,7 +1005,20 @@ function App() {
     return true
   }
 
+  const getSourceDeletionBlocker = (sourceId) => {
+    if (opportunityRepository.isPersistenceBlocked) return 'opportunities_unavailable'
+    if (isOpportunityFormVisible && opportunityFormSource?.id === sourceId) return 'form_open'
+    return null
+  }
+
   const requestSourceDeletion = (source) => {
+    const blocker = getSourceDeletionBlocker(source.id)
+
+    if (blocker) {
+      setSourceWarning(keepLoadWarningOr(SOURCE_LOAD_WARNING, SOURCE_DELETE_WARNINGS[blocker]))
+      return
+    }
+
     setPendingSourceDeletion({ id: source.id, expectedUpdatedAt: source.updatedAt })
   }
 
@@ -1007,9 +1029,16 @@ function App() {
   const confirmSourceDeletion = () => {
     if (!pendingSourceDeletion) return
 
-    const result = deleteSource(sources, opportunities, pendingSourceDeletion)
-
     setPendingSourceDeletion(null)
+
+    const blocker = getSourceDeletionBlocker(pendingSourceDeletion.id)
+
+    if (blocker) {
+      setSourceWarning(keepLoadWarningOr(SOURCE_LOAD_WARNING, SOURCE_DELETE_WARNINGS[blocker]))
+      return
+    }
+
+    const result = deleteSource(sources, opportunities, pendingSourceDeletion)
 
     if (!result.ok) {
       setSourceWarning(SOURCE_DELETE_WARNINGS[result.status] ?? SOURCE_EDIT_WARNINGS.invalid_input)
@@ -1050,6 +1079,12 @@ function App() {
   }
 
   const createOpportunity = (opportunityData) => {
+    // The source may have been deleted (here or in another tab) while the form was open.
+    if (opportunityFormSource && !sources.some((source) => source.id === opportunityFormSource.id)) {
+      setEditWarning(OPPORTUNITY_SOURCE_MISSING_WARNING)
+      return false
+    }
+
     const opportunity = new JobOpportunity({
       ...opportunityData,
       sourceId: opportunityFormSource?.id ?? null,
@@ -1250,6 +1285,7 @@ function App() {
             onSubmitEdit={submitSourceEdit}
             onRequestDelete={requestSourceDeletion}
             onAddOpportunity={openOpportunityFormFromSource}
+            headingRef={sourcesHeadingRef}
           />
         </div>
         <DataPanel
@@ -1303,7 +1339,7 @@ function App() {
         destructive
         onConfirm={confirmSourceDeletion}
         onCancel={cancelSourceDeletion}
-        fallbackFocusRef={addOpportunityButtonRef}
+        fallbackFocusRef={sourcesHeadingRef}
       />
       <ConfirmDialog
         isOpen={pendingBackupImport !== null}

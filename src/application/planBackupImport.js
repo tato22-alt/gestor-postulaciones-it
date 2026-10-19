@@ -1,3 +1,5 @@
+import JobOpportunity from '../domain/JobOpportunity.js'
+
 // Plans a non-destructive import: records from the backup are only ever added. Existing
 // records are never replaced or removed, and every skipped record is counted with a reason.
 export default function planBackupImport({
@@ -11,6 +13,12 @@ export default function planBackupImport({
   const sourceIds = new Set(currentSources.map((source) => source.id))
   const sourcesToAdd = backupSources.filter((source) => !sourceIds.has(source.id))
 
+  for (const source of sourcesToAdd) {
+    sourceIds.add(source.id)
+  }
+
+  let opportunitiesWithoutSource = 0
+
   const opportunityIds = new Set(currentOpportunities.map((opportunity) => opportunity.id))
   const opportunitiesToAdd = []
   let existingOpportunities = 0
@@ -20,7 +28,15 @@ export default function planBackupImport({
       existingOpportunities += 1
     } else {
       opportunityIds.add(opportunity.id)
-      opportunitiesToAdd.push(opportunity)
+
+      // A reference to a source that is neither stored nor in the backup is dropped, so
+      // the opportunity is kept without pointing to a source that does not exist.
+      if (opportunity.sourceId !== null && !sourceIds.has(opportunity.sourceId)) {
+        opportunitiesWithoutSource += 1
+        opportunitiesToAdd.push(new JobOpportunity({ ...opportunity, sourceId: null }))
+      } else {
+        opportunitiesToAdd.push(opportunity)
+      }
     }
   }
 
@@ -52,6 +68,7 @@ export default function planBackupImport({
     skipped: {
       existingSources: backupSources.length - sourcesToAdd.length,
       existingOpportunities,
+      opportunitiesWithoutSource,
       existingApplications: skippedApplications.existing,
       applicationsWithoutOpportunity: skippedApplications.withoutOpportunity,
       applicationsAlreadyApplied: skippedApplications.alreadyApplied,

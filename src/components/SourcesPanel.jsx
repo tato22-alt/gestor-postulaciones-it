@@ -110,6 +110,7 @@ function SourcesPanel({
   onSubmitEdit,
   onRequestDelete,
   onAddOpportunity,
+  headingRef,
 }) {
   const opportunityCountBySource = new Map()
 
@@ -127,7 +128,9 @@ function SourcesPanel({
       <div className="section-heading">
         <div>
           <p className="section-kicker">Empresas</p>
-          <h2 id="sources-title">Fuentes de empleo</h2>
+          <h2 id="sources-title" ref={headingRef} tabIndex={-1}>
+            Fuentes de empleo
+          </h2>
         </div>
         <p>Guardá las páginas de empleo oficiales de las empresas que seguís.</p>
       </div>
