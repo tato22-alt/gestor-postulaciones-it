@@ -8,6 +8,9 @@ function Header({ onAddOpportunity, addOpportunityButtonRef }) {
           <p className="header-description">
             Encontrá oportunidades compatibles, decidí dónde postularte y seguí cada proceso laboral.
           </p>
+          <p className="header-privacy">
+            Tus datos se guardan solo en este navegador. Exportá un respaldo para no perderlos.
+          </p>
         </div>
         <div className="header-actions">
           <button

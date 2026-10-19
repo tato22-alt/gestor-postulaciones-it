@@ -43,6 +43,7 @@ function OpportunityForm({
   mode = 'create',
   initialValues,
   submissionWarning,
+  findOpportunityWithSameUrl,
   onSubmit,
   onCancel,
 }) {
@@ -50,6 +51,8 @@ function OpportunityForm({
     createOpportunityDraft(initialValues),
   )
   const [errors, setErrors] = useState({})
+  // Possible duplicate shown for a specific normalized URL; changing the URL clears it.
+  const [duplicateWarning, setDuplicateWarning] = useState(null)
   const isEditMode = mode === 'edit'
   const currentStatusObject = isEditMode
     ? (Object.values(OPPORTUNITY_STATUSES).find((s) => s.value === initialValues?.status) ?? null)
@@ -63,6 +66,10 @@ function OpportunityForm({
     const nextDraft = { ...draft, [name]: value }
 
     setDraft((currentDraft) => ({ ...currentDraft, [name]: value }))
+
+    if (name === 'url') {
+      setDuplicateWarning(null)
+    }
 
     if (Object.hasOwn(errors, name)) {
       const nextFieldError = validateOpportunityInput(nextDraft)[name]
@@ -81,8 +88,7 @@ function OpportunityForm({
     }
   }
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
+  const submitDraft = ({ ignoreDuplicate }) => {
     const validationErrors = validateOpportunityInput(draft)
     setErrors(validationErrors)
 
@@ -90,7 +96,19 @@ function OpportunityForm({
       return
     }
 
-    const wasAccepted = onSubmit(normalizeOpportunityInput(draft))
+    const normalizedInput = normalizeOpportunityInput(draft)
+    const duplicate = ignoreDuplicate
+      ? null
+      : (findOpportunityWithSameUrl?.(normalizedInput.url) ?? null)
+
+    // A possible duplicate only warns: the user decides whether to save anyway.
+    if (duplicate) {
+      setDuplicateWarning({ title: duplicate.title, company: duplicate.company })
+      return
+    }
+
+    setDuplicateWarning(null)
+    const wasAccepted = onSubmit(normalizedInput)
 
     if (wasAccepted === false) {
       return
@@ -98,6 +116,16 @@ function OpportunityForm({
 
     setDraft(createOpportunityDraft())
     setErrors({})
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    submitDraft({ ignoreDuplicate: duplicateWarning !== null })
+  }
+
+  const keepEditing = () => {
+    setDuplicateWarning(null)
+    document.getElementById('opportunity-url')?.focus()
   }
 
   // Escape behaves exactly like the Cancel button: the draft is discarded without saving.
@@ -355,6 +383,27 @@ function OpportunityForm({
             </div>
           )}
         </div>
+
+        {duplicateWarning && (
+          <div className="duplicate-warning" role="alert">
+            <p>
+              Ya tenés una oportunidad con este enlace: {duplicateWarning.title} en{' '}
+              {duplicateWarning.company}.
+            </p>
+            <div className="duplicate-warning-actions">
+              <button className="button button-secondary" type="button" onClick={keepEditing}>
+                Seguir editando
+              </button>
+              <button
+                className="button button-primary"
+                type="button"
+                onClick={() => submitDraft({ ignoreDuplicate: true })}
+              >
+                Guardar igual
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="form-actions">
           <button className="button button-secondary" type="button" onClick={onCancel}>

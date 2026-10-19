@@ -143,21 +143,6 @@ function StatsPanel({ metrics, applicationMetrics, dueFollowUpCount }) {
           metrics={applicationStatusMetrics}
         />
 
-        <article className="dashboard-group dashboard-group-wide">
-          <div className="dashboard-group-heading">
-            <h3>Procesos todavía no disponibles</h3>
-            <p>
-              Esta métrica necesita un flujo que aún no fue implementado y no se calcula a
-              partir de oportunidades ni de postulaciones.
-            </p>
-          </div>
-          <dl className="unsupported-metrics">
-            <div>
-              <dt>Recomendaciones</dt>
-              <dd>No implementado</dd>
-            </div>
-          </dl>
-        </article>
       </div>
     </section>
   )

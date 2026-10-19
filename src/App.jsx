@@ -5,21 +5,23 @@ import calculateDashboardMetrics from './application/calculateDashboardMetrics.j
 import changeApplicationStatus from './application/changeApplicationStatus.js'
 import changeOpportunityStatus from './application/changeOpportunityStatus.js'
 import completeFollowUp from './application/completeFollowUp.js'
+import { buildApplicationsCsv, buildOpportunitiesCsv } from './application/csvExport.js'
 import deleteOpportunity from './application/deleteOpportunity.js'
 import filterOpportunities from './application/filterOpportunities.js'
 import getPendingFollowUps from './application/getPendingFollowUps.js'
+import planBackupImport from './application/planBackupImport.js'
 import registerApplication from './application/registerApplication.js'
 import updateApplicationDetails from './application/updateApplicationDetails.js'
 import updateOpportunity from './application/updateOpportunity.js'
 import ApplicationList from './components/ApplicationList.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import CreatedUnderFilterNotice from './components/CreatedUnderFilterNotice.jsx'
+import DataPanel from './components/DataPanel.jsx'
 import FollowUpPanel from './components/FollowUpPanel.jsx'
 import Header from './components/Header.jsx'
 import OpportunityForm from './components/OpportunityForm.jsx'
 import OpportunitySection from './components/OpportunitySection.jsx'
 import PersistenceWarning from './components/PersistenceWarning.jsx'
-import SourceSection from './components/SourceSection.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import SuccessFeedback from './components/SuccessFeedback.jsx'
 import WorkspaceTabs from './components/WorkspaceTabs.jsx'
@@ -31,14 +33,22 @@ import {
 import { APPLICATION_STATUSES } from './constants/domainOptions.js'
 import { findApplicationForOpportunity } from './domain/applicationRegistrationPolicy.js'
 import { isFinalApplicationStatus } from './domain/applicationStatusPolicy.js'
+import { findOpportunityWithSameUrl } from './domain/duplicateOpportunityPolicy.js'
 import { FOLLOW_UP_URGENCY } from './domain/followUpPolicy.js'
 import JobOpportunity from './domain/JobOpportunity.js'
+import {
+  BACKUP_MAX_BYTES,
+  createBackupText,
+  parseBackupText,
+} from './infrastructure/backupFile.js'
+import { downloadTextFile } from './infrastructure/fileDownload.js'
 import LocalStorageApplicationRepository, {
   APPLICATION_STORAGE_KEY,
 } from './infrastructure/LocalStorageApplicationRepository.js'
 import LocalStorageOpportunityRepository, {
   OPPORTUNITY_STORAGE_KEY,
 } from './infrastructure/LocalStorageOpportunityRepository.js'
+import { toLocalDateString } from './utils/date.js'
 
 const LOAD_WARNING =
   'No pudimos recuperar las oportunidades guardadas de forma segura. Los datos almacenados se conservaron sin sobrescribirse. Los cambios de esta sesión no se guardarán permanentemente.'
@@ -122,6 +132,22 @@ const FOLLOW_UP_SAVE_WARNING =
 const UNEXPECTED_APPLICATION_WARNING =
   'No pudimos completar la acción sobre la postulación. Intentá nuevamente.'
 
+const BACKUP_IMPORT_ERRORS = {
+  too_large: 'El archivo supera los 5 MB permitidos para un respaldo.',
+  invalid_json: 'El archivo no es un respaldo válido: no se pudo leer como JSON.',
+  unknown_format: 'El archivo no es un respaldo de Gestor de Postulaciones IT.',
+  unsupported_version: 'El respaldo fue creado con una versión no compatible.',
+  invalid_records: 'El respaldo contiene datos inválidos. No se importó nada.',
+  read_failure: 'No se pudo leer el archivo seleccionado.',
+  blocked:
+    'No se puede importar mientras los datos guardados no puedan leerse. Descargá primero los datos guardados desde el aviso de almacenamiento.',
+}
+
+const BACKUP_NOTHING_NEW_MESSAGE =
+  'El respaldo no tiene datos nuevos: todo lo que contiene ya está en este navegador.'
+
+const CORRUPTED_DOWNLOAD_LABEL = 'Descargar los datos guardados tal como están'
+
 const CREATE_SUCCESS_MESSAGE = 'Oportunidad creada.'
 const EDIT_SUCCESS_MESSAGE = 'Oportunidad editada.'
 const STATUS_SUCCESS_MESSAGE = 'Estado actualizado.'
@@ -130,6 +156,8 @@ const APPLICATION_SUCCESS_MESSAGE =
   'Postulación registrada. La encontrás en la pestaña «Postulaciones».'
 const APPLICATION_STATUS_SUCCESS_MESSAGE = 'Estado de la postulación actualizado.'
 const APPLICATION_EDIT_SUCCESS_MESSAGE = 'Postulación actualizada.'
+const BACKUP_EXPORT_SUCCESS_MESSAGE = 'Respaldo exportado.'
+const CSV_EXPORT_SUCCESS_MESSAGE = 'Planilla CSV exportada.'
 const FOLLOW_UP_SUCCESS_MESSAGE =
   'Seguimiento marcado como hecho. Si necesitás otro, programalo con «Editar postulación».'
 
@@ -137,6 +165,34 @@ const FOLLOW_UP_SUCCESS_MESSAGE =
 // conflict), except the load warning, which must stay visible while persistence is blocked.
 function keepLoadWarningOr(loadWarning, nextWarning) {
   return (currentWarning) => (currentWarning === loadWarning ? currentWarning : nextWarning)
+}
+
+function pluralize(count, singular, plural) {
+  return `${count} ${count === 1 ? singular : plural}`
+}
+
+function describeBackupImport(plan) {
+  const lines = [
+    `Se van a agregar ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad', 'oportunidades')} y ${pluralize(plan.applicationsToAdd.length, 'postulación', 'postulaciones')}.`,
+  ]
+  const { skipped } = plan
+  const omitted = [
+    skipped.existingOpportunities > 0 &&
+      `${pluralize(skipped.existingOpportunities, 'oportunidad que ya existe', 'oportunidades que ya existen')}`,
+    skipped.existingApplications > 0 &&
+      `${pluralize(skipped.existingApplications, 'postulación que ya existe', 'postulaciones que ya existen')}`,
+    skipped.applicationsAlreadyApplied > 0 &&
+      `${pluralize(skipped.applicationsAlreadyApplied, 'postulación para una oportunidad que ya tiene otra', 'postulaciones para oportunidades que ya tienen otra')}`,
+    skipped.applicationsWithoutOpportunity > 0 &&
+      `${pluralize(skipped.applicationsWithoutOpportunity, 'postulación sin su oportunidad', 'postulaciones sin su oportunidad')}`,
+  ].filter(Boolean)
+
+  if (omitted.length > 0) {
+    lines.push(`Se omiten: ${omitted.join('; ')}.`)
+  }
+
+  lines.push('No se borra ni se reemplaza nada de lo que ya tenés.')
+  return lines.join(' ')
 }
 
 function getApplicationStatusLabel(status) {
@@ -190,6 +246,8 @@ function App() {
   const [editWarning, setEditWarning] = useState(null)
   const [pendingDeletion, setPendingDeletion] = useState(null)
   const [successFeedback, setSuccessFeedback] = useState(null)
+  const [dataPanelMessage, setDataPanelMessage] = useState(null)
+  const [pendingBackupImport, setPendingBackupImport] = useState(null)
   const [isCreatedUnderFilterNoticeVisible, setIsCreatedUnderFilterNoticeVisible] =
     useState(false)
   const addOpportunityButtonRef = useRef(null)
@@ -583,6 +641,166 @@ function App() {
     }
   }
 
+  const todayFileSuffix = () => toLocalDateString(new Date()) ?? 'sin-fecha'
+
+  const exportBackup = () => {
+    downloadTextFile({
+      filename: `gestor-postulaciones-respaldo-${todayFileSuffix()}.json`,
+      content: createBackupText({ opportunities, applications }),
+      mimeType: 'application/json',
+    })
+    setDataPanelMessage(null)
+    showSuccessFeedback(BACKUP_EXPORT_SUCCESS_MESSAGE)
+  }
+
+  const exportOpportunitiesCsv = () => {
+    downloadTextFile({
+      filename: `gestor-postulaciones-oportunidades-${todayFileSuffix()}.csv`,
+      content: buildOpportunitiesCsv(opportunities),
+      mimeType: 'text/csv;charset=utf-8',
+    })
+    showSuccessFeedback(CSV_EXPORT_SUCCESS_MESSAGE)
+  }
+
+  const exportApplicationsCsv = () => {
+    downloadTextFile({
+      filename: `gestor-postulaciones-postulaciones-${todayFileSuffix()}.csv`,
+      content: buildApplicationsCsv(applications, opportunities),
+      mimeType: 'text/csv;charset=utf-8',
+    })
+    showSuccessFeedback(CSV_EXPORT_SUCCESS_MESSAGE)
+  }
+
+  const isAnyStorageBlocked = () =>
+    opportunityRepository.isPersistenceBlocked || applicationRepository.isPersistenceBlocked
+
+  const showBackupImportError = (status) => {
+    setDataPanelMessage({ type: 'error', text: BACKUP_IMPORT_ERRORS[status] })
+  }
+
+  const importBackupFile = async (file) => {
+    if (isAnyStorageBlocked()) {
+      showBackupImportError('blocked')
+      return
+    }
+
+    if (file.size > BACKUP_MAX_BYTES) {
+      showBackupImportError('too_large')
+      return
+    }
+
+    let text
+
+    try {
+      text = await file.text()
+    } catch {
+      showBackupImportError('read_failure')
+      return
+    }
+
+    const parsed = parseBackupText(text)
+
+    if (!parsed.ok) {
+      showBackupImportError(parsed.status)
+      return
+    }
+
+    const plan = planBackupImport({
+      currentOpportunities: opportunities,
+      currentApplications: applications,
+      backupOpportunities: parsed.opportunities,
+      backupApplications: parsed.applications,
+    })
+
+    if (!plan.hasChanges) {
+      setDataPanelMessage({ type: 'info', text: BACKUP_NOTHING_NEW_MESSAGE })
+      return
+    }
+
+    setDataPanelMessage(null)
+    setPendingBackupImport({ backup: parsed, preview: describeBackupImport(plan) })
+  }
+
+  const cancelBackupImport = () => {
+    setPendingBackupImport(null)
+  }
+
+  const confirmBackupImport = () => {
+    if (!pendingBackupImport) return
+
+    const { backup } = pendingBackupImport
+
+    setPendingBackupImport(null)
+
+    if (isAnyStorageBlocked()) {
+      showBackupImportError('blocked')
+      return
+    }
+
+    // Planned again against the current state: another tab may have changed it while the
+    // confirmation dialog was open.
+    const plan = planBackupImport({
+      currentOpportunities: opportunities,
+      currentApplications: applications,
+      backupOpportunities: backup.opportunities,
+      backupApplications: backup.applications,
+    })
+
+    if (!plan.hasChanges) {
+      setDataPanelMessage({ type: 'info', text: BACKUP_NOTHING_NEW_MESSAGE })
+      return
+    }
+
+    setOpportunities(plan.nextOpportunities)
+    setApplications(plan.nextApplications)
+
+    const opportunitySave = opportunityRepository.saveAll(plan.nextOpportunities)
+    const applicationSave = applicationRepository.saveAll(plan.nextApplications)
+
+    if (!opportunitySave.ok || !applicationSave.ok) {
+      setDataPanelMessage({
+        type: 'error',
+        text: 'Los datos se importaron en esta sesión, pero no pudieron guardarse en el navegador. Pueden perderse al recargar la página.',
+      })
+      return
+    }
+
+    setPersistenceWarning(null)
+    setApplicationWarning(null)
+    setDataPanelMessage({
+      type: 'info',
+      text: `Respaldo importado: ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad agregada', 'oportunidades agregadas')} y ${pluralize(plan.applicationsToAdd.length, 'postulación agregada', 'postulaciones agregadas')}.`,
+    })
+  }
+
+  const downloadStoredRawValue = (repository, name) => {
+    const rawValue = repository.readRawValue()
+
+    if (rawValue === null) return
+
+    downloadTextFile({
+      filename: `gestor-postulaciones-${name}-datos-guardados-${todayFileSuffix()}.txt`,
+      content: rawValue,
+      mimeType: 'text/plain;charset=utf-8',
+    })
+  }
+
+  const opportunityWarningAction =
+    persistenceWarning === LOAD_WARNING && opportunityRepository.readRawValue() !== null
+      ? {
+          label: CORRUPTED_DOWNLOAD_LABEL,
+          onClick: () => downloadStoredRawValue(opportunityRepository, 'oportunidades'),
+        }
+      : null
+
+  const applicationWarningAction =
+    applicationWarning === APPLICATION_LOAD_WARNING && applicationRepository.readRawValue() !== null
+      ? {
+          label: CORRUPTED_DOWNLOAD_LABEL,
+          onClick: () => downloadStoredRawValue(applicationRepository, 'postulaciones'),
+        }
+      : null
+
   const finalStatusOpportunity = pendingFinalApplicationStatus
     ? (opportunities.find(
         (opp) => opp.id === pendingFinalApplicationStatus.application.opportunityId,
@@ -694,7 +912,7 @@ function App() {
           onChange={setActiveWorkspaceTab}
         />
         <SuccessFeedback
-          key={successFeedback?.id ?? 'none'}
+          messageId={successFeedback?.id ?? null}
           message={successFeedback?.message ?? null}
           durationMs={SUCCESS_FEEDBACK_DURATION_MS}
         />
@@ -702,8 +920,8 @@ function App() {
           isVisible={isCreatedUnderFilterNoticeVisible}
           onResetFilters={resetOpportunityFilters}
         />
-        <PersistenceWarning message={persistenceWarning} />
-        <PersistenceWarning message={applicationWarning} />
+        <PersistenceWarning message={persistenceWarning} action={opportunityWarningAction} />
+        <PersistenceWarning message={applicationWarning} action={applicationWarningAction} />
         <div
           className="workspace-panel"
           role="tabpanel"
@@ -722,6 +940,9 @@ function App() {
               initialValues={editingSession?.initialValues}
               submissionWarning={editWarning}
               onSubmit={editingSession ? editOpportunity : createOpportunity}
+              findOpportunityWithSameUrl={(url) =>
+                findOpportunityWithSameUrl(opportunities, url, editingSession?.id ?? null)
+              }
               onCancel={closeOpportunityForm}
             />
           )}
@@ -745,7 +966,6 @@ function App() {
             onRequestApplicationRegistration={requestApplicationRegistration}
             headingRef={opportunitiesHeadingRef}
           />
-          <SourceSection />
         </div>
         <div
           className="workspace-panel"
@@ -772,6 +992,13 @@ function App() {
             headingRef={followUpsHeadingRef}
           />
         </div>
+        <DataPanel
+          message={dataPanelMessage}
+          onExportBackup={exportBackup}
+          onImportFile={importBackupFile}
+          onExportOpportunitiesCsv={exportOpportunitiesCsv}
+          onExportApplicationsCsv={exportApplicationsCsv}
+        />
       </main>
       <ConfirmDialog
         isOpen={pendingDeletion !== null}
@@ -786,6 +1013,16 @@ function App() {
         destructive
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
+        fallbackFocusRef={addOpportunityButtonRef}
+      />
+      <ConfirmDialog
+        isOpen={pendingBackupImport !== null}
+        title="Importar respaldo"
+        message={pendingBackupImport?.preview ?? ''}
+        confirmLabel="Importar"
+        cancelLabel="Cancelar"
+        onConfirm={confirmBackupImport}
+        onCancel={cancelBackupImport}
         fallbackFocusRef={addOpportunityButtonRef}
       />
       <ConfirmDialog
