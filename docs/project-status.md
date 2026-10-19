@@ -24,6 +24,8 @@ The follow-ups milestone (suggested and editable follow-up dates, application de
 
 Public deployment to GitHub Pages is configured and live at `https://tato22-alt.github.io/gestor-postulaciones-it/`. The first successful deployment ran after the repository's Pages source was set to "GitHub Actions". With it, every item of the local MVP definition is implemented.
 
+The finishing-touches milestone (backup export and import, CSV export, download of unreadable stored data, a privacy note, a duplicate URL warning, removal of non-functional placeholders, and Node 24 workflow actions) is implemented and verified.
+
 The UX pass milestone (accent-insensitive search, success feedback, created-under-filter notice, focus management, and Escape to close the form) is implemented and verified. An automated unit-test suite based on the native `node:test` runner was added without new dependencies.
 
 The application can create and edit opportunities, persist them in the current browser origin, rehydrate domain instances after reload, recover safely when stored data is invalid, derive honest metrics from the complete collection, synchronize valid storage changes between same-origin tabs, and derive a visible subset from temporary search and status criteria.
@@ -329,6 +331,20 @@ The production build was verified by serving `dist` statically under `/gestor-po
 
 Rollback: revert the deployment commit or disable GitHub Pages in the repository settings.
 
+### Finishing touches
+
+* **Backup export:** "Exportar respaldo" downloads `gestor-postulaciones-respaldo-YYYY-MM-DD.json` with `{ format: 'it-job-search-assistant.backup', schemaVersion: 1, exportedAt, opportunities, applications }`, built with the repository serializers (`src/infrastructure/backupFile.js`).
+* **Backup import:** "Importar respaldo" reads a file of at most 5 MB and validates it with the same strict record validators as browser storage. It rejects invalid JSON, unknown formats or versions, extra envelope fields, `__proto__`/`constructor`/`prototype` keys anywhere, unsafe URLs, duplicated identifiers, two applications for one opportunity, and oversized text.
+* **Non-destructive merge:** `planBackupImport` (application layer) only adds records whose identifiers do not exist. An application is added only when its opportunity exists after the merge and has no other application. A confirmation dialog shows what will be added and what is skipped and why; the plan is recalculated at confirm time. Import is refused while any stored collection cannot be read.
+* **Unreadable stored data:** the storage warning offers "Descargar los datos guardados tal como están", which downloads the raw stored text through `readRawValue()`. Nothing is repaired or deleted.
+* **CSV export:** opportunities and applications as separate files with Spanish headers, RFC 4180 quoting, CRLF line endings, a UTF-8 BOM, and an apostrophe prefix for cells starting with `=`, `+`, `-`, `@`, tab, or carriage return (`src/application/csvExport.js`).
+* **Possible duplicates:** `duplicateOpportunityPolicy.js` compares URLs after lowercasing protocol and host, dropping the fragment, and dropping a trailing slash. Saving an opportunity whose URL matches another shows a non-blocking warning with "Guardar igual" and "Seguir editando"; changing the URL clears it. Nothing is blocked or deleted.
+* **Privacy note** in the header: data is stored only in this browser; export a backup to keep it.
+* **Success feedback:** the `role="status"` live region stays mounted and is shown as a fixed toast at the bottom, so messages are announced reliably and do not shift the layout.
+* **Removed placeholders:** the static "Fuentes de empleo" section and the "Recomendaciones" placeholder group were removed from the interface; `CompanySource` and `MatchResult` remain in the domain model.
+* **Workflow:** `actions/checkout@v5`, `actions/setup-node@v5`, `actions/configure-pages@v6`, and `actions/deploy-pages@v5` run on Node 24; `actions/upload-pages-artifact@v3` is a composite action and was kept.
+* **Technical note:** the branch `feature/supabase-persistence` contains an SQL schema with row level security that is not connected to the application.
+
 ### Documentation
 
 Relevant documentation distinguishes:
@@ -342,10 +358,11 @@ Relevant documentation distinguishes:
 
 The repository does not yet include:
 
-* duplicate detection;
+* automatic duplicate merging (possible duplicates are only flagged);
 * deleting applications;
 * follow-up history (completed follow-ups are cleared, not archived);
 * reminders or notifications outside the application;
+* a source management interface;
 * source approval behavior;
 * source monitoring;
 * opportunity discovery;
@@ -371,7 +388,7 @@ They represented an earlier application-centered interface and must not be resto
 
 ### Presentation
 
-React components render the header, statistics, workspace tabs, the shared create/edit opportunity form, opportunity search and status controls, opportunity cards with status action buttons and visual treatment by status, the opportunity section, a confirmation dialog for destructive operations, and the static source, application, and follow-up sections.
+React components render the header, statistics, workspace tabs, the shared create/edit opportunity form, opportunity search and status controls, opportunity cards with status action buttons and visual treatment by status, the opportunity section, a confirmation dialog for destructive operations, the applications list with inline editing, the follow-up agenda, and the data panel for backups and CSV exports.
 
 ### State ownership
 
@@ -431,7 +448,6 @@ No remote service is connected.
 ## Current Limitations
 
 * Opportunity creation, editing, explicit status management, permanent deletion, local search, and status filtering are the functional opportunity workflows.
-* The source section remains static.
 * The agenda's "Vencido" and "Hoy" labels are calculated when the page renders; a page left open past midnight updates them on the next interaction or reload.
 * Opportunities with an application cannot be deleted; the long-term rule is a pending product decision.
 * If application storage cannot be read safely, the corrupted value is preserved and the app cannot know which opportunities already have an application, so opportunity deletion and application registration are disabled until a valid load succeeds.
@@ -440,7 +456,8 @@ No remote service is connected.
 * No remote synchronization exists.
 * No multi-device data sharing exists.
 * Tabs using `localhost`, `127.0.0.1`, or different ports do not share data.
-* Corrupted data is preserved and reported, but there is no user-facing repair or export workflow yet.
+* Unreadable stored data is preserved, reported, and downloadable as raw text; there is no automatic repair or reset.
+* Backup import adds records only; it never updates records that already exist with newer data from the file.
 * Automated tests cover pure domain, application, and repository logic only; React components are verified manually or with external browser scripts.
 * Escape closes the form only while keyboard focus is inside it.
 * Clearing `localStorage` from another tab (`storage` event with a `null` key) is not synchronized; the current tab keeps its collection and writes it back on the next save.
@@ -523,7 +540,9 @@ The manual opportunity and persistence flows have been reviewed through:
 * repository round-trip after deletion: save, reload, verify target absent, survivor rehydrated as a `JobOpportunity` instance;
 * `invalid_collection` guard for null, undefined, plain object, string, and numeric inputs.
 
-* 180 automated unit tests through `npm test`, also passing under the `America/Argentina/Buenos_Aires`, `Pacific/Kiritimati` (UTC+14), and `Pacific/Pago_Pago` (UTC−11) time zones, including follow-up suggestions, urgency, calendar-date helpers, application detail validation and editing, follow-up completion, the derived agenda, and the full 5×5 application transition matrix, registration eligibility, application status changes, application metrics, and the application repository;
+* 200 automated unit tests through `npm test` after the finishing touches, adding the backup round trip, malicious and invalid backups, the non-destructive import plan, CSV quoting and formula neutralization, and URL normalization for duplicates;
+* 33 automated browser checks for the finishing touches: backup export, CSV contents, import preview, Escape, import into an empty profile, persistence, re-import without duplicates, partial merge keeping local data, invalid, malicious, and `__proto__` files, raw download of unreadable data, refusal to import while storage is unreadable, the duplicate warning flow, removed placeholders, the privacy note, overflow at 1440 and 320 CSS pixels, and absence of console errors;
+* 180 automated unit tests through `npm test` before the finishing touches, also passing under the `America/Argentina/Buenos_Aires`, `Pacific/Kiritimati` (UTC+14), and `Pacific/Pago_Pago` (UTC−11) time zones, including follow-up suggestions, urgency, calendar-date helpers, application detail validation and editing, follow-up completion, the derived agenda, and the full 5×5 application transition matrix, registration eligibility, application status changes, application metrics, and the application repository;
 * 48 automated browser checks for follow-ups with a fixed browser clock in the Buenos Aires time zone: suggested dates after registration and each status, agenda order and "Vencido"/"Hoy"/"Próximo" labels, applied-date and follow-up validation, Escape and focus return, trimming, malicious-looking notes rendered as text, mark as done and focus, persistence after reload, final statuses without follow-up, cross-tab edit conflict with the draft preserved, rejection of timestamp-shaped stored follow-ups, horizontal overflow at five widths with long content, and absence of console errors;
 * 62 automated browser checks for application tracking: eligibility by status, confirmation and cancellation, Escape and focus containment, persistence, final-status confirmation, orphan applications, corrupted and duplicated stored data, cross-tab synchronization, cross-tab conflicts for registration, deletion, and final status, malicious-looking text, horizontal overflow at five widths, and absence of console errors;
 * 58 automated browser checks with Playwright on Chromium: validation, unsafe URL rejection, create, edit, status change, search, filters, created-under-filter notice, delete confirmation, Escape behavior, focus return and fallback, dialog focus containment, malicious-looking text, external-link attributes, reload persistence, corrupted and unsafe stored data, cross-tab synchronization, horizontal overflow at 1440, 1024, 768, 390, and 320 CSS pixels, and absence of console errors or warnings.
@@ -542,64 +561,14 @@ No blocking source defect is currently known. The reload report was conclusively
 
 The repository has deterministic unit tests for pure logic but no automated component or browser tests inside the repository. Adding them would require a testing dependency and explicit approval.
 
-`npm audit` reports advisories in development-only build tooling (`nanoid`, `postcss`, `source-map-js`, pulled in by Vite). They do not ship in the production bundle. Updating them changes `package-lock.json` and requires approval.
-
 These gaps should be addressed only when the corresponding approved milestone requires them.
-
-## Next Planned Technical Direction
-
-The next proposed milestone must be selected after the current opportunity-editing changes are manually reviewed.
-
-The intended direction is:
-
-```text
-OpportunityForm
-        ↓
-App coordinates accepted data and owns opportunities
-        ↓
-JobOpportunity and LocalStorageOpportunityRepository
-        ↓
-calculateDashboardMetrics and StatsPanel
-        ↓
-filterOpportunities and OpportunityFilters
-        ↓
-updateOpportunity and shared opportunity input rules
-```
-
-The implemented architecture now:
-
-* isolates browser storage behind a repository;
-* uses a stable namespaced key and versioned envelope;
-* validates parsed records and rehydrates real `JobOpportunity` instances;
-* preserves IDs, timestamps, order, optional fields, and corrupted data;
-* reports load and save failures safely;
-* derives dashboard metrics from one source of truth;
-* synchronizes same-origin tabs without polling;
-* derives a visible opportunity subset from temporary UI criteria;
-* keeps dashboard metrics independent from list filtering;
-* preserves entity identity while applying accepted edits;
-* blocks stale same-record edits instead of using silent last-write-wins behavior;
-* remains replaceable by a future remote repository.
-
-No later milestone is authorized automatically.
 
 ## Next Milestone (proposed, not yet approved)
 
-Rule-based compatibility analysis with a $0 budget: compare each opportunity with a candidate profile and search preferences entered by Luciano, and show strengths, warnings, missing skills, and missing information without AI. Required decisions: which criteria matter, their weights or priority, which mismatches are warnings versus exclusions, how missing data is treated, and the recommendation thresholds. AI-assisted analysis remains deferred until a budget exists.
+Candidates, each requiring Luciano's decisions before implementation:
 
-AI-assisted compatibility analysis remains deferred. It requires a backend or Edge Function, an approved provider and budget, a secret API key stored outside the frontend, a candidate profile entered by Luciano, and approved matching criteria.
+* manual source management: register official careers pages per company and create opportunities linked to a source, without monitoring;
+* deleting applications and the rule for deleting opportunities that have one;
+* rule-based compatibility analysis, which needs approved criteria, priorities, warning versus exclusion behavior, and missing-data handling.
 
-No implementation is authorized until this milestone is explicitly approved.
-
-## Intentionally Deferred
-
-The following remain planned for later approved milestones:
-
-* application conversion and tracking;
-* source approval and monitoring;
-* duplicate detection;
-* compatibility analysis;
-* remote persistence;
-* authentication and authorization;
-* AI-assisted analysis;
-* public deployment.
+No implementation is authorized until a milestone is explicitly approved.

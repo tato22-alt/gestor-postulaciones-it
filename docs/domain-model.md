@@ -22,7 +22,9 @@ Representa una fuente oficial de empleos de una empresa. Una fuente nueva comien
 
 ### `JobOpportunity`
 
-Representa una oferta detectada o ingresada manualmente. Conserva información como empresa, puesto, URL, publicación, requisitos y fuente de origen. Estos datos podrán colaborar con una futura detección de duplicados, pero esa comparación todavía no existe.
+Representa una oferta detectada o ingresada manualmente. Conserva información como empresa, puesto, URL, publicación, requisitos y fuente de origen. La URL se usa para avisar sobre posibles duplicados.
+
+`duplicateOpportunityPolicy.js` define una señal mínima de posible duplicado: dos oportunidades apuntan a la misma publicación cuando sus URLs coinciden después de pasar protocolo y host a minúsculas, quitar el `#fragmento` y quitar la barra final. La coincidencia solo genera un aviso; nunca bloquea, fusiona ni elimina oportunidades.
 
 El ciclo de vida de una oportunidad está controlado por cuatro estados: `detected`, `saved`, `dismissed` y `archived`. Las transiciones permitidas están centralizadas en `opportunityStatusPolicy.js`: desde detectada se puede avanzar a guardada, descartada o archivada; desde guardada o descartada se puede cambiar entre sí o archivar; desde archivada se puede restaurar a cualquiera de los otros tres estados. Las auto-transiciones y los retrocesos de guardada o descartada a detectada están siempre bloqueados. Ningún componente visual ni función de aplicación inventa reglas de transición fuera de esa política.
 
@@ -93,7 +95,7 @@ Todavía no existen:
 - persistencia remota o repositorios para perfiles, preferencias, fuentes o resultados de compatibilidad;
 - monitoreo de fuentes;
 - scraping o consumo de APIs;
-- detección de duplicados;
+- fusión automática de duplicados;
 - cálculo de puntajes o recomendaciones;
 - pesos de compatibilidad;
 - conversiones salariales;
