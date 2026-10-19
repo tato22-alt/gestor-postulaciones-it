@@ -146,6 +146,9 @@ const BACKUP_IMPORT_ERRORS = {
 const BACKUP_NOTHING_NEW_MESSAGE =
   'El respaldo no tiene datos nuevos: todo lo que contiene ya está en este navegador.'
 
+const BACKUP_EXPORT_PARTIAL_MESSAGE =
+  'Se exportó un respaldo con los datos de esta sesión, pero no incluye los datos guardados que no se pudieron leer. Descargalos desde el aviso de almacenamiento.'
+
 const CORRUPTED_DOWNLOAD_LABEL = 'Descargar los datos guardados tal como están'
 
 const CREATE_SUCCESS_MESSAGE = 'Oportunidad creada.'
@@ -256,6 +259,7 @@ function App() {
   const opportunitiesHeadingRef = useRef(null)
   const followUpsHeadingRef = useRef(null)
   const successFeedbackIdRef = useRef(0)
+  const dataPanelMessageIdRef = useRef(0)
   const successFeedbackTimeoutRef = useRef(null)
   const visibleOpportunities = filterOpportunities(opportunities, {
     searchQuery: opportunitySearchQuery,
@@ -641,6 +645,15 @@ function App() {
     }
   }
 
+  const isAnyStorageBlocked = () =>
+    opportunityRepository.isPersistenceBlocked || applicationRepository.isPersistenceBlocked
+
+  // Each message gets a new id so repeating the same text is announced again.
+  const showDataPanelMessage = (message) => {
+    dataPanelMessageIdRef.current += 1
+    setDataPanelMessage(message ? { ...message, id: dataPanelMessageIdRef.current } : null)
+  }
+
   const todayFileSuffix = () => toLocalDateString(new Date()) ?? 'sin-fecha'
 
   const exportBackup = () => {
@@ -649,7 +662,13 @@ function App() {
       content: createBackupText({ opportunities, applications }),
       mimeType: 'application/json',
     })
-    setDataPanelMessage(null)
+
+    if (isAnyStorageBlocked()) {
+      showDataPanelMessage({ type: 'error', text: BACKUP_EXPORT_PARTIAL_MESSAGE })
+      return
+    }
+
+    showDataPanelMessage(null)
     showSuccessFeedback(BACKUP_EXPORT_SUCCESS_MESSAGE)
   }
 
@@ -671,11 +690,8 @@ function App() {
     showSuccessFeedback(CSV_EXPORT_SUCCESS_MESSAGE)
   }
 
-  const isAnyStorageBlocked = () =>
-    opportunityRepository.isPersistenceBlocked || applicationRepository.isPersistenceBlocked
-
   const showBackupImportError = (status) => {
-    setDataPanelMessage({ type: 'error', text: BACKUP_IMPORT_ERRORS[status] })
+    showDataPanelMessage({ type: 'error', text: BACKUP_IMPORT_ERRORS[status] })
   }
 
   const importBackupFile = async (file) => {
@@ -713,11 +729,11 @@ function App() {
     })
 
     if (!plan.hasChanges) {
-      setDataPanelMessage({ type: 'info', text: BACKUP_NOTHING_NEW_MESSAGE })
+      showDataPanelMessage({ type: 'info', text: BACKUP_NOTHING_NEW_MESSAGE })
       return
     }
 
-    setDataPanelMessage(null)
+    showDataPanelMessage(null)
     setPendingBackupImport({ backup: parsed, preview: describeBackupImport(plan) })
   }
 
@@ -747,18 +763,22 @@ function App() {
     })
 
     if (!plan.hasChanges) {
-      setDataPanelMessage({ type: 'info', text: BACKUP_NOTHING_NEW_MESSAGE })
+      showDataPanelMessage({ type: 'info', text: BACKUP_NOTHING_NEW_MESSAGE })
       return
     }
 
     setOpportunities(plan.nextOpportunities)
     setApplications(plan.nextApplications)
 
+    // Applications are saved only after their opportunities, so a failed write can never
+    // leave stored applications pointing to opportunities that were not stored.
     const opportunitySave = opportunityRepository.saveAll(plan.nextOpportunities)
-    const applicationSave = applicationRepository.saveAll(plan.nextApplications)
+    const applicationSave = opportunitySave.ok
+      ? applicationRepository.saveAll(plan.nextApplications)
+      : opportunitySave
 
     if (!opportunitySave.ok || !applicationSave.ok) {
-      setDataPanelMessage({
+      showDataPanelMessage({
         type: 'error',
         text: 'Los datos se importaron en esta sesión, pero no pudieron guardarse en el navegador. Pueden perderse al recargar la página.',
       })
@@ -767,7 +787,7 @@ function App() {
 
     setPersistenceWarning(null)
     setApplicationWarning(null)
-    setDataPanelMessage({
+    showDataPanelMessage({
       type: 'info',
       text: `Respaldo importado: ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad agregada', 'oportunidades agregadas')} y ${pluralize(plan.applicationsToAdd.length, 'postulación agregada', 'postulaciones agregadas')}.`,
     })

@@ -52,14 +52,21 @@ function DataPanel({ message, onExportBackup, onImportFile, onExportOpportunitie
         </button>
       </div>
 
-      {message && (
-        <p
-          className={`data-panel-message data-panel-message--${message.type}`}
-          role={message.type === 'error' ? 'alert' : 'status'}
-        >
-          {message.text}
-        </p>
-      )}
+      {/* Both live regions stay mounted; only their content changes, keyed by message id. */}
+      <div role="alert">
+        {message?.type === 'error' && (
+          <p key={message.id} className="data-panel-message data-panel-message--error">
+            {message.text}
+          </p>
+        )}
+      </div>
+      <div role="status">
+        {message?.type === 'info' && (
+          <p key={message.id} className="data-panel-message data-panel-message--info">
+            {message.text}
+          </p>
+        )}
+      </div>
     </section>
   )
 }

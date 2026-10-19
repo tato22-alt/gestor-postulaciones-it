@@ -124,7 +124,8 @@
 .app-main {
   display: grid;
   gap: 24px;
-  padding: 32px 0 64px;
+  /* Bottom space keeps the fixed success toast from covering the last controls. */
+  padding: 32px 0 112px;
 }
 
 .section-heading,
@@ -1070,7 +1071,7 @@
   }
 
   .app-main {
-    padding: 24px 0 40px;
+    padding: 24px 0 112px;
   }
 
   .statistics-grid,

@@ -21,7 +21,9 @@ export function escapeCsvCell(value) {
   const text = value === null || value === undefined ? '' : String(value)
   const safeText = FORMULA_TRIGGER_PATTERN.test(text) ? `'${text}` : text
 
-  return /[",\r\n]/.test(safeText) ? `"${safeText.replaceAll('"', '""')}"` : safeText
+  // Semicolons and tabs are quoted too: spreadsheet programs in Spanish locales split
+  // CSV files on ';', which would otherwise let a value start a new, formula-like cell.
+  return /[",;\t\r\n]/.test(safeText) ? `"${safeText.replaceAll('"', '""')}"` : safeText
 }
 
 export function toCsv(rows) {

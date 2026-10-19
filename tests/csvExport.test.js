@@ -15,6 +15,11 @@ describe('csvExport', () => {
     assert.equal(escapeCsvCell(null), '')
   })
 
+  it('quotes semicolons and tabs so locales that split on ";" cannot start a formula cell', () => {
+    assert.equal(escapeCsvCell('ACME;=1+1'), '"ACME;=1+1"')
+    assert.equal(escapeCsvCell('a\tb'), '"a\tb"')
+  })
+
   it('neutralizes spreadsheet formulas', () => {
     for (const value of ['=HYPERLINK("x")', '+1', '-1', '@SUM(A1)', '\tx', '\rx']) {
       assert.ok(escapeCsvCell(value).replace(/^"/, '').startsWith("'"), JSON.stringify(value))
