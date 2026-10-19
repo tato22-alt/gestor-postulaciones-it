@@ -18,7 +18,7 @@ Los rangos pueden expresarse con objetos `{ min, max }`. Por ejemplo, `travelTim
 
 ### `CompanySource`
 
-Representa una fuente oficial de empleos de una empresa. Una fuente nueva comienza pendiente y debe pasar a estado aprobado antes de que una futura infraestructura pueda monitorearla.
+Representa una fuente oficial de empleos de una empresa. Una fuente nueva comienza pendiente y debe pasar a estado aprobado antes de que una futura infraestructura pueda monitorearla. Las fuentes que el usuario agrega a mano se crean aprobadas, porque es el propio usuario quien las elige; no se monitorean. Una fuente con oportunidades asociadas no puede eliminarse.
 
 ### `JobOpportunity`
 

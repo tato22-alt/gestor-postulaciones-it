@@ -331,6 +331,19 @@ The production build was verified by serving `dist` statically under `/gestor-po
 
 Rollback: revert the deployment commit or disable GitHub Pages in the repository settings.
 
+### Sources, text limits, and application deletion
+
+Approved by Luciano ("sí a todo"):
+
+* **Text limits:** company and title up to 200 characters and description up to 10,000, enforced in the form (with `maxLength`) and in imported backups. Browser storage does not enforce them, so data saved before the limits can still be loaded.
+* **Application deletion:** "Eliminar postulación" with a destructive confirmation dialog and optimistic concurrency (`deleteApplication`). The opportunity is kept and can receive a new application or be deleted.
+* **Job sources:** a "Fuentes (N)" tab to add, edit (inline, Escape cancels), and delete official careers pages. A source added by the user is created as `approved` with `approvedAt`, because the user is the one who decides; nothing is discovered or monitored automatically. A source with linked opportunities cannot be deleted. "Agregar oportunidad" from a source opens the opportunity form with the company prefilled and stores `sourceId`; the opportunity card and the opportunities CSV show the source.
+* `LocalStorageSourceRepository` uses the key `it-job-search-assistant.sources`, a versioned envelope, strict validation, raw download of unreadable data, and same-origin tab synchronization.
+* **Backups** move to `schemaVersion: 2` with `sources`; version 1 files are still accepted. Imports save sources, then opportunities, then applications, each only if the previous save succeeded.
+* **Tabs** wrap on narrow screens so three tabs never cause horizontal overflow.
+* **README screenshots** in `docs/screenshots/` use fictional demo data.
+* The remote branches `feature/supabase-persistence` and `qa/browser-checks` could not be deleted from the cloud environment (the Git proxy rejects branch deletion); they were deleted locally and must be deleted on GitHub.
+
 ### Finishing touches
 
 * **Backup export:** "Exportar respaldo" downloads `gestor-postulaciones-respaldo-YYYY-MM-DD.json` with `{ format: 'it-job-search-assistant.backup', schemaVersion: 1, exportedAt, opportunities, applications }`, built with the repository serializers (`src/infrastructure/backupFile.js`).
@@ -363,8 +376,7 @@ The repository does not yet include:
 * deleting applications;
 * follow-up history (completed follow-ups are cleared, not archived);
 * reminders or notifications outside the application;
-* a source management interface;
-* source approval behavior;
+* automatic source discovery or approval workflows (sources are added manually);
 * source monitoring;
 * opportunity discovery;
 * compatibility matching;
@@ -459,7 +471,7 @@ No remote service is connected.
 * Tabs using `localhost`, `127.0.0.1`, or different ports do not share data.
 * Unreadable stored data is preserved, reported, and downloadable as raw text; there is no automatic repair or reset.
 * Backup import adds records only; it never updates records that already exist with newer data from the file.
-* Opportunity text fields (company, title, description, location) have no maximum length; a backup up to 5 MB can contain very long values. Defining limits is a pending product decision.
+* Location has no maximum length.
 * Automated tests cover pure domain, application, and repository logic only; React components are verified manually or with external browser scripts.
 * Escape closes the form only while keyboard focus is inside it.
 * Clearing `localStorage` from another tab (`storage` event with a `null` key) is not synchronized; the current tab keeps its collection and writes it back on the next save.
@@ -569,8 +581,6 @@ These gaps should be addressed only when the corresponding approved milestone re
 
 Candidates, each requiring Luciano's decisions before implementation:
 
-* manual source management: register official careers pages per company and create opportunities linked to a source, without monitoring;
-* deleting applications and the rule for deleting opportunities that have one;
 * rule-based compatibility analysis, which needs approved criteria, priorities, warning versus exclusion behavior, and missing-data handling.
 
 No implementation is authorized until a milestone is explicitly approved.

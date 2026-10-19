@@ -6,6 +6,8 @@ Aplicación web para organizar una búsqueda laboral en tecnología: registrá l
 
 No requiere cuenta. Tus datos se guardan en tu propio navegador.
 
+![Lista de oportunidades](docs/screenshots/oportunidades.png)
+
 ## Funcionalidades
 
 **Oportunidades**
@@ -20,18 +22,31 @@ No requiere cuenta. Tus datos se guardan en tu propio navegador.
 
 * registro de una postulación a partir de una oportunidad, con confirmación;
 * estados Postulado, Entrevista, Prueba técnica, Oferta y Rechazado;
-* fecha de postulación, próxima acción y notas editables.
+* fecha de postulación, próxima acción y notas editables;
+* eliminación con confirmación, conservando la oportunidad.
+
+![Postulaciones con su estado y próximo seguimiento](docs/screenshots/postulaciones.png)
 
 **Seguimientos**
 
 * fecha de seguimiento sugerida según la etapa (7 días después de postularte, 3 después de una entrevista y 5 después de una prueba técnica), siempre editable;
 * agenda ordenada por fecha con etiquetas «Vencido», «Hoy» y «Próximo».
 
+![Agenda de seguimientos](docs/screenshots/seguimientos.png)
+
+**Fuentes de empleo**
+
+* páginas de empleo oficiales de las empresas que seguís, con acceso directo;
+* carga de oportunidades desde una fuente, que queda asociada a la oferta.
+
+![Fuentes de empleo](docs/screenshots/fuentes.png)
+
 **Tus datos**
 
 * respaldo en un archivo JSON para guardar una copia o pasar los datos a otro navegador;
 * importación de respaldos que solo agrega lo nuevo, con vista previa;
-* exportación de oportunidades y postulaciones a CSV para abrirlas en una planilla.
+* exportación de oportunidades y postulaciones a CSV para abrirlas en una planilla;
+* el respaldo incluye oportunidades, postulaciones y fuentes.
 
 **Estadísticas**
 
@@ -40,7 +55,7 @@ No requiere cuenta. Tus datos se guardan en tu propio navegador.
 
 ## Cómo se usa
 
-1. En **Oportunidades**, agregá cada oferta que te interese con «Agregar oportunidad».
+1. En **Oportunidades**, agregá cada oferta que te interese con «Agregar oportunidad». Si seguís a una empresa, guardá su página de empleo en **Fuentes** y cargá sus ofertas desde ahí.
 2. Cuando te postules, presioná «Registrar postulación» en su tarjeta.
 3. En **Postulaciones**, avanzá el estado de cada proceso y editá fechas, próxima acción y notas.
 4. Revisá **Próximos seguimientos** para saber a quién escribir y cuándo. Marcá cada seguimiento como hecho al completarlo.
