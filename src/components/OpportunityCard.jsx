@@ -36,6 +36,7 @@ const DE_EMPHASIZED_STATUSES = new Set([
 function OpportunityCard({
   opportunity,
   application,
+  sourceName,
   areStoredApplicationsUnavailable,
   isEditDisabled,
   isBeingEdited,
@@ -70,8 +71,15 @@ function OpportunityCard({
       {(opportunity.modality ||
         opportunity.employmentType ||
         opportunity.location ||
-        opportunity.publishedAt) && (
+        opportunity.publishedAt ||
+        sourceName) && (
         <dl className="opportunity-details">
+          {sourceName && (
+            <div>
+              <dt>Fuente</dt>
+              <dd>{sourceName}</dd>
+            </div>
+          )}
           {opportunity.modality && (
             <div>
               <dt>Modalidad</dt>

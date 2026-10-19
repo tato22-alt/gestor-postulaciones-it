@@ -10,22 +10,33 @@ import {
   serializeApplication,
 } from './LocalStorageApplicationRepository.js'
 import { isValidStoredOpportunity, serializeOpportunity } from './LocalStorageOpportunityRepository.js'
+import {
+  hasUniqueSourceIds,
+  isValidStoredSource,
+  serializeSource,
+} from './LocalStorageSourceRepository.js'
+import CompanySource from '../domain/CompanySource.js'
 import { hasExactFields, isPlainObject, isValidTimestamp } from './storageValidation.js'
 
 export const BACKUP_FORMAT = 'it-job-search-assistant.backup'
-export const BACKUP_SCHEMA_VERSION = 1
+// Version 2 adds job sources. Version 1 backups (without sources) are still accepted.
+export const BACKUP_SCHEMA_VERSION = 2
 export const BACKUP_MAX_BYTES = 5 * 1024 * 1024
 
-const BACKUP_FIELDS = ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications']
+const BACKUP_FIELDS_BY_VERSION = {
+  1: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications'],
+  2: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications', 'sources'],
+}
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 
-export function createBackupText({ opportunities, applications, now = new Date() }) {
+export function createBackupText({ opportunities, applications, sources, now = new Date() }) {
   const backup = {
     format: BACKUP_FORMAT,
     schemaVersion: BACKUP_SCHEMA_VERSION,
     exportedAt: new Date(now).toISOString(),
     opportunities: opportunities.map(serializeOpportunity),
     applications: applications.map(serializeApplication),
+    sources: sources.map(serializeSource),
   }
 
   return JSON.stringify(backup, null, 2)
@@ -79,12 +90,19 @@ export function parseBackupText(text) {
     return { ok: false, status: 'unknown_format' }
   }
 
-  if (backup.schemaVersion !== BACKUP_SCHEMA_VERSION) {
+  const fields = BACKUP_FIELDS_BY_VERSION[backup.schemaVersion]
+
+  if (!fields) {
     return { ok: false, status: 'unsupported_version' }
   }
 
+  const sources = backup.schemaVersion >= 2 ? backup.sources : []
+
   if (
-    !hasExactFields(backup, BACKUP_FIELDS) ||
+    !hasExactFields(backup, fields) ||
+    !Array.isArray(sources) ||
+    !sources.every(isValidStoredSource) ||
+    !hasUniqueSourceIds(sources) ||
     !isValidTimestamp(backup.exportedAt) ||
     !Array.isArray(backup.opportunities) ||
     !Array.isArray(backup.applications) ||
@@ -102,5 +120,6 @@ export function parseBackupText(text) {
     status: 'parsed',
     opportunities: backup.opportunities.map((record) => new JobOpportunity(record)),
     applications: backup.applications.map((record) => new Application(record)),
+    sources: sources.map((record) => new CompanySource(record)),
   }
 }

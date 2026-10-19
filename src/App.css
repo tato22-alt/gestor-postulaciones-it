@@ -77,6 +77,29 @@
   color: #1d4ed8;
 }
 
+.source-form {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.source-count {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #344054;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+.opportunity-form-source {
+  margin: 0 0 16px;
+  color: #475467;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
 .duplicate-warning {
   display: grid;
   gap: 12px;

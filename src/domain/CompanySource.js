@@ -1,6 +1,8 @@
 import { SOURCE_STATUSES } from '../constants/domainOptions.js'
 import { generateId } from '../utils/id.js'
 
+export const SOURCE_COMPANY_NAME_MAX_LENGTH = 200
+
 class CompanySource {
   constructor({
     id = generateId(),

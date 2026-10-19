@@ -51,6 +51,7 @@ function OpportunityForm({
   mode = 'create',
   initialValues,
   submissionWarning,
+  sourceName,
   findOpportunityWithSameUrl,
   onSubmit,
   onCancel,
@@ -169,6 +170,10 @@ function OpportunityForm({
             : 'Registrá los datos básicos de una oferta para revisarla.'}
         </p>
       </div>
+
+      {sourceName && (
+        <p className="opportunity-form-source">Desde la fuente: {sourceName}</p>
+      )}
 
       {submissionWarning && (
         <div className="edit-conflict-warning" role="alert">

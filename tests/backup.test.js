@@ -2,13 +2,14 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import planBackupImport from '../src/application/planBackupImport.js'
 import Application from '../src/domain/Application.js'
+import CompanySource from '../src/domain/CompanySource.js'
 import JobOpportunity from '../src/domain/JobOpportunity.js'
 import { BACKUP_MAX_BYTES, createBackupText, parseBackupText } from '../src/infrastructure/backupFile.js'
 import { createApplication, createOpportunity } from './helpers.js'
 
 const NOW = '2026-01-10T12:00:00.000Z'
-const backupOf = (opportunities, applications) =>
-  createBackupText({ opportunities, applications, now: NOW })
+const backupOf = (opportunities, applications, sources = []) =>
+  createBackupText({ opportunities, applications, sources, now: NOW })
 const tamper = (text, change) => {
   const backup = JSON.parse(text)
   change(backup)
@@ -24,7 +25,7 @@ describe('backup file', () => {
     const result = parseBackupText(text)
 
     assert.equal(envelope.format, 'it-job-search-assistant.backup')
-    assert.equal(envelope.schemaVersion, 1)
+    assert.equal(envelope.schemaVersion, 2)
     assert.equal(envelope.exportedAt, NOW)
     assert.equal(result.ok, true)
     assert.ok(result.opportunities[0] instanceof JobOpportunity)
@@ -39,7 +40,26 @@ describe('backup file', () => {
     assert.equal(parseBackupText('{nope').status, 'invalid_json')
     assert.equal(parseBackupText('[]').status, 'unknown_format')
     assert.equal(parseBackupText(tamper(valid, (b) => { b.format = 'other' })).status, 'unknown_format')
-    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 2 })).status, 'unsupported_version')
+    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 3 })).status, 'unsupported_version')
+  })
+
+  it('still accepts version 1 backups without sources', () => {
+    const v1 = tamper(backupOf([createOpportunity()], []), (b) => {
+      b.schemaVersion = 1
+      delete b.sources
+    })
+    const result = parseBackupText(v1)
+
+    assert.equal(result.ok, true)
+    assert.deepEqual(result.sources, [])
+  })
+
+  it('round-trips sources and rejects unsafe source URLs', () => {
+    const source = new CompanySource({ id: 's1', companyName: 'Acme', careersUrl: 'https://acme.com/jobs', status: 'approved', discoveredAt: NOW })
+    const text = backupOf([], [], [source])
+
+    assert.deepEqual({ ...parseBackupText(text).sources[0] }, { ...source })
+    assert.equal(parseBackupText(tamper(text, (b) => { b.sources[0].careersUrl = 'javascript:x' })).status, 'invalid_records')
   })
 
   it('rejects oversized text before parsing', () => {
@@ -111,6 +131,7 @@ describe('planBackupImport', () => {
 
     assert.deepEqual(result.applicationsToAdd.map((a) => a.id), ['for-o2', 'for-o3'])
     assert.deepEqual(result.skipped, {
+      existingSources: 0,
       existingOpportunities: 0,
       existingApplications: 1,
       applicationsWithoutOpportunity: 1,

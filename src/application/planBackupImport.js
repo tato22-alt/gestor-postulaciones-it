@@ -5,7 +5,12 @@ export default function planBackupImport({
   currentApplications,
   backupOpportunities,
   backupApplications,
+  currentSources = [],
+  backupSources = [],
 }) {
+  const sourceIds = new Set(currentSources.map((source) => source.id))
+  const sourcesToAdd = backupSources.filter((source) => !sourceIds.has(source.id))
+
   const opportunityIds = new Set(currentOpportunities.map((opportunity) => opportunity.id))
   const opportunitiesToAdd = []
   let existingOpportunities = 0
@@ -41,9 +46,11 @@ export default function planBackupImport({
   }
 
   return {
+    sourcesToAdd,
     opportunitiesToAdd,
     applicationsToAdd,
     skipped: {
+      existingSources: backupSources.length - sourcesToAdd.length,
       existingOpportunities,
       existingApplications: skippedApplications.existing,
       applicationsWithoutOpportunity: skippedApplications.withoutOpportunity,
@@ -51,6 +58,8 @@ export default function planBackupImport({
     },
     nextOpportunities: [...currentOpportunities, ...opportunitiesToAdd],
     nextApplications: [...currentApplications, ...applicationsToAdd],
-    hasChanges: opportunitiesToAdd.length > 0 || applicationsToAdd.length > 0,
+    nextSources: [...currentSources, ...sourcesToAdd],
+    hasChanges:
+      sourcesToAdd.length > 0 || opportunitiesToAdd.length > 0 || applicationsToAdd.length > 0,
   }
 }

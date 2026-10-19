@@ -34,7 +34,7 @@ describe('csvExport', () => {
     const [header, row] = csv.slice(1).trimEnd().split('\r\n')
 
     assert.ok(csv.startsWith('﻿'))
-    assert.equal(header, 'Empresa,Puesto,Estado,Modalidad,Jornada,Ubicación,Fecha de publicación,Enlace,Fecha de alta')
+    assert.equal(header, 'Empresa,Puesto,Estado,Modalidad,Jornada,Ubicación,Fecha de publicación,Enlace,Fecha de alta,Fuente')
     assert.ok(row.startsWith('"Ácme, SA",Desarrollador trainee,Guardada,Remota,,,2026-01-02,https://example.com/jobs/1,'))
   })
 

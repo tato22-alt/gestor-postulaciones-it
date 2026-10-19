@@ -10,6 +10,7 @@ import deleteApplication from './application/deleteApplication.js'
 import deleteOpportunity from './application/deleteOpportunity.js'
 import filterOpportunities from './application/filterOpportunities.js'
 import getPendingFollowUps from './application/getPendingFollowUps.js'
+import { createSource, deleteSource, updateSource } from './application/manageSources.js'
 import planBackupImport from './application/planBackupImport.js'
 import registerApplication from './application/registerApplication.js'
 import updateApplicationDetails from './application/updateApplicationDetails.js'
@@ -23,6 +24,7 @@ import Header from './components/Header.jsx'
 import OpportunityForm from './components/OpportunityForm.jsx'
 import OpportunitySection from './components/OpportunitySection.jsx'
 import PersistenceWarning from './components/PersistenceWarning.jsx'
+import SourcesPanel from './components/SourcesPanel.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import SuccessFeedback from './components/SuccessFeedback.jsx'
 import WorkspaceTabs from './components/WorkspaceTabs.jsx'
@@ -49,6 +51,9 @@ import LocalStorageApplicationRepository, {
 import LocalStorageOpportunityRepository, {
   OPPORTUNITY_STORAGE_KEY,
 } from './infrastructure/LocalStorageOpportunityRepository.js'
+import LocalStorageSourceRepository, {
+  SOURCE_STORAGE_KEY,
+} from './infrastructure/LocalStorageSourceRepository.js'
 import { toLocalDateString } from './utils/date.js'
 
 const LOAD_WARNING =
@@ -160,6 +165,25 @@ const BACKUP_EXPORT_PARTIAL_MESSAGE =
 
 const CORRUPTED_DOWNLOAD_LABEL = 'Descargar los datos guardados tal como están'
 
+const SOURCE_LOAD_WARNING =
+  'No pudimos recuperar las fuentes guardadas de forma segura. Los datos almacenados se conservaron sin sobrescribirse. Las fuentes de esta sesión no se guardarán permanentemente.'
+
+const SOURCE_SAVE_WARNING =
+  'La fuente se actualizó en esta sesión, pero no pudo guardarse en el navegador. El cambio puede perderse al recargar la página.'
+
+const SOURCE_EDIT_WARNINGS = {
+  conflict:
+    'Esta fuente cambió mientras la editabas, por ejemplo en otra pestaña. Tus cambios no se guardaron. Cancelá y volvé a abrirla.',
+  not_found: 'La fuente que estabas editando ya no está disponible.',
+  invalid_input: 'Revisá los datos ingresados.',
+}
+
+const SOURCE_DELETE_WARNINGS = {
+  conflict: 'Esta fuente cambió mientras el diálogo estaba abierto. No se eliminó.',
+  not_found: 'La fuente que intentabas eliminar ya no está disponible.',
+  has_opportunities: 'La fuente tiene oportunidades asociadas, por eso no se eliminó.',
+}
+
 const CREATE_SUCCESS_MESSAGE = 'Oportunidad creada.'
 const EDIT_SUCCESS_MESSAGE = 'Oportunidad editada.'
 const STATUS_SUCCESS_MESSAGE = 'Estado actualizado.'
@@ -169,6 +193,9 @@ const APPLICATION_SUCCESS_MESSAGE =
 const APPLICATION_STATUS_SUCCESS_MESSAGE = 'Estado de la postulación actualizado.'
 const APPLICATION_EDIT_SUCCESS_MESSAGE = 'Postulación actualizada.'
 const APPLICATION_DELETE_SUCCESS_MESSAGE = 'Postulación eliminada.'
+const SOURCE_CREATE_SUCCESS_MESSAGE = 'Fuente agregada.'
+const SOURCE_EDIT_SUCCESS_MESSAGE = 'Fuente actualizada.'
+const SOURCE_DELETE_SUCCESS_MESSAGE = 'Fuente eliminada.'
 const BACKUP_EXPORT_SUCCESS_MESSAGE = 'Respaldo exportado.'
 const CSV_EXPORT_SUCCESS_MESSAGE = 'Planilla CSV exportada.'
 const FOLLOW_UP_SUCCESS_MESSAGE =
@@ -185,11 +212,17 @@ function pluralize(count, singular, plural) {
 }
 
 function describeBackupImport(plan) {
+  const sourcesPart =
+    plan.sourcesToAdd.length > 0
+      ? `${pluralize(plan.sourcesToAdd.length, 'fuente', 'fuentes')}, `
+      : ''
   const lines = [
-    `Se van a agregar ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad', 'oportunidades')} y ${pluralize(plan.applicationsToAdd.length, 'postulación', 'postulaciones')}.`,
+    `Se van a agregar ${sourcesPart}${pluralize(plan.opportunitiesToAdd.length, 'oportunidad', 'oportunidades')} y ${pluralize(plan.applicationsToAdd.length, 'postulación', 'postulaciones')}.`,
   ]
   const { skipped } = plan
   const omitted = [
+    skipped.existingSources > 0 &&
+      `${pluralize(skipped.existingSources, 'fuente que ya existe', 'fuentes que ya existen')}`,
     skipped.existingOpportunities > 0 &&
       `${pluralize(skipped.existingOpportunities, 'oportunidad que ya existe', 'oportunidades que ya existen')}`,
     skipped.existingApplications > 0 &&
@@ -232,6 +265,8 @@ const opportunityRepository = new LocalStorageOpportunityRepository(getBrowserSt
 const initialOpportunityLoad = opportunityRepository.loadAll()
 const applicationRepository = new LocalStorageApplicationRepository(getBrowserStorage())
 const initialApplicationLoad = applicationRepository.loadAll()
+const sourceRepository = new LocalStorageSourceRepository(getBrowserStorage())
+const initialSourceLoad = sourceRepository.loadAll()
 
 function App() {
   const [opportunities, setOpportunities] = useState(initialOpportunityLoad.opportunities)
@@ -240,6 +275,13 @@ function App() {
     initialOpportunityLoad.ok ? null : LOAD_WARNING,
   )
   const [applications, setApplications] = useState(initialApplicationLoad.applications)
+  const [sources, setSources] = useState(initialSourceLoad.sources)
+  const [sourceWarning, setSourceWarning] = useState(initialSourceLoad.ok ? null : SOURCE_LOAD_WARNING)
+  const [sourceEditSession, setSourceEditSession] = useState(null)
+  const [sourceEditWarning, setSourceEditWarning] = useState(null)
+  const [pendingSourceDeletion, setPendingSourceDeletion] = useState(null)
+  // Source that the opportunity form is creating from, if any. Temporary UI state.
+  const [opportunityFormSource, setOpportunityFormSource] = useState(null)
   const [applicationWarning, setApplicationWarning] = useState(
     initialApplicationLoad.ok ? null : APPLICATION_LOAD_WARNING,
   )
@@ -303,6 +345,17 @@ function App() {
         }
       }
 
+      if (event.key === SOURCE_STORAGE_KEY) {
+        const loadResult = sourceRepository.loadAll()
+
+        if (loadResult.ok) {
+          setSources([...loadResult.sources])
+          setSourceWarning(null)
+        } else {
+          setSourceWarning(SOURCE_LOAD_WARNING)
+        }
+      }
+
       if (event.key === APPLICATION_STORAGE_KEY) {
         const loadResult = applicationRepository.loadAll()
 
@@ -338,7 +391,8 @@ function App() {
     const trigger = formTriggerRef.current
     if (!trigger) return
 
-    if (document.contains(trigger)) {
+    // The trigger may be gone or inside a tab panel that is now hidden.
+    if (document.contains(trigger) && trigger.getClientRects().length > 0) {
       trigger.focus()
     } else {
       addOpportunityButtonRef.current?.focus()
@@ -364,12 +418,19 @@ function App() {
   const openOpportunityForm = () => {
     setActiveWorkspaceTab(WORKSPACE_TABS.OPPORTUNITIES)
     formTriggerRef.current = document.activeElement
+    setOpportunityFormSource(null)
     setEditingSession(null)
     setEditWarning(null)
     setIsOpportunityFormVisible(true)
   }
 
+  const openOpportunityFormFromSource = (source) => {
+    openOpportunityForm()
+    setOpportunityFormSource({ id: source.id, companyName: source.companyName })
+  }
+
   const closeOpportunityForm = () => {
+    setOpportunityFormSource(null)
     setIsOpportunityFormVisible(false)
     setEditingSession(null)
     setEditWarning(null)
@@ -696,7 +757,9 @@ function App() {
   }
 
   const isAnyStorageBlocked = () =>
-    opportunityRepository.isPersistenceBlocked || applicationRepository.isPersistenceBlocked
+    opportunityRepository.isPersistenceBlocked ||
+    applicationRepository.isPersistenceBlocked ||
+    sourceRepository.isPersistenceBlocked
 
   // Each message gets a new id so repeating the same text is announced again.
   const showDataPanelMessage = (message) => {
@@ -709,7 +772,7 @@ function App() {
   const exportBackup = () => {
     downloadTextFile({
       filename: `gestor-postulaciones-respaldo-${todayFileSuffix()}.json`,
-      content: createBackupText({ opportunities, applications }),
+      content: createBackupText({ opportunities, applications, sources }),
       mimeType: 'application/json',
     })
 
@@ -725,7 +788,7 @@ function App() {
   const exportOpportunitiesCsv = () => {
     downloadTextFile({
       filename: `gestor-postulaciones-oportunidades-${todayFileSuffix()}.csv`,
-      content: buildOpportunitiesCsv(opportunities),
+      content: buildOpportunitiesCsv(opportunities, sources),
       mimeType: 'text/csv;charset=utf-8',
     })
     showSuccessFeedback(CSV_EXPORT_SUCCESS_MESSAGE)
@@ -774,8 +837,10 @@ function App() {
     const plan = planBackupImport({
       currentOpportunities: opportunities,
       currentApplications: applications,
+      currentSources: sources,
       backupOpportunities: parsed.opportunities,
       backupApplications: parsed.applications,
+      backupSources: parsed.sources,
     })
 
     if (!plan.hasChanges) {
@@ -808,8 +873,10 @@ function App() {
     const plan = planBackupImport({
       currentOpportunities: opportunities,
       currentApplications: applications,
+      currentSources: sources,
       backupOpportunities: backup.opportunities,
       backupApplications: backup.applications,
+      backupSources: backup.sources,
     })
 
     if (!plan.hasChanges) {
@@ -817,12 +884,17 @@ function App() {
       return
     }
 
+    setSources(plan.nextSources)
     setOpportunities(plan.nextOpportunities)
     setApplications(plan.nextApplications)
 
-    // Applications are saved only after their opportunities, so a failed write can never
-    // leave stored applications pointing to opportunities that were not stored.
-    const opportunitySave = opportunityRepository.saveAll(plan.nextOpportunities)
+    // Collections are saved in dependency order (sources, opportunities, applications) and
+    // each only if the previous one succeeded, so a failed write never leaves stored records
+    // pointing to records that were not stored.
+    const sourceSave = sourceRepository.saveAll(plan.nextSources)
+    const opportunitySave = sourceSave.ok
+      ? opportunityRepository.saveAll(plan.nextOpportunities)
+      : sourceSave
     const applicationSave = opportunitySave.ok
       ? applicationRepository.saveAll(plan.nextApplications)
       : opportunitySave
@@ -837,9 +909,10 @@ function App() {
 
     setPersistenceWarning(null)
     setApplicationWarning(null)
+    setSourceWarning(null)
     showDataPanelMessage({
       type: 'info',
-      text: `Respaldo importado: ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad agregada', 'oportunidades agregadas')} y ${pluralize(plan.applicationsToAdd.length, 'postulación agregada', 'postulaciones agregadas')}.`,
+      text: `Respaldo importado: ${pluralize(plan.sourcesToAdd.length, 'fuente agregada', 'fuentes agregadas')}, ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad agregada', 'oportunidades agregadas')} y ${pluralize(plan.applicationsToAdd.length, 'postulación agregada', 'postulaciones agregadas')}.`,
     })
   }
 
@@ -862,6 +935,95 @@ function App() {
           onClick: () => downloadStoredRawValue(opportunityRepository, 'oportunidades'),
         }
       : null
+
+  const sourceWarningAction =
+    sourceWarning === SOURCE_LOAD_WARNING && sourceRepository.readRawValue() !== null
+      ? {
+          label: CORRUPTED_DOWNLOAD_LABEL,
+          onClick: () => downloadStoredRawValue(sourceRepository, 'fuentes'),
+        }
+      : null
+
+  const saveSources = (nextSources) => {
+    setSources(nextSources)
+
+    const saveResult = sourceRepository.saveAll(nextSources)
+
+    if (saveResult.ok) {
+      setSourceWarning(null)
+    } else {
+      setSourceWarning(keepLoadWarningOr(SOURCE_LOAD_WARNING, SOURCE_SAVE_WARNING))
+    }
+  }
+
+  const addSource = (changes) => {
+    const result = createSource(sources, { changes, now: new Date() })
+
+    if (!result.ok) {
+      setSourceWarning(SOURCE_EDIT_WARNINGS.invalid_input)
+      return false
+    }
+
+    saveSources(result.sources)
+    showSuccessFeedback(SOURCE_CREATE_SUCCESS_MESSAGE)
+    return true
+  }
+
+  const openSourceEdit = (source) => {
+    setSourceEditSession({ id: source.id, expectedUpdatedAt: source.updatedAt })
+    setSourceEditWarning(null)
+  }
+
+  const cancelSourceEdit = () => {
+    setSourceEditSession(null)
+    setSourceEditWarning(null)
+  }
+
+  const submitSourceEdit = (changes) => {
+    if (!sourceEditSession) return false
+
+    const result = updateSource(sources, { ...sourceEditSession, changes, now: new Date() })
+
+    if (!result.ok) {
+      setSourceEditWarning(SOURCE_EDIT_WARNINGS[result.status] ?? SOURCE_EDIT_WARNINGS.invalid_input)
+      return false
+    }
+
+    saveSources(result.sources)
+    setSourceEditSession(null)
+    setSourceEditWarning(null)
+    showSuccessFeedback(SOURCE_EDIT_SUCCESS_MESSAGE)
+    return true
+  }
+
+  const requestSourceDeletion = (source) => {
+    setPendingSourceDeletion({ id: source.id, expectedUpdatedAt: source.updatedAt })
+  }
+
+  const cancelSourceDeletion = () => {
+    setPendingSourceDeletion(null)
+  }
+
+  const confirmSourceDeletion = () => {
+    if (!pendingSourceDeletion) return
+
+    const result = deleteSource(sources, opportunities, pendingSourceDeletion)
+
+    setPendingSourceDeletion(null)
+
+    if (!result.ok) {
+      setSourceWarning(SOURCE_DELETE_WARNINGS[result.status] ?? SOURCE_EDIT_WARNINGS.invalid_input)
+      return
+    }
+
+    saveSources(result.sources)
+    showSuccessFeedback(SOURCE_DELETE_SUCCESS_MESSAGE)
+  }
+
+  const sourceToDelete = pendingSourceDeletion
+    ? (sources.find((source) => source.id === pendingSourceDeletion.id) ?? null)
+    : null
+  const sourceNamesById = new Map(sources.map((source) => [source.id, source.companyName]))
 
   const applicationWarningAction =
     applicationWarning === APPLICATION_LOAD_WARNING && applicationRepository.readRawValue() !== null
@@ -890,7 +1052,7 @@ function App() {
   const createOpportunity = (opportunityData) => {
     const opportunity = new JobOpportunity({
       ...opportunityData,
-      sourceId: null,
+      sourceId: opportunityFormSource?.id ?? null,
       requiredExperience: null,
       requiredSkills: [],
       preferredSkills: [],
@@ -979,6 +1141,7 @@ function App() {
         <WorkspaceTabs
           activeTab={activeWorkspaceTab}
           applicationCount={applications.length}
+          sourceCount={sources.length}
           onChange={setActiveWorkspaceTab}
         />
         <SuccessFeedback
@@ -992,6 +1155,7 @@ function App() {
         />
         <PersistenceWarning message={persistenceWarning} action={opportunityWarningAction} />
         <PersistenceWarning message={applicationWarning} action={applicationWarningAction} />
+        <PersistenceWarning message={sourceWarning} action={sourceWarningAction} />
         <div
           className="workspace-panel"
           role="tabpanel"
@@ -1004,10 +1168,14 @@ function App() {
               key={
                 editingSession
                   ? `edit-${editingSession.id}-${editingSession.expectedUpdatedAt}`
-                  : 'create'
+                  : `create-${opportunityFormSource?.id ?? 'manual'}`
               }
               mode={editingSession ? 'edit' : 'create'}
-              initialValues={editingSession?.initialValues}
+              initialValues={
+                editingSession?.initialValues ??
+                (opportunityFormSource ? { company: opportunityFormSource.companyName } : undefined)
+              }
+              sourceName={editingSession ? null : (opportunityFormSource?.companyName ?? null)}
               submissionWarning={editWarning}
               onSubmit={editingSession ? editOpportunity : createOpportunity}
               findOpportunityWithSameUrl={(url) =>
@@ -1020,6 +1188,7 @@ function App() {
             opportunities={opportunities}
             visibleOpportunities={visibleOpportunities}
             applications={applications}
+            sourceNamesById={sourceNamesById}
             areStoredApplicationsUnavailable={areStoredApplicationsUnavailable}
             searchQuery={opportunitySearchQuery}
             statusFilter={opportunityStatusFilter}
@@ -1053,7 +1222,7 @@ function App() {
             onEdit={openApplicationEdit}
             onCancelEdit={cancelApplicationEdit}
             onSubmitEdit={submitApplicationEdit}
-          onRequestDelete={requestApplicationDeletion}
+            onRequestDelete={requestApplicationDeletion}
             headingRef={applicationsHeadingRef}
           />
           <FollowUpPanel
@@ -1061,6 +1230,26 @@ function App() {
             onComplete={completeApplicationFollowUp}
             editingApplicationId={applicationEditSession?.id ?? null}
             headingRef={followUpsHeadingRef}
+          />
+        </div>
+        <div
+          className="workspace-panel"
+          role="tabpanel"
+          id={getWorkspacePanelId(WORKSPACE_TABS.SOURCES)}
+          aria-labelledby={getWorkspaceTabId(WORKSPACE_TABS.SOURCES)}
+          hidden={activeWorkspaceTab !== WORKSPACE_TABS.SOURCES}
+        >
+          <SourcesPanel
+            sources={sources}
+            opportunities={opportunities}
+            editingSourceId={sourceEditSession?.id ?? null}
+            editWarning={sourceEditWarning}
+            onCreate={addSource}
+            onEdit={openSourceEdit}
+            onCancelEdit={cancelSourceEdit}
+            onSubmitEdit={submitSourceEdit}
+            onRequestDelete={requestSourceDeletion}
+            onAddOpportunity={openOpportunityFormFromSource}
           />
         </div>
         <DataPanel
@@ -1100,6 +1289,21 @@ function App() {
         onConfirm={confirmApplicationDeletion}
         onCancel={cancelApplicationDeletion}
         fallbackFocusRef={applicationsHeadingRef}
+      />
+      <ConfirmDialog
+        isOpen={pendingSourceDeletion !== null}
+        title="Eliminar fuente"
+        message={
+          sourceToDelete
+            ? `¿Eliminar la fuente "${sourceToDelete.companyName}"? Esta acción no se puede deshacer.`
+            : '¿Eliminar esta fuente? Esta acción no se puede deshacer.'
+        }
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={confirmSourceDeletion}
+        onCancel={cancelSourceDeletion}
+        fallbackFocusRef={addOpportunityButtonRef}
       />
       <ConfirmDialog
         isOpen={pendingBackupImport !== null}

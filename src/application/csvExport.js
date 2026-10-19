@@ -30,9 +30,11 @@ export function toCsv(rows) {
   return UTF8_BOM + rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n') + '\r\n'
 }
 
-export function buildOpportunitiesCsv(opportunities) {
+export function buildOpportunitiesCsv(opportunities, sources = []) {
+  const sourceNamesById = new Map(sources.map((source) => [source.id, source.companyName]))
+
   return toCsv([
-    ['Empresa', 'Puesto', 'Estado', 'Modalidad', 'Jornada', 'Ubicación', 'Fecha de publicación', 'Enlace', 'Fecha de alta'],
+    ['Empresa', 'Puesto', 'Estado', 'Modalidad', 'Jornada', 'Ubicación', 'Fecha de publicación', 'Enlace', 'Fecha de alta', 'Fuente'],
     ...opportunities.map((opportunity) => [
       opportunity.company,
       opportunity.title,
@@ -43,6 +45,7 @@ export function buildOpportunitiesCsv(opportunities) {
       opportunity.publishedAt ?? '',
       opportunity.url,
       toLocalDateString(opportunity.createdAt) ?? '',
+      sourceNamesById.get(opportunity.sourceId) ?? '',
     ]),
   ])
 }
