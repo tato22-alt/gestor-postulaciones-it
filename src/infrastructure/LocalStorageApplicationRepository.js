@@ -31,7 +31,7 @@ const VALID_APPLICATION_STATUSES = new Set(
   Object.values(APPLICATION_STATUSES).map((status) => status.value),
 )
 
-function isValidStoredApplication(value) {
+export function isValidStoredApplication(value) {
   return (
     isPlainObject(value) &&
     hasExactFields(value, APPLICATION_FIELDS) &&
@@ -51,14 +51,14 @@ function isValidStoredApplication(value) {
 
 // Each application identifier and each referenced opportunity must appear only once:
 // the domain allows at most one application per opportunity.
-function hasUniqueIdentities(records) {
+export function hasUniqueApplicationIdentities(records) {
   const ids = new Set(records.map((record) => record.id))
   const opportunityIds = new Set(records.map((record) => record.opportunityId))
 
   return ids.size === records.length && opportunityIds.size === records.length
 }
 
-function serializeApplication(application) {
+export function serializeApplication(application) {
   return {
     id: application.id,
     opportunityId: application.opportunityId,
@@ -114,7 +114,7 @@ class LocalStorageApplicationRepository {
     if (
       !Array.isArray(envelope.applications) ||
       !envelope.applications.every(isValidStoredApplication) ||
-      !hasUniqueIdentities(envelope.applications)
+      !hasUniqueApplicationIdentities(envelope.applications)
     ) {
       return this.blockPersistence('corrupted')
     }
@@ -149,7 +149,7 @@ class LocalStorageApplicationRepository {
 
     if (
       !serializedApplications.every(isValidStoredApplication) ||
-      !hasUniqueIdentities(serializedApplications)
+      !hasUniqueApplicationIdentities(serializedApplications)
     ) {
       return { ok: false, status: 'invalid_data' }
     }
@@ -164,6 +164,16 @@ class LocalStorageApplicationRepository {
       return { ok: true, status: 'saved' }
     } catch {
       return { ok: false, status: 'write_failure' }
+    }
+  }
+
+  // Returns the stored text exactly as it is, so the user can keep a copy of data that
+  // could not be loaded. Never parses, repairs, or deletes it.
+  readRawValue() {
+    try {
+      return this.storage?.getItem(APPLICATION_STORAGE_KEY) ?? null
+    } catch {
+      return null
     }
   }
 

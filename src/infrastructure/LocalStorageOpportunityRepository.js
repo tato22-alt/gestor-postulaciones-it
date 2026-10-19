@@ -109,7 +109,7 @@ function isValidSalary(value) {
   )
 }
 
-function isValidStoredOpportunity(value) {
+export function isValidStoredOpportunity(value) {
   return (
     isPlainObject(value) &&
     hasExactFields(value, OPPORTUNITY_FIELDS) &&
@@ -135,7 +135,7 @@ function isValidStoredOpportunity(value) {
   )
 }
 
-function serializeOpportunity(opportunity) {
+export function serializeOpportunity(opportunity) {
   return {
     id: opportunity.id,
     sourceId: opportunity.sourceId,
@@ -251,6 +251,16 @@ class LocalStorageOpportunityRepository {
       return { ok: true, status: 'saved' }
     } catch {
       return { ok: false, status: 'write_failure' }
+    }
+  }
+
+  // Returns the stored text exactly as it is, so the user can keep a copy of data that
+  // could not be loaded. Never parses, repairs, or deletes it.
+  readRawValue() {
+    try {
+      return this.storage?.getItem(OPPORTUNITY_STORAGE_KEY) ?? null
+    } catch {
+      return null
     }
   }
 
