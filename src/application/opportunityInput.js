@@ -1,4 +1,9 @@
 import { EMPLOYMENT_TYPES, MODALITIES } from '../constants/domainOptions.js'
+import {
+  OPPORTUNITY_COMPANY_MAX_LENGTH,
+  OPPORTUNITY_DESCRIPTION_MAX_LENGTH,
+  OPPORTUNITY_TITLE_MAX_LENGTH,
+} from '../domain/JobOpportunity.js'
 import { isValidDateString } from '../utils/date.js'
 import { isValidHttpUrl, normalizeHttpUrl } from '../utils/url.js'
 
@@ -42,10 +47,14 @@ export function validateOpportunityInput(input = {}) {
 
   if (!normalizeText(input.company)) {
     errors.company = 'required'
+  } else if (normalizeText(input.company).length > OPPORTUNITY_COMPANY_MAX_LENGTH) {
+    errors.company = 'too_long'
   }
 
   if (!normalizeText(input.title)) {
     errors.title = 'required'
+  } else if (normalizeText(input.title).length > OPPORTUNITY_TITLE_MAX_LENGTH) {
+    errors.title = 'too_long'
   }
 
   if (!normalizeText(input.url)) {
@@ -80,6 +89,8 @@ export function validateOpportunityInput(input = {}) {
 
   if (typeof input.description !== 'string') {
     errors.description = 'invalid_text'
+  } else if (normalizeText(input.description).length > OPPORTUNITY_DESCRIPTION_MAX_LENGTH) {
+    errors.description = 'too_long'
   }
 
   return errors

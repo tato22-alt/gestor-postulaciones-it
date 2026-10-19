@@ -33,6 +33,7 @@ function ApplicationCard({
   onEdit,
   onCancelEdit,
   onSubmitEdit,
+  onRequestDelete,
 }) {
   const allowedTargets = getAllowedApplicationTargetStatuses(application.status)
   const { cardRef, markStatusChangeRequested } = useStatusChangeFocus(application.status)
@@ -145,6 +146,19 @@ function ApplicationCard({
       ) : (
         <p className="application-final-note">Proceso finalizado. Este estado ya no cambia.</p>
       )}
+
+      {!isEditing && (
+        <div className="opportunity-delete-action">
+          <button
+            className="button button-danger-outline"
+            type="button"
+            aria-label={`Eliminar postulación: ${accessibleName}`}
+            onClick={() => onRequestDelete(application)}
+          >
+            Eliminar postulación
+          </button>
+        </div>
+      )}
     </article>
   )
 }
@@ -158,6 +172,7 @@ function ApplicationList({
   onEdit,
   onCancelEdit,
   onSubmitEdit,
+  onRequestDelete,
   headingRef,
 }) {
   const opportunitiesById = new Map(opportunities.map((opportunity) => [opportunity.id, opportunity]))
@@ -190,6 +205,7 @@ function ApplicationList({
               onEdit={onEdit}
               onCancelEdit={onCancelEdit}
               onSubmitEdit={onSubmitEdit}
+              onRequestDelete={onRequestDelete}
             />
           ))}
         </div>

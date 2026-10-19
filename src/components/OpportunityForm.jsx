@@ -5,14 +5,21 @@ import {
   validateOpportunityInput,
 } from '../application/opportunityInput.js'
 import { EMPLOYMENT_TYPES, MODALITIES, OPPORTUNITY_STATUSES } from '../constants/domainOptions.js'
+import {
+  OPPORTUNITY_COMPANY_MAX_LENGTH,
+  OPPORTUNITY_DESCRIPTION_MAX_LENGTH,
+  OPPORTUNITY_TITLE_MAX_LENGTH,
+} from '../domain/JobOpportunity.js'
 import { getAllowedTargetStatuses } from '../domain/opportunityStatusPolicy.js'
 
 const ERROR_MESSAGES = {
   company: {
     required: 'Ingresá la empresa.',
+    too_long: `Usá como máximo ${OPPORTUNITY_COMPANY_MAX_LENGTH} caracteres.`,
   },
   title: {
     required: 'Ingresá el puesto.',
+    too_long: `Usá como máximo ${OPPORTUNITY_TITLE_MAX_LENGTH} caracteres.`,
   },
   url: {
     required: 'Ingresá el enlace a la publicación.',
@@ -32,6 +39,7 @@ const ERROR_MESSAGES = {
   },
   description: {
     invalid_text: 'Ingresá una descripción válida.',
+    too_long: `Usá como máximo ${OPPORTUNITY_DESCRIPTION_MAX_LENGTH} caracteres.`,
   },
 }
 
@@ -179,6 +187,7 @@ function OpportunityForm({
               id="opportunity-company"
               name="company"
               value={draft.company}
+              maxLength={OPPORTUNITY_COMPANY_MAX_LENGTH}
               onChange={handleChange}
               autoFocus
               aria-invalid={Boolean(errors.company)}
@@ -200,6 +209,7 @@ function OpportunityForm({
               id="opportunity-title"
               name="title"
               value={draft.title}
+              maxLength={OPPORTUNITY_TITLE_MAX_LENGTH}
               onChange={handleChange}
               aria-invalid={Boolean(errors.title)}
               aria-describedby={errors.title ? 'opportunity-title-error' : undefined}
@@ -344,6 +354,7 @@ function OpportunityForm({
               id="opportunity-description"
               name="description"
               value={draft.description}
+              maxLength={OPPORTUNITY_DESCRIPTION_MAX_LENGTH}
               onChange={handleChange}
               aria-invalid={Boolean(errors.description)}
               aria-describedby={

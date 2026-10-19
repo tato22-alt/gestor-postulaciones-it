@@ -19,6 +19,19 @@ describe('validateOpportunityInput', () => {
     )
   })
 
+  it('enforces company, title, and description limits after trimming', () => {
+    assert.deepEqual(
+      validateOpportunityInput(
+        createValidInput({ company: 'a'.repeat(201), title: 'b'.repeat(201), description: 'c'.repeat(10001) }),
+      ),
+      { company: 'too_long', title: 'too_long', description: 'too_long' },
+    )
+    assert.deepEqual(
+      validateOpportunityInput(createValidInput({ company: ` ${'a'.repeat(200)} `, description: 'c'.repeat(10000) })),
+      {},
+    )
+  })
+
   it('rejects unsafe URL schemes', () => {
     assert.deepEqual(
       validateOpportunityInput(createValidInput({ url: 'javascript:alert(1)' })),

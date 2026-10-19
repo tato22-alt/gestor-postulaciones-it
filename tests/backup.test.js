@@ -53,6 +53,7 @@ describe('backup file', () => {
     'duplicated opportunity ids': (b) => { b.opportunities.push({ ...b.opportunities[0] }) },
     'two applications for one opportunity': (b) => { b.applications.push({ ...b.applications[0], id: 'other' }) },
     'notes over the limit': (b) => { b.applications[0].notes = 'n'.repeat(2001) },
+    'a description over the limit': (b) => { b.opportunities[0].description = 'd'.repeat(10001) },
     'an extra envelope field': (b) => { b.extra = true },
   }
 

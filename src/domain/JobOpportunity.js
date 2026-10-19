@@ -1,6 +1,11 @@
 import { OPPORTUNITY_STATUSES } from '../constants/domainOptions.js'
 import { generateId } from '../utils/id.js'
 
+// Size limits approved by Luciano for text the user types or imports.
+export const OPPORTUNITY_COMPANY_MAX_LENGTH = 200
+export const OPPORTUNITY_TITLE_MAX_LENGTH = 200
+export const OPPORTUNITY_DESCRIPTION_MAX_LENGTH = 10000
+
 class JobOpportunity {
   constructor({
     id = generateId(),

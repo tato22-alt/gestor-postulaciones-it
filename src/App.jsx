@@ -6,6 +6,7 @@ import changeApplicationStatus from './application/changeApplicationStatus.js'
 import changeOpportunityStatus from './application/changeOpportunityStatus.js'
 import completeFollowUp from './application/completeFollowUp.js'
 import { buildApplicationsCsv, buildOpportunitiesCsv } from './application/csvExport.js'
+import deleteApplication from './application/deleteApplication.js'
 import deleteOpportunity from './application/deleteOpportunity.js'
 import filterOpportunities from './application/filterOpportunities.js'
 import getPendingFollowUps from './application/getPendingFollowUps.js'
@@ -117,6 +118,14 @@ const APPLICATION_EDIT_WARNINGS = {
   invalid_input: 'Revisá los datos ingresados. Tus cambios no se guardaron.',
 }
 
+const APPLICATION_DELETE_WARNINGS = {
+  conflict: 'Esta postulación cambió mientras el diálogo estaba abierto, por ejemplo en otra pestaña. No se eliminó.',
+  not_found: 'La postulación que intentabas eliminar ya no está disponible.',
+}
+
+const APPLICATION_DELETE_SAVE_WARNING =
+  'La postulación se eliminó en esta sesión, pero el cambio no pudo guardarse en el navegador. Puede reaparecer al recargar la página.'
+
 const APPLICATION_EDIT_SAVE_WARNING =
   'La postulación se actualizó en esta sesión, pero no pudo guardarse en el navegador. El cambio puede perderse al recargar la página.'
 
@@ -159,6 +168,7 @@ const APPLICATION_SUCCESS_MESSAGE =
   'Postulación registrada. La encontrás en la pestaña «Postulaciones».'
 const APPLICATION_STATUS_SUCCESS_MESSAGE = 'Estado de la postulación actualizado.'
 const APPLICATION_EDIT_SUCCESS_MESSAGE = 'Postulación actualizada.'
+const APPLICATION_DELETE_SUCCESS_MESSAGE = 'Postulación eliminada.'
 const BACKUP_EXPORT_SUCCESS_MESSAGE = 'Respaldo exportado.'
 const CSV_EXPORT_SUCCESS_MESSAGE = 'Planilla CSV exportada.'
 const FOLLOW_UP_SUCCESS_MESSAGE =
@@ -241,6 +251,7 @@ function App() {
   const [pendingApplicationRegistration, setPendingApplicationRegistration] = useState(null)
   const [pendingFinalApplicationStatus, setPendingFinalApplicationStatus] = useState(null)
   const [applicationEditSession, setApplicationEditSession] = useState(null)
+  const [pendingApplicationDeletion, setPendingApplicationDeletion] = useState(null)
   const [applicationEditWarning, setApplicationEditWarning] = useState(null)
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState(WORKSPACE_TABS.OPPORTUNITIES)
   const [opportunitySearchQuery, setOpportunitySearchQuery] = useState('')
@@ -617,6 +628,45 @@ function App() {
       setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, APPLICATION_EDIT_SAVE_WARNING))
     }
   }
+
+  const requestApplicationDeletion = (application) => {
+    setPendingApplicationDeletion({ id: application.id, expectedUpdatedAt: application.updatedAt })
+  }
+
+  const cancelApplicationDeletion = () => {
+    setPendingApplicationDeletion(null)
+  }
+
+  const confirmApplicationDeletion = () => {
+    if (!pendingApplicationDeletion) return
+
+    const result = deleteApplication(applications, pendingApplicationDeletion)
+
+    setPendingApplicationDeletion(null)
+
+    if (!result.ok) {
+      setApplicationWarning(APPLICATION_DELETE_WARNINGS[result.status] ?? UNEXPECTED_APPLICATION_WARNING)
+      return
+    }
+
+    setApplications(result.applications)
+    showSuccessFeedback(APPLICATION_DELETE_SUCCESS_MESSAGE)
+
+    const saveResult = applicationRepository.saveAll(result.applications)
+
+    if (saveResult.ok) {
+      setApplicationWarning(null)
+    } else {
+      setApplicationWarning(keepLoadWarningOr(APPLICATION_LOAD_WARNING, APPLICATION_DELETE_SAVE_WARNING))
+    }
+  }
+
+  const applicationToDelete = pendingApplicationDeletion
+    ? (applications.find((application) => application.id === pendingApplicationDeletion.id) ?? null)
+    : null
+  const opportunityOfApplicationToDelete = applicationToDelete
+    ? (opportunities.find((opp) => opp.id === applicationToDelete.opportunityId) ?? null)
+    : null
 
   const completeApplicationFollowUp = (application) => {
     const result = completeFollowUp(applications, {
@@ -1003,6 +1053,7 @@ function App() {
             onEdit={openApplicationEdit}
             onCancelEdit={cancelApplicationEdit}
             onSubmitEdit={submitApplicationEdit}
+          onRequestDelete={requestApplicationDeletion}
             headingRef={applicationsHeadingRef}
           />
           <FollowUpPanel
@@ -1034,6 +1085,21 @@ function App() {
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
         fallbackFocusRef={addOpportunityButtonRef}
+      />
+      <ConfirmDialog
+        isOpen={pendingApplicationDeletion !== null}
+        title="Eliminar postulación"
+        message={
+          opportunityOfApplicationToDelete
+            ? `¿Eliminar la postulación a "${opportunityOfApplicationToDelete.title}" en ${opportunityOfApplicationToDelete.company}? Se borran su estado, fechas, seguimiento y notas. La oportunidad se conserva. Esta acción no se puede deshacer.`
+            : '¿Eliminar esta postulación? Se borran su estado, fechas, seguimiento y notas. Esta acción no se puede deshacer.'
+        }
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={confirmApplicationDeletion}
+        onCancel={cancelApplicationDeletion}
+        fallbackFocusRef={applicationsHeadingRef}
       />
       <ConfirmDialog
         isOpen={pendingBackupImport !== null}
