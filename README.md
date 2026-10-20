@@ -4,7 +4,7 @@ Aplicación web para organizar una búsqueda laboral en tecnología: registrá l
 
 **Usala online:** https://tato22-alt.github.io/gestor-postulaciones-it/
 
-No requiere cuenta. Tus datos se guardan en tu propio navegador.
+No requiere cuenta. Tus datos se guardan en tu navegador y, si querés, se sincronizan con tu propio Google Drive para usarlos en todos tus dispositivos.
 
 ![Lista de oportunidades](docs/screenshots/oportunidades.png)
 
@@ -43,6 +43,7 @@ No requiere cuenta. Tus datos se guardan en tu propio navegador.
 
 **Tus datos**
 
+* sincronización opcional con tu Google Drive: conectás tu cuenta una vez y tus datos quedan disponibles en la computadora y en el celular;
 * respaldo en un archivo JSON para guardar una copia o pasar los datos a otro navegador;
 * importación de respaldos que solo agrega lo nuevo, con vista previa;
 * exportación de oportunidades y postulaciones a CSV para abrirlas en una planilla;
@@ -59,17 +60,18 @@ No requiere cuenta. Tus datos se guardan en tu propio navegador.
 2. Cuando te postules, presioná «Registrar postulación» en su tarjeta.
 3. En **Postulaciones**, avanzá el estado de cada proceso y editá fechas, próxima acción y notas.
 4. Revisá **Próximos seguimientos** para saber a quién escribir y cuándo. Marcá cada seguimiento como hecho al completarlo.
-5. En **Tus datos**, exportá un respaldo cada tanto. Para usar la app en otro navegador, importá ese archivo allí.
+5. Para usar la app en varios dispositivos, tocá «Conectar Google Drive» en cada uno. También podés exportar un respaldo en **Tus datos** e importarlo en otro navegador.
 
 ## Privacidad
 
-Toda la información queda en el `localStorage` del navegador que usás.
+La información queda en el `localStorage` del navegador que usás. Si conectás Google Drive, la app guarda una copia en una carpeta privada de tu propia cuenta, a la que solo ella accede y que no le permite ver tus otros archivos. Los datos nunca pasan por un servidor propio de la app.
 
 ## Tecnologías
 
 * React 19 y Vite;
 * JavaScript y CSS;
 * `localStorage` del navegador;
+* Google Identity Services y la API de Google Drive (carpeta privada de la app);
 * pruebas con `node:test`, el ejecutor nativo de Node.js;
 * GitHub Actions y GitHub Pages.
 
@@ -81,7 +83,7 @@ El código está organizado en capas con responsabilidades separadas:
 src/components      Presentación: componentes React, formularios y accesibilidad
 src/application     Casos de uso puros: crear, editar, filtrar, calcular métricas, importar
 src/domain          Entidades y reglas del negocio: estados, transiciones, seguimientos
-src/infrastructure  Almacenamiento: localStorage, formato del respaldo y descargas
+src/infrastructure  Almacenamiento: localStorage, formato del respaldo, descargas y Google Drive
 ```
 
 Los componentes no acceden al almacenamiento directamente. Los datos guardados y los archivos importados se validan antes de convertirse en entidades del dominio, y nunca se sobrescriben datos que no se pudieron leer.
@@ -93,7 +95,7 @@ npm install
 npm run dev -- --host 127.0.0.1
 ```
 
-La app queda disponible en `http://127.0.0.1:5173/`. Cada combinación de host y puerto guarda sus propios datos: `127.0.0.1` y `localhost` no los comparten.
+La app queda disponible en `http://127.0.0.1:5173/`. Para probar la sincronización localmente, copiá `.env.example` como `.env.local` y completá `VITE_GOOGLE_CLIENT_ID`. Cada combinación de host y puerto guarda sus propios datos: `127.0.0.1` y `localhost` no los comparten.
 
 ### Verificación
 
