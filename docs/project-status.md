@@ -331,6 +331,20 @@ The production build was verified by serving `dist` statically under `/gestor-po
 
 Rollback: revert the deployment commit or disable GitHub Pages in the repository settings.
 
+### Google Drive synchronization (implemented, activated by a client ID)
+
+Approved by Luciano: local-first data with optional synchronization to each user's own Google Drive, so data never passes through a server of Luciano's and each person owns it.
+
+* **Scope:** `https://www.googleapis.com/auth/drive.appdata` only. The app reads and writes a single file, `gestor-postulaciones-it.json`, in the hidden appDataFolder and cannot see other Drive files.
+* **Authorization:** Google Identity Services token client loaded from `https://accounts.google.com/gsi/client` (approved external script, no npm dependency). Access tokens live only in memory; only the on/off preference is stored (`it-job-search-assistant.drive-sync`). After a reload the user taps «Sincronizar» once to get a new token.
+* **Sync file:** the backup format, now `schemaVersion: 3` with `deletions`. Versions 1 and 2 are still accepted.
+* **Deletion records:** every deletion of an opportunity, application, or source is recorded (`it-job-search-assistant.deletions`) so a device that still has the record cannot bring it back. Importing a backup removes the deletion records of the records it re-adds.
+* **Merge rules** (`mergeSnapshots`): the most recent `updatedAt` wins; a deletion wins over earlier edits; an edit after a deletion keeps the record; if two devices registered an application for the same opportunity, the most recently edited one is kept and the other is recorded as deleted; an opportunity whose source was deleted keeps its data without the source.
+* **Safety:** a remote file that fails validation is never overwritten; synchronization is refused while any local collection cannot be read; edits made during a running sync are merged again and synchronized afterwards.
+* **Timing:** after connecting, 3 seconds after local changes, and when the tab becomes visible, while a valid token exists.
+* **Configuration:** the section appears only when `VITE_GOOGLE_CLIENT_ID` is set at build time (see `.env.example`). The client ID is public. Until Google verifies the OAuth app, only the owner and listed test users can authorize it.
+* **Verification:** unit tests cover the merge rules, convergence, the coordinator, and the Drive client with a simulated Drive; a browser suite simulates two devices with stubbed Google endpoints (first upload to appDataFolder, receiving data, edits and deletions in both directions, invalid remote file untouched, expired authorization, disconnect, token never stored). Real Google endpoints were not reachable from the development environment.
+
 ### Sources, text limits, and application deletion
 
 Approved by Luciano ("sí a todo"):
