@@ -25,7 +25,7 @@ describe('backup file', () => {
     const result = parseBackupText(text)
 
     assert.equal(envelope.format, 'it-job-search-assistant.backup')
-    assert.equal(envelope.schemaVersion, 2)
+    assert.equal(envelope.schemaVersion, 3)
     assert.equal(envelope.exportedAt, NOW)
     assert.equal(result.ok, true)
     assert.ok(result.opportunities[0] instanceof JobOpportunity)
@@ -40,7 +40,7 @@ describe('backup file', () => {
     assert.equal(parseBackupText('{nope').status, 'invalid_json')
     assert.equal(parseBackupText('[]').status, 'unknown_format')
     assert.equal(parseBackupText(tamper(valid, (b) => { b.format = 'other' })).status, 'unknown_format')
-    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 3 })).status, 'unsupported_version')
+    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 4 })).status, 'unsupported_version')
   })
 
   it('accepts long descriptions saved before the text limits existed', () => {
@@ -61,6 +61,7 @@ describe('backup file', () => {
     const v1 = tamper(backupOf([createOpportunity()], []), (b) => {
       b.schemaVersion = 1
       delete b.sources
+      delete b.deletions
     })
     const result = parseBackupText(v1)
 

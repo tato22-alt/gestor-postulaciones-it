@@ -12,20 +12,29 @@ import {
   serializeSource,
 } from './LocalStorageSourceRepository.js'
 import CompanySource from '../domain/CompanySource.js'
+import { hasUniqueDeletionKeys, isValidDeletionRecord, serializeDeletion } from './deletionRecords.js'
 import { hasExactFields, isPlainObject, isValidTimestamp } from './storageValidation.js'
 
 export const BACKUP_FORMAT = 'it-job-search-assistant.backup'
-// Version 2 adds job sources. Version 1 backups (without sources) are still accepted.
-export const BACKUP_SCHEMA_VERSION = 2
+// Version 2 adds job sources and version 3 adds deletion records, which synchronization
+// needs. Older versions are still accepted.
+export const BACKUP_SCHEMA_VERSION = 3
 export const BACKUP_MAX_BYTES = 5 * 1024 * 1024
 
 const BACKUP_FIELDS_BY_VERSION = {
   1: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications'],
   2: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications', 'sources'],
+  3: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications', 'sources', 'deletions'],
 }
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 
-export function createBackupText({ opportunities, applications, sources, now = new Date() }) {
+export function createBackupText({
+  opportunities,
+  applications,
+  sources,
+  deletions = [],
+  now = new Date(),
+}) {
   const backup = {
     format: BACKUP_FORMAT,
     schemaVersion: BACKUP_SCHEMA_VERSION,
@@ -33,6 +42,7 @@ export function createBackupText({ opportunities, applications, sources, now = n
     opportunities: opportunities.map(serializeOpportunity),
     applications: applications.map(serializeApplication),
     sources: sources.map(serializeSource),
+    deletions: deletions.map(serializeDeletion),
   }
 
   return JSON.stringify(backup, null, 2)
@@ -87,12 +97,16 @@ export function parseBackupText(text) {
   }
 
   const sources = backup.schemaVersion >= 2 ? backup.sources : []
+  const deletions = backup.schemaVersion >= 3 ? backup.deletions : []
 
   if (
     !hasExactFields(backup, fields) ||
     !Array.isArray(sources) ||
     !sources.every(isValidStoredSource) ||
     !hasUniqueSourceIds(sources) ||
+    !Array.isArray(deletions) ||
+    !deletions.every(isValidDeletionRecord) ||
+    !hasUniqueDeletionKeys(deletions) ||
     !isValidTimestamp(backup.exportedAt) ||
     !Array.isArray(backup.opportunities) ||
     !Array.isArray(backup.applications) ||
@@ -110,5 +124,6 @@ export function parseBackupText(text) {
     opportunities: backup.opportunities.map((record) => new JobOpportunity(record)),
     applications: backup.applications.map((record) => new Application(record)),
     sources: sources.map((record) => new CompanySource(record)),
+    deletions: deletions.map(serializeDeletion),
   }
 }
