@@ -34,13 +34,36 @@ describe('mergeSnapshots', () => {
     assert.equal(mergeSnapshots(snapshot({ opportunities: [remote] }), snapshot({ opportunities: [local] })).opportunities[0].company, 'Remota')
   })
 
-  it('keeps the local copy on an exact tie', () => {
+  it('picks the same copy on an exact tie from both devices', () => {
+    const first = snapshot({ opportunities: [opp('a', 5, { company: 'Alfa' })] })
+    const second = snapshot({ opportunities: [opp('a', 5, { company: 'Beta' })] })
+
+    assert.equal(
+      mergeSnapshots(first, second).opportunities[0].company,
+      mergeSnapshots(second, first).opportunities[0].company,
+    )
+  })
+
+  it('ignores a different order of the same records', () => {
     const result = mergeSnapshots(
-      snapshot({ opportunities: [opp('a', 5, { company: 'Local' })] }),
-      snapshot({ opportunities: [opp('a', 5, { company: 'Remota' })] }),
+      snapshot({ opportunities: [opp('a', 1), opp('b', 1)] }),
+      snapshot({ opportunities: [opp('b', 1), opp('a', 1)] }),
     )
 
-    assert.equal(result.opportunities[0].company, 'Local')
+    assert.equal(result.changedLocal, false)
+    assert.equal(result.changedRemote, false)
+  })
+
+  it('keeps an opportunity that still has an application on another device', () => {
+    const application = createApplication({ id: 'x', opportunityId: 'o', updatedAt: T(8) })
+    const result = mergeSnapshots(
+      snapshot({ deletions: [{ collection: 'opportunities', id: 'o', deletedAt: T(5) }] }),
+      snapshot({ opportunities: [opp('o', 1)], applications: [application] }),
+    )
+
+    assert.deepEqual(result.opportunities.map((o) => o.id), ['o'])
+    assert.deepEqual(result.applications.map((a) => a.id), ['x'])
+    assert.deepEqual(result.deletions, [])
   })
 
   it('reports no changes when both sides are equal', () => {
@@ -90,6 +113,18 @@ describe('mergeSnapshots', () => {
     )
 
     assert.deepEqual(result.opportunities.map((o) => o.id), ['same'])
+  })
+
+  it('resolves two applications edited at the same time identically on both devices', () => {
+    const first = createApplication({ id: 'first', opportunityId: 'o', updatedAt: T(4) })
+    const second = createApplication({ id: 'second', opportunityId: 'o', updatedAt: T(4) })
+    const a = snapshot({ opportunities: [opp('o', 1)], applications: [first] })
+    const b = snapshot({ opportunities: [opp('o', 1)], applications: [second] })
+
+    assert.deepEqual(
+      mergeSnapshots(a, b).applications.map((x) => x.id),
+      mergeSnapshots(b, a).applications.map((x) => x.id),
+    )
   })
 
   it('resolves two applications for one opportunity by keeping the most recent', () => {

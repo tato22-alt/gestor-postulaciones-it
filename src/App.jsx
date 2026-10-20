@@ -91,6 +91,9 @@ const DELETE_NOT_FOUND_WARNING =
 const DELETE_SAVE_WARNING =
   'La oportunidad se eliminó de esta sesión, pero el cambio no pudo guardarse en el navegador. Puede reaparecer al recargar la página.'
 
+const DELETION_SAVE_WARNING =
+  'El borrado se aplicó en esta sesión, pero no pudo registrarse en el navegador. Si sincronizás con Google Drive, el dato borrado podría volver a aparecer después de recargar.'
+
 const DELETE_HAS_APPLICATION_WARNING =
   'Esta oportunidad tiene una postulación registrada, por eso no se eliminó.'
 
@@ -433,7 +436,10 @@ function App() {
 
   const saveDeletions = (nextDeletions) => {
     setDeletions(nextDeletions)
-    deletionRepository.saveAll(nextDeletions)
+
+    if (!deletionRepository.saveAll(nextDeletions).ok) {
+      showDataPanelMessage({ type: 'error', text: DELETION_SAVE_WARNING })
+    }
   }
 
   const recordDeletion = (collection, id) => {
@@ -886,6 +892,7 @@ function App() {
       backupOpportunities: parsed.opportunities,
       backupApplications: parsed.applications,
       backupSources: parsed.sources,
+      deletions,
     })
 
     if (!plan.hasChanges) {
@@ -922,6 +929,8 @@ function App() {
       backupOpportunities: backup.opportunities,
       backupApplications: backup.applications,
       backupSources: backup.sources,
+      deletions,
+      now: new Date(),
     })
 
     if (!plan.hasChanges) {

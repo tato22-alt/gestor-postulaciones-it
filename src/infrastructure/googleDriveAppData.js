@@ -25,8 +25,13 @@ export function createDriveAppDataClient({ accessToken, fetchImpl = globalThis.f
       throw new DriveRequestError('network')
     }
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       throw new DriveRequestError('unauthorized')
+    }
+
+    // Quota, rate limits, or a full Drive: a new token would not help.
+    if (response.status === 403) {
+      throw new DriveRequestError('forbidden')
     }
 
     if (!response.ok) {

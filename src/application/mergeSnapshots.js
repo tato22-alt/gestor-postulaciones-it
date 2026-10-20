@@ -25,15 +25,24 @@ function mergeDeletions(localDeletions, remoteDeletions) {
   return byKey
 }
 
-// Keeps local order and appends records that only exist remotely. When both sides have
-// the same record, the most recent edit wins; on a tie the local copy is kept.
+// The most recent edit wins. On an exact tie the content decides, so both devices pick
+// the same copy no matter which one is local.
+function isPreferred(candidate, current) {
+  if (candidate.updatedAt !== current.updatedAt) {
+    return candidate.updatedAt > current.updatedAt
+  }
+
+  return JSON.stringify(candidate) > JSON.stringify(current)
+}
+
+// Keeps local order and appends records that only exist remotely.
 function mergeRecords(localRecords, remoteRecords) {
   const merged = new Map(localRecords.map((record) => [record.id, record]))
 
   for (const remote of remoteRecords) {
     const local = merged.get(remote.id)
 
-    if (!local || remote.updatedAt > local.updatedAt) {
+    if (!local || isPreferred(remote, local)) {
       merged.set(remote.id, remote)
     }
   }
@@ -41,11 +50,14 @@ function mergeRecords(localRecords, remoteRecords) {
   return [...merged.values()]
 }
 
+const byId = (records) => [...records].sort((a, b) => a.id.localeCompare(b.id))
+
+// Order is ignored: two snapshots with the same records in a different order are equal.
 function toComparable(snapshot) {
   return JSON.stringify({
-    opportunities: snapshot.opportunities,
-    applications: snapshot.applications,
-    sources: snapshot.sources,
+    opportunities: byId(snapshot.opportunities),
+    applications: byId(snapshot.applications),
+    sources: byId(snapshot.sources),
     deletions: [...snapshot.deletions].sort((a, b) =>
       deletionKey(a.collection, a.id).localeCompare(deletionKey(b.collection, b.id)),
     ),
@@ -61,14 +73,18 @@ function toComparable(snapshot) {
  *   the record and discards that deletion;
  * - if two devices registered an application for the same opportunity, the most recently
  *   edited one is kept and the other is recorded as deleted, so every device converges;
+ * - an opportunity that still has an application is never removed, because an
+ *   opportunity with an application cannot be deleted;
  * - an opportunity that points to a deleted source keeps its data without that source.
  */
 export default function mergeSnapshots(local, remote) {
   const deletions = mergeDeletions(local.deletions, remote.deletions)
   const result = {}
+  const candidates = {}
 
   for (const [collection, EntityClass] of Object.entries(COLLECTIONS)) {
-    result[collection] = mergeRecords(local[collection], remote[collection]).filter((record) => {
+    candidates[collection] = mergeRecords(local[collection], remote[collection])
+    result[collection] = candidates[collection].filter((record) => {
       const deletion = deletions.get(deletionKey(collection, record.id))
 
       if (!deletion) return true
@@ -96,8 +112,9 @@ export default function mergeSnapshots(local, remote) {
       continue
     }
 
-    const [keep, drop] =
-      application.updatedAt > current.updatedAt ? [application, current] : [current, application]
+    const [keep, drop] = isPreferred(application, current)
+      ? [application, current]
+      : [current, application]
 
     applicationByOpportunity.set(application.opportunityId, keep)
     deletions.set(deletionKey('applications', drop.id), {
@@ -110,6 +127,23 @@ export default function mergeSnapshots(local, remote) {
 
   const keptApplicationIds = new Set([...applicationByOpportunity.values()].map((a) => a.id))
   result.applications = result.applications.filter((application) => keptApplicationIds.has(application.id))
+
+  // A deletion on one device cannot remove an opportunity that another device used for an
+  // application: the opportunity is restored and that deletion is discarded.
+  const opportunityIds = new Set(result.opportunities.map((opportunity) => opportunity.id))
+  const opportunityById = new Map(candidates.opportunities.map((record) => [record.id, record]))
+
+  for (const application of result.applications) {
+    const opportunity = opportunityById.get(application.opportunityId)
+
+    if (!opportunityIds.has(application.opportunityId) && opportunity) {
+      opportunityIds.add(opportunity.id)
+      deletions.delete(deletionKey('opportunities', opportunity.id))
+      result.opportunities.push(
+        opportunity instanceof JobOpportunity ? opportunity : new JobOpportunity(opportunity),
+      )
+    }
+  }
 
   const sourceIds = new Set(result.sources.map((source) => source.id))
   result.opportunities = result.opportunities.map((opportunity) =>

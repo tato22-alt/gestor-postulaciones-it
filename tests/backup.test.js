@@ -164,6 +164,23 @@ describe('planBackupImport', () => {
     assert.equal(result.skipped.opportunitiesWithoutSource, 1)
   })
 
+  it('marks a previously deleted record as edited after its deletion', () => {
+    const deletedAt = '2030-01-01T00:00:00.000Z'
+    const now = '2030-02-01T00:00:00.000Z'
+    const result = planBackupImport({
+      currentOpportunities: [],
+      currentApplications: [],
+      backupOpportunities: [createOpportunity({ id: 'o1' }), createOpportunity({ id: 'o2' })],
+      backupApplications: [],
+      deletions: [{ collection: 'opportunities', id: 'o1', deletedAt }],
+      now,
+    })
+
+    assert.equal(result.opportunitiesToAdd[0].updatedAt, now)
+    assert.ok(result.opportunitiesToAdd[0] instanceof JobOpportunity)
+    assert.notEqual(result.opportunitiesToAdd[1].updatedAt, now)
+  })
+
   it('reports no changes when re-importing the same data', () => {
     const opportunities = [createOpportunity()]
     const applications = [createApplication()]

@@ -104,4 +104,10 @@ describe('synchronizeData with a simulated Drive', () => {
     await assert.rejects(unauthorized.readSyncFile(), (error) => error instanceof DriveRequestError && error.status === 'unauthorized')
     await assert.rejects(offline.readSyncFile(), (error) => error.status === 'network')
   })
+
+  it('distinguishes a refused request from an expired authorization', async () => {
+    const refused = createDriveAppDataClient({ accessToken: 't', fetchImpl: async () => new Response('', { status: 403 }) })
+
+    await assert.rejects(refused.readSyncFile(), (error) => error.status === 'forbidden')
+  })
 })

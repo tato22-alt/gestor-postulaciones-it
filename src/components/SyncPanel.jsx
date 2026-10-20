@@ -2,6 +2,8 @@ import { DRIVE_SYNC_STATUS } from './useDriveSync.js'
 
 const ERROR_MESSAGES = {
   authorization: 'No se pudo conectar con Google. Probá de nuevo.',
+  forbidden:
+    'Google Drive rechazó la operación, por ejemplo por límite de uso o falta de espacio. Probá más tarde.',
   network: 'No se pudo sincronizar: revisá tu conexión e intentá de nuevo.',
   remote_invalid:
     'La copia guardada en tu Google Drive no es válida, así que no se modificó. Tus datos en este dispositivo siguen intactos.',
@@ -30,6 +32,7 @@ function SyncPanel({ sync }) {
       : 'Sincronizado.',
     [DRIVE_SYNC_STATUS.ERROR]: ERROR_MESSAGES[sync.error] ?? ERROR_MESSAGES.network,
   }[sync.status]
+  const isError = sync.status === DRIVE_SYNC_STATUS.ERROR
 
   return (
     <section className="panel sync-panel" aria-labelledby="sync-panel-title">
@@ -40,11 +43,15 @@ function SyncPanel({ sync }) {
         </div>
       </div>
 
-      <p
-        className={`sync-status sync-status--${sync.status}`}
-        role={sync.status === DRIVE_SYNC_STATUS.ERROR ? 'alert' : 'status'}
-      >
-        {statusText}
+      <p className={`sync-status sync-status--${sync.status}`}>{statusText}</p>
+
+      {/* Live regions stay mounted so screen readers announce their changes. Automatic
+          background syncs only update the visible text, so they do not interrupt. */}
+      <p className="visually-hidden" role="alert">
+        {isError ? statusText : ''}
+      </p>
+      <p className="visually-hidden" role="status">
+        {sync.announce && !isError ? statusText : ''}
       </p>
 
       <div className="data-panel-actions">

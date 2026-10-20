@@ -7,6 +7,9 @@ import { createDriveAppDataClient } from '../infrastructure/googleDriveAppData.j
 import { requestDriveAccessToken, revokeDriveAccessToken } from '../infrastructure/googleIdentity.js'
 
 const AUTO_SYNC_DELAY_MS = 3000
+// After uploading, read the copy once more a little later: if another device uploaded at
+// the same moment, its changes are picked up instead of waiting for the next local edit.
+const VERIFY_SYNC_DELAY_MS = 10000
 const SNAPSHOT_COLLECTIONS = ['opportunities', 'applications', 'sources', 'deletions']
 
 // The snapshot object is rebuilt on every render, so changes are detected per collection.
@@ -42,6 +45,7 @@ export default function useDriveSync({
         : DRIVE_SYNC_STATUS.DISCONNECTED,
     lastSyncedAt: null,
     error: null,
+    announce: false,
   }))
   const tokenRef = useRef(null)
   const snapshotRef = useRef(snapshot)
@@ -49,6 +53,7 @@ export default function useDriveSync({
   const rerunRef = useRef(false)
   const appliedFromSyncRef = useRef(false)
   const runSyncRef = useRef(null)
+  const verifyTimerRef = useRef(null)
 
   snapshotRef.current = snapshot
 
@@ -58,8 +63,11 @@ export default function useDriveSync({
   const runSync = async ({ interactive }) => {
     if (!clientId) return
 
+    // Only results of an action the user started are announced to screen readers.
+    const announce = interactive
+
     if (isStorageBlocked()) {
-      setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: 'storage_blocked' }))
+      setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: 'storage_blocked', announce }))
       return
     }
 
@@ -70,20 +78,20 @@ export default function useDriveSync({
 
     if (!hasValidToken()) {
       if (!interactive) {
-        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.NEEDS_AUTHORIZATION }))
+        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.NEEDS_AUTHORIZATION, announce }))
         return
       }
 
       try {
         tokenRef.current = await requestDriveAccessToken(clientId)
       } catch {
-        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: 'authorization' }))
+        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: 'authorization', announce }))
         return
       }
     }
 
     inFlightRef.current = true
-    setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.SYNCING, error: null }))
+    setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.SYNCING, error: null, announce }))
 
     const startSnapshot = snapshotRef.current
 
@@ -96,7 +104,7 @@ export default function useDriveSync({
       })
 
       if (!result.ok) {
-        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: result.status }))
+        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: result.status, announce }))
         return
       }
 
@@ -116,13 +124,22 @@ export default function useDriveSync({
         applyMergedSnapshot(finalSnapshot)
       }
 
-      setSyncState({ status: DRIVE_SYNC_STATUS.SYNCED, lastSyncedAt: new Date(), error: null })
+      if (result.uploaded) {
+        clearTimeout(verifyTimerRef.current)
+        verifyTimerRef.current = setTimeout(
+          () => runSyncRef.current?.({ interactive: false }),
+          VERIFY_SYNC_DELAY_MS,
+        )
+      }
+
+      setSyncState({ status: DRIVE_SYNC_STATUS.SYNCED, lastSyncedAt: new Date(), error: null, announce })
     } catch (error) {
       if (error?.status === 'unauthorized') {
         tokenRef.current = null
-        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.NEEDS_AUTHORIZATION }))
+        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.NEEDS_AUTHORIZATION, announce }))
       } else {
-        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: 'network' }))
+        const errorCode = error?.status === 'forbidden' ? 'forbidden' : 'network'
+        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: errorCode, announce }))
       }
     } finally {
       inFlightRef.current = false
@@ -166,6 +183,8 @@ export default function useDriveSync({
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [isEnabled])
 
+  useEffect(() => () => clearTimeout(verifyTimerRef.current), [])
+
   const connect = () => {
     setDriveSyncEnabled(storage, true)
     runSync({ interactive: true })
@@ -178,9 +197,10 @@ export default function useDriveSync({
       revokeDriveAccessToken(tokenRef.current.accessToken)
     }
 
+    clearTimeout(verifyTimerRef.current)
     tokenRef.current = null
     setDriveSyncEnabled(storage, false)
-    setSyncState({ status: DRIVE_SYNC_STATUS.DISCONNECTED, lastSyncedAt: null, error: null })
+    setSyncState({ status: DRIVE_SYNC_STATUS.DISCONNECTED, lastSyncedAt: null, error: null, announce: true })
   }
 
   return { ...syncState, isAvailable: Boolean(clientId), connect, syncNow, disconnect }
