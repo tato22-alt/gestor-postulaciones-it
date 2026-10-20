@@ -25,6 +25,8 @@ import OpportunityForm from './components/OpportunityForm.jsx'
 import OpportunitySection from './components/OpportunitySection.jsx'
 import PersistenceWarning from './components/PersistenceWarning.jsx'
 import SourcesPanel from './components/SourcesPanel.jsx'
+import SyncPanel from './components/SyncPanel.jsx'
+import useDriveSync from './components/useDriveSync.js'
 import StatsPanel from './components/StatsPanel.jsx'
 import SuccessFeedback from './components/SuccessFeedback.jsx'
 import WorkspaceTabs from './components/WorkspaceTabs.jsx'
@@ -51,6 +53,9 @@ import LocalStorageApplicationRepository, {
 import LocalStorageOpportunityRepository, {
   OPPORTUNITY_STORAGE_KEY,
 } from './infrastructure/LocalStorageOpportunityRepository.js'
+import LocalStorageDeletionRepository, {
+  DELETION_STORAGE_KEY,
+} from './infrastructure/LocalStorageDeletionRepository.js'
 import LocalStorageSourceRepository, {
   SOURCE_STORAGE_KEY,
 } from './infrastructure/LocalStorageSourceRepository.js'
@@ -275,6 +280,12 @@ const applicationRepository = new LocalStorageApplicationRepository(getBrowserSt
 const initialApplicationLoad = applicationRepository.loadAll()
 const sourceRepository = new LocalStorageSourceRepository(getBrowserStorage())
 const initialSourceLoad = sourceRepository.loadAll()
+const deletionRepository = new LocalStorageDeletionRepository(getBrowserStorage())
+const initialDeletionLoad = deletionRepository.loadAll()
+
+// Public OAuth client identifier for Google Drive synchronization. Without it, the
+// synchronization section is not shown.
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
 
 function App() {
   const [opportunities, setOpportunities] = useState(initialOpportunityLoad.opportunities)
@@ -284,6 +295,8 @@ function App() {
   )
   const [applications, setApplications] = useState(initialApplicationLoad.applications)
   const [sources, setSources] = useState(initialSourceLoad.sources)
+  // Deletion records: what was deleted and when, so synchronization does not restore it.
+  const [deletions, setDeletions] = useState(initialDeletionLoad.deletions)
   const [sourceWarning, setSourceWarning] = useState(initialSourceLoad.ok ? null : SOURCE_LOAD_WARNING)
   const [sourceEditSession, setSourceEditSession] = useState(null)
   const [sourceEditWarning, setSourceEditWarning] = useState(null)
@@ -354,6 +367,14 @@ function App() {
         }
       }
 
+      if (event.key === DELETION_STORAGE_KEY) {
+        const loadResult = deletionRepository.loadAll()
+
+        if (loadResult.ok) {
+          setDeletions([...loadResult.deletions])
+        }
+      }
+
       if (event.key === SOURCE_STORAGE_KEY) {
         const loadResult = sourceRepository.loadAll()
 
@@ -409,6 +430,18 @@ function App() {
 
     formTriggerRef.current = null
   }, [isOpportunityFormVisible])
+
+  const saveDeletions = (nextDeletions) => {
+    setDeletions(nextDeletions)
+    deletionRepository.saveAll(nextDeletions)
+  }
+
+  const recordDeletion = (collection, id) => {
+    saveDeletions([
+      ...deletions.filter((record) => !(record.collection === collection && record.id === id)),
+      { collection, id, deletedAt: new Date().toISOString() },
+    ])
+  }
 
   const showSuccessFeedback = (message) => {
     if (successFeedbackTimeoutRef.current) {
@@ -540,6 +573,7 @@ function App() {
     }
 
     setOpportunities(result.opportunities)
+    recordDeletion('opportunities', id)
     showSuccessFeedback(DELETE_SUCCESS_MESSAGE)
 
     const saveResult = opportunityRepository.saveAll(result.opportunities)
@@ -720,6 +754,7 @@ function App() {
     }
 
     setApplications(result.applications)
+    recordDeletion('applications', pendingApplicationDeletion.id)
     showSuccessFeedback(APPLICATION_DELETE_SUCCESS_MESSAGE)
 
     const saveResult = applicationRepository.saveAll(result.applications)
@@ -768,7 +803,8 @@ function App() {
   const isAnyStorageBlocked = () =>
     opportunityRepository.isPersistenceBlocked ||
     applicationRepository.isPersistenceBlocked ||
-    sourceRepository.isPersistenceBlocked
+    sourceRepository.isPersistenceBlocked ||
+    deletionRepository.isPersistenceBlocked
 
   // Each message gets a new id so repeating the same text is announced again.
   const showDataPanelMessage = (message) => {
@@ -781,7 +817,7 @@ function App() {
   const exportBackup = () => {
     downloadTextFile({
       filename: `gestor-postulaciones-respaldo-${todayFileSuffix()}.json`,
-      content: createBackupText({ opportunities, applications, sources }),
+      content: createBackupText({ opportunities, applications, sources, deletions }),
       mimeType: 'application/json',
     })
 
@@ -896,6 +932,17 @@ function App() {
     setSources(plan.nextSources)
     setOpportunities(plan.nextOpportunities)
     setApplications(plan.nextApplications)
+
+    // Records brought back by an import must not be removed again by an older deletion.
+    const importedKeys = new Set([
+      ...plan.sourcesToAdd.map((record) => `sources:${record.id}`),
+      ...plan.opportunitiesToAdd.map((record) => `opportunities:${record.id}`),
+      ...plan.applicationsToAdd.map((record) => `applications:${record.id}`),
+    ])
+
+    if (deletions.some((record) => importedKeys.has(`${record.collection}:${record.id}`))) {
+      saveDeletions(deletions.filter((record) => !importedKeys.has(`${record.collection}:${record.id}`)))
+    }
 
     // Collections are saved in dependency order (sources, opportunities, applications) and
     // each only if the previous one succeeded, so a failed write never leaves stored records
@@ -1046,8 +1093,39 @@ function App() {
     }
 
     saveSources(result.sources)
+    recordDeletion('sources', pendingSourceDeletion.id)
     showSuccessFeedback(SOURCE_DELETE_SUCCESS_MESSAGE)
   }
+
+  // Applies the result of a synchronization to this device. Collections are saved in
+  // dependency order, and each only if the previous save succeeded.
+  const applyMergedSnapshot = (merged) => {
+    setSources(merged.sources)
+    setOpportunities(merged.opportunities)
+    setApplications(merged.applications)
+    setDeletions(merged.deletions)
+
+    const saved =
+      sourceRepository.saveAll(merged.sources).ok &&
+      opportunityRepository.saveAll(merged.opportunities).ok &&
+      applicationRepository.saveAll(merged.applications).ok &&
+      deletionRepository.saveAll(merged.deletions).ok
+
+    if (!saved) {
+      showDataPanelMessage({
+        type: 'error',
+        text: 'Los datos sincronizados se muestran en esta sesión, pero no pudieron guardarse en el navegador.',
+      })
+    }
+  }
+
+  const driveSync = useDriveSync({
+    clientId: GOOGLE_CLIENT_ID,
+    storage: getBrowserStorage(),
+    snapshot: { opportunities, applications, sources, deletions },
+    isStorageBlocked: isAnyStorageBlocked,
+    applyMergedSnapshot,
+  })
 
   const sourceToDelete = pendingSourceDeletion
     ? (sources.find((source) => source.id === pendingSourceDeletion.id) ?? null)
@@ -1288,6 +1366,7 @@ function App() {
             headingRef={sourcesHeadingRef}
           />
         </div>
+        <SyncPanel sync={driveSync} />
         <DataPanel
           message={dataPanelMessage}
           onExportBackup={exportBackup}

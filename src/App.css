@@ -77,6 +77,19 @@
   color: #1d4ed8;
 }
 
+.sync-status {
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+}
+
+.sync-status--synced {
+  color: #05603a;
+}
+
+.sync-status--error {
+  color: #b42318;
+}
+
 .source-form {
   display: grid;
   gap: 18px;
