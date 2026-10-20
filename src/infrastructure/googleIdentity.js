@@ -28,9 +28,12 @@ function loadGoogleIdentity() {
   return scriptPromise
 }
 
-export async function requestDriveAccessToken(clientId) {
-  await loadGoogleIdentity()
+// Loads the script ahead of time, so a click can open Google's window immediately.
+export function preloadGoogleIdentity() {
+  loadGoogleIdentity().catch(() => {})
+}
 
+function openTokenPrompt(clientId) {
   return new Promise((resolve, reject) => {
     const tokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
@@ -51,6 +54,16 @@ export async function requestDriveAccessToken(clientId) {
 
     tokenClient.requestAccessToken({ prompt: '' })
   })
+}
+
+// Browsers block popups that do not open right after a click, so when the script is
+// already loaded the window is opened synchronously, without waiting for anything.
+export function requestDriveAccessToken(clientId) {
+  if (window.google?.accounts?.oauth2) {
+    return openTokenPrompt(clientId)
+  }
+
+  return loadGoogleIdentity().then(() => openTokenPrompt(clientId))
 }
 
 export function revokeDriveAccessToken(accessToken) {

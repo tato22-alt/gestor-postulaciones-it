@@ -4,7 +4,11 @@ import synchronizeData from '../application/synchronizeData.js'
 import { createBackupText, parseBackupText } from '../infrastructure/backupFile.js'
 import { isDriveSyncEnabled, setDriveSyncEnabled } from '../infrastructure/driveSyncSettings.js'
 import { createDriveAppDataClient } from '../infrastructure/googleDriveAppData.js'
-import { requestDriveAccessToken, revokeDriveAccessToken } from '../infrastructure/googleIdentity.js'
+import {
+  preloadGoogleIdentity,
+  requestDriveAccessToken,
+  revokeDriveAccessToken,
+} from '../infrastructure/googleIdentity.js'
 
 const AUTO_SYNC_DELAY_MS = 3000
 // After uploading, read the copy once more a little later: if another device uploaded at
@@ -84,8 +88,9 @@ export default function useDriveSync({
 
       try {
         tokenRef.current = await requestDriveAccessToken(clientId)
-      } catch {
-        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: 'authorization', announce }))
+      } catch (error) {
+        const errorCode = error?.message === 'popup_failed_to_open' ? 'popup_blocked' : 'authorization'
+        setSyncState((current) => ({ ...current, status: DRIVE_SYNC_STATUS.ERROR, error: errorCode, announce }))
         return
       }
     }
@@ -184,6 +189,10 @@ export default function useDriveSync({
   }, [isEnabled])
 
   useEffect(() => () => clearTimeout(verifyTimerRef.current), [])
+
+  useEffect(() => {
+    if (clientId) preloadGoogleIdentity()
+  }, [clientId])
 
   const connect = () => {
     setDriveSyncEnabled(storage, true)

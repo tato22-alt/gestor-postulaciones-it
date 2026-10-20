@@ -2,6 +2,8 @@ import { DRIVE_SYNC_STATUS } from './useDriveSync.js'
 
 const ERROR_MESSAGES = {
   authorization: 'No se pudo conectar con Google. Probá de nuevo.',
+  popup_blocked:
+    'El navegador bloqueó la ventana de Google. Permití las ventanas emergentes para este sitio y volvé a intentar.',
   forbidden:
     'Google Drive rechazó la operación, por ejemplo por límite de uso o falta de espacio. Probá más tarde.',
   network: 'No se pudo sincronizar: revisá tu conexión e intentá de nuevo.',
