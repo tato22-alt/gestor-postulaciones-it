@@ -46,6 +46,11 @@ function SyncPanel({ sync }) {
       </div>
 
       <p className={`sync-status sync-status--${sync.status}`}>{statusText}</p>
+      {!isConnected && (
+        <p className="sync-privacy-link">
+          <a href="privacidad.html">Cómo se cuidan tus datos</a>
+        </p>
+      )}
 
       {/* Live regions stay mounted so screen readers announce their changes. Automatic
           background syncs only update the visible text, so they do not interrupt. */}

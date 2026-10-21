@@ -82,6 +82,46 @@
   overflow-wrap: anywhere;
 }
 
+.sync-privacy-link {
+  margin: -8px 0 16px;
+}
+
+.drive-sync-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  border: 1px solid #b2ccff;
+  border-radius: 14px;
+  background: #eff4ff;
+  padding: 18px 20px;
+}
+
+.drive-sync-prompt-text {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.drive-sync-prompt h2 {
+  margin: 0 0 6px;
+  color: #172033;
+  font-size: 1.05rem;
+}
+
+.drive-sync-prompt p {
+  margin: 0;
+  color: #344054;
+  overflow-wrap: anywhere;
+}
+
+.drive-sync-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .sync-status--synced {
   color: #05603a;
 }
@@ -1175,6 +1215,7 @@
 
   .follow-up-item .button,
   .data-panel-actions .button,
+  .drive-sync-prompt-actions .button,
   .duplicate-warning-actions .button {
     width: 100%;
   }

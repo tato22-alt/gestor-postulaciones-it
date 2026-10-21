@@ -64,7 +64,7 @@ No requiere cuenta. Tus datos se guardan en tu navegador y, si querés, se sincr
 
 ## Privacidad
 
-La información queda en el `localStorage` del navegador que usás. Si conectás Google Drive, la app guarda una copia en una carpeta privada de tu propia cuenta, a la que solo ella accede y que no le permite ver tus otros archivos. Los datos nunca pasan por un servidor propio de la app.
+La información queda en el `localStorage` del navegador que usás. Si conectás Google Drive, la app guarda una copia en una carpeta privada de tu propia cuenta, a la que solo ella accede y que no le permite ver tus otros archivos. Los datos nunca pasan por un servidor propio de la app. Más detalles en la [política de privacidad](https://tato22-alt.github.io/gestor-postulaciones-it/privacidad.html).
 
 ## Tecnologías
 

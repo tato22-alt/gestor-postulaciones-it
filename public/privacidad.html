@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Política de privacidad del Gestor de Postulaciones IT." />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <title>Privacidad · Gestor de Postulaciones IT</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f4f6f8;
+        color: #172033;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.6;
+      }
+
+      main {
+        width: min(760px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 40px 0 64px;
+      }
+
+      h1 {
+        margin: 8px 0 4px;
+        font-size: clamp(1.8rem, 4vw, 2.4rem);
+        line-height: 1.15;
+      }
+
+      h2 {
+        margin: 32px 0 8px;
+        font-size: 1.2rem;
+      }
+
+      p,
+      li {
+        color: #344054;
+        overflow-wrap: anywhere;
+      }
+
+      a {
+        color: #1d4ed8;
+      }
+
+      a:focus-visible {
+        outline: 3px solid #84adff;
+        outline-offset: 2px;
+      }
+
+      .updated {
+        margin: 0;
+        color: #667085;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="./">← Volver al Gestor de Postulaciones IT</a></p>
+      <h1>Privacidad</h1>
+      <p class="updated">Última actualización: 21 de octubre de 2026</p>
+
+      <p>
+        El Gestor de Postulaciones IT es una aplicación web gratuita para organizar una búsqueda
+        laboral. Funciona en tu navegador y no tiene servidores propios: nadie más que vos puede ver
+        los datos que cargás.
+      </p>
+
+      <h2>Qué datos se guardan</h2>
+      <p>
+        Solo lo que vos cargás: oportunidades laborales, postulaciones, seguimientos y páginas de
+        empleo de empresas. La app no pide ni guarda tu nombre, documento, dirección, contraseñas ni
+        datos de pago.
+      </p>
+
+      <h2>Dónde se guardan</h2>
+      <ul>
+        <li>
+          <strong>En tu navegador.</strong> Los datos quedan en el almacenamiento local
+          (<code>localStorage</code>) del navegador que usás.
+        </li>
+        <li>
+          <strong>En tu Google Drive, si lo conectás.</strong> La app guarda una copia en una carpeta
+          privada de tu propia cuenta, reservada para ella y oculta en Drive. Así podés usar tus datos
+          en varios dispositivos.
+        </li>
+      </ul>
+
+      <h2>Qué permiso se pide a Google</h2>
+      <p>
+        Al conectar Google Drive, la app pide únicamente el permiso
+        <code>drive.appdata</code>. Ese permiso le permite leer y escribir su propia carpeta privada,
+        y no le da acceso a tus documentos, fotos ni a ningún otro archivo de tu Drive. El acceso
+        dura mientras usás la app: no se guarda en el navegador y se vuelve a pedir en cada visita.
+      </p>
+      <p>
+        El uso de la información recibida de las APIs de Google cumple con la
+        <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener noreferrer">Política de datos del usuario de los servicios de API de Google</a>,
+        incluidos los requisitos de uso limitado. Los datos solo se usan para mostrarte y
+        sincronizar tu información; no se venden, no se comparten y no se usan para publicidad.
+      </p>
+
+      <h2>Qué no hace la app</h2>
+      <ul>
+        <li>No envía tus datos a servidores del autor ni de terceros.</li>
+        <li>No usa analíticas, publicidad ni cookies propias.</li>
+        <li>No se postula, no envía correos ni contacta empresas por vos.</li>
+      </ul>
+      <p>
+        Para conectar Google Drive se carga el servicio de inicio de sesión de Google, que se rige
+        por la <a href="https://policies.google.com/privacy" rel="noopener noreferrer">política de privacidad de Google</a>.
+      </p>
+
+      <h2>Cómo borrar tus datos</h2>
+      <ul>
+        <li>
+          <strong>Desconectar Drive:</strong> en la sección «Google Drive» de la app, tocá
+          «Desconectar». También podés quitar el acceso desde
+          <a href="https://myaccount.google.com/connections" rel="noopener noreferrer">tu cuenta de Google</a>.
+        </li>
+        <li>
+          <strong>Borrar la copia de Drive:</strong> en Google Drive, entrá a Configuración →
+          Administrar apps, buscá «Gestor de Postulaciones IT» y elegí «Borrar datos ocultos de la
+          app».
+        </li>
+        <li>
+          <strong>Borrar los datos del navegador:</strong> eliminá los datos del sitio desde la
+          configuración de tu navegador. Antes podés exportar un respaldo desde la app.
+        </li>
+      </ul>
+
+      <h2>Contacto</h2>
+      <p>
+        Para consultas sobre privacidad, abrí un issue en el
+        <a href="https://github.com/tato22-alt/gestor-postulaciones-it/issues" rel="noopener noreferrer">repositorio del proyecto</a>.
+      </p>
+    </main>
+  </body>
+</html>

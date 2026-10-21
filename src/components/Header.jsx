@@ -9,7 +9,8 @@ function Header({ onAddOpportunity, addOpportunityButtonRef }) {
             Encontrá oportunidades compatibles, decidí dónde postularte y seguí cada proceso laboral.
           </p>
           <p className="header-privacy">
-            Tus datos se guardan solo en este navegador. Exportá un respaldo para no perderlos.
+            Tus datos se guardan en este navegador y, si lo conectás, en tu propio Google Drive.{' '}
+            <a href="privacidad.html">Privacidad</a>
           </p>
         </div>
         <div className="header-actions">

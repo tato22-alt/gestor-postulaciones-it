@@ -26,7 +26,8 @@ import OpportunitySection from './components/OpportunitySection.jsx'
 import PersistenceWarning from './components/PersistenceWarning.jsx'
 import SourcesPanel from './components/SourcesPanel.jsx'
 import SyncPanel from './components/SyncPanel.jsx'
-import useDriveSync from './components/useDriveSync.js'
+import DriveSyncPrompt from './components/DriveSyncPrompt.jsx'
+import useDriveSync, { DRIVE_SYNC_STATUS } from './components/useDriveSync.js'
 import StatsPanel from './components/StatsPanel.jsx'
 import SuccessFeedback from './components/SuccessFeedback.jsx'
 import WorkspaceTabs from './components/WorkspaceTabs.jsx'
@@ -1136,6 +1137,18 @@ function App() {
     applyMergedSnapshot,
   })
 
+  // Hidden for this visit only; it reappears on the next visit while Drive is not connected.
+  const [isDriveSyncPromptDismissed, setIsDriveSyncPromptDismissed] = useState(false)
+  const isDriveSyncPromptVisible =
+    driveSync.isAvailable &&
+    driveSync.status === DRIVE_SYNC_STATUS.DISCONNECTED &&
+    !isDriveSyncPromptDismissed
+
+  const dismissDriveSyncPrompt = () => {
+    setIsDriveSyncPromptDismissed(true)
+    addOpportunityButtonRef.current?.focus()
+  }
+
   const sourceToDelete = pendingSourceDeletion
     ? (sources.find((source) => source.id === pendingSourceDeletion.id) ?? null)
     : null
@@ -1255,6 +1268,9 @@ function App() {
       />
 
       <main className="app-main">
+        {isDriveSyncPromptVisible && (
+          <DriveSyncPrompt onConnect={driveSync.connect} onDismiss={dismissDriveSyncPrompt} />
+        )}
         <StatsPanel
           metrics={dashboardMetrics}
           applicationMetrics={applicationMetrics}
