@@ -337,7 +337,7 @@ Approved by Luciano: local-first data with optional synchronization to each user
 
 * **Scope:** `https://www.googleapis.com/auth/drive.appdata` only. The app reads and writes a single file, `gestor-postulaciones-it.json`, in the hidden appDataFolder and cannot see other Drive files.
 * **Authorization:** Google Identity Services token client loaded from `https://accounts.google.com/gsi/client` (approved external script, no npm dependency). Access tokens live only in memory; only the on/off preference is stored (`it-job-search-assistant.drive-sync`). After a reload the user taps «Sincronizar» once to get a new token.
-* **Sync file:** the backup format, now `schemaVersion: 4` with `deletions` and `profile`. Versions 1 to 3 are still accepted.
+* **Sync file:** the backup format, now `schemaVersion: 5` with `deletions`, `profile`, and `preferences`. Versions 1 to 4 are still accepted.
 * **Deletion records:** every deletion of an opportunity, application, or source is recorded (`it-job-search-assistant.deletions`) so a device that still has the record cannot bring it back. Importing a backup removes the deletion records of the records it re-adds and marks those records as edited after the deletion, so a deletion synchronized from another device does not remove them again.
 * **Merge rules** (`mergeSnapshots`): the most recent `updatedAt` wins; a deletion wins over earlier edits; an edit after a deletion keeps the record; an exact tie is broken by content, so every device picks the same copy; if two devices registered an application for the same opportunity, the most recently edited one is kept and the other is recorded as deleted; an opportunity that still has an application is never removed; an opportunity whose source was deleted keeps its data without the source; record order is ignored when detecting changes.
 * **Safety:** a remote file that fails validation is never overwritten; synchronization is refused while any local collection cannot be read; edits made during a running sync are merged again and synchronized afterwards.
@@ -360,6 +360,19 @@ Approved by Luciano: the first profile version holds only skills, entered as fre
 * **Backups:** `schemaVersion: 4` adds `profile` (or `null`); versions 1 to 3 are still accepted. Import keeps the non-destructive rule: the backup profile is added only when this browser has none, and the preview says when it is skipped.
 * **Synchronization:** the profile is a single record in the Drive file; the most recent `updatedAt` wins and an exact tie is broken by content, like every other record. It is never deleted (removing every skill is an edit), so it needs no deletion record. Older app versions cannot read version 4 files and, as before, refuse to overwrite them.
 * **Verification:** 24 new unit tests (policy, input validation, use cases, repository corruption and failures, merge, backup v3/v4, import plan, two-device sync with a simulated Drive); 261 tests pass, also under `Pacific/Kiritimati`. 42 automated browser checks on Chromium: keyboard tab navigation, validation and correction, duplicates by case and accents, whitespace normalization, markup rendered as text, `maxLength`, persistence after reload, removal and focus, cross-tab updates, backup export, import into an empty browser and re-import, corrupted storage preserved with its warning and download, no horizontal overflow at 1440, 1024, 768, 390, and 320 CSS pixels, and no console errors or warnings. Real Google Drive synchronization of the profile was not tested from the development environment.
+
+### Job search preferences
+
+Luciano delegated the choice of the first preferences to the agent ("elegí lo que te parezca"). The chosen fields already existed in `JobSearchPreferences` and reuse the controlled values of opportunities; salary, travel time, English and experience policies, and notifications stay out because they are sensitive business rules. Nothing is compared with opportunities yet.
+
+* **Fields:** target roles (free text, up to 80 characters and 20 roles, same duplicate rules as skills), preferred modalities (`on_site`, `hybrid`, `remote`), and accepted employment types (`full_time`, `part_time`, `internship`). No option checked means no preference.
+* **Interface:** a «Preferencias de búsqueda» section in the «Perfil» tab, below the skills, with the role list and two native checkbox groups inside `fieldset`/`legend`. Every change saves immediately and shows success feedback.
+* **Shared code:** `textListPolicy.js` (domain) holds the free-text list rules used by skills and roles; `TextListEditor.jsx` is the list editor used by both sections.
+* **Domain:** `JobSearchPreferences` now has `id`, `createdAt`, and `updatedAt`, which synchronization needs. Rules live in `jobSearchPreferencesPolicy.js`; option lists are stored in the canonical option order.
+* **Use cases:** `addTargetRole`, `removeTargetRole`, and `setPreferenceOption` in `managePreferences.js`, pure and immutable, with a monotonic `updatedAt`.
+* **Storage:** `LocalStoragePreferencesRepository` with the key `it-job-search-assistant.preferences`, the envelope `{ schemaVersion: 1, preferences: null | { id, targetRoles, preferredModalities, acceptedEmploymentTypes, createdAt, updatedAt } }`, strict validation, preservation and raw download of unreadable data, and same-origin tab synchronization.
+* **Backups and sync:** `schemaVersion: 5` adds `preferences` (or `null`); versions 1 to 4 are still accepted. Import adds the backup preferences only when this browser has none. Synchronization treats them as a single record like the profile: the most recent edit wins.
+* **Verification:** 15 new unit tests (276 in total, also under `Pacific/Pago_Pago`); 27 automated browser checks (validation, duplicates, keyboard checkbox toggling, canonical order, reload, removal focus, cross-tab updates, backup export and import, corrupted storage preserved, no overflow at five widths, no console errors), and the 42 profile checks still pass.
 
 ### Sources, text limits, and application deletion
 
@@ -403,7 +416,7 @@ Relevant documentation distinguishes:
 The repository does not yet include:
 
 * automatic duplicate merging (possible duplicates are only flagged);
-* editing or persisting `JobSearchPreferences` (the domain class exists, but nothing uses it);
+* editing `JobSearchPreferences` fields other than target roles, modalities, and employment types;
 * editing `CandidateProfile` fields other than skills;
 * follow-up history (completed follow-ups are cleared, not archived);
 * reminders or notifications outside the application;
@@ -438,10 +451,10 @@ React components render the header, statistics, workspace tabs, the shared creat
 
 `App` owns:
 
-* the opportunity, application, source, and deletion-record collections, and the candidate profile;
+* the opportunity, application, source, and deletion-record collections, the candidate profile, and the search preferences;
 * opportunity-form visibility and the source an opportunity form was opened from;
 * the opportunity, application, and source edit sessions with their expected `updatedAt` versions;
-* the persistence, source, application, profile, and edit warnings;
+* the persistence, source, application, profile, preferences, and edit warnings;
 * whether stored applications could not be read;
 * the temporary opportunity search query and status filter;
 * the pending confirmations (opportunity, application, and source deletion, application registration, final application status, backup import), each captured at trigger time;
@@ -449,7 +462,7 @@ React components render the header, statistics, workspace tabs, the shared creat
 
 `useDriveSync` owns the synchronization status and keeps the access token only in memory.
 
-`OpportunityForm`, `ApplicationDetailsForm`, `SourceForm`, and `ProfilePanel` own their temporary drafts and validation errors; `OpportunityForm` also owns the possible-duplicate warning.
+`OpportunityForm`, `ApplicationDetailsForm`, `SourceForm`, and each `TextListEditor` own their temporary drafts and validation errors; `OpportunityForm` also owns the possible-duplicate warning.
 
 Dashboard values are derived from the opportunity collection during rendering. They are not independent state and are not stored in `localStorage`.
 
@@ -479,11 +492,11 @@ Presentation components receive data through props and communicate actions throu
 
 ### Infrastructure
 
-`LocalStorageOpportunityRepository`, `LocalStorageApplicationRepository`, `LocalStorageSourceRepository`, `LocalStorageDeletionRepository`, and `LocalStorageProfileRepository` own browser-storage access and remain outside the presentation and domain layers.
+`LocalStorageOpportunityRepository`, `LocalStorageApplicationRepository`, `LocalStorageSourceRepository`, `LocalStorageDeletionRepository`, `LocalStorageProfileRepository`, and `LocalStoragePreferencesRepository` own browser-storage access and remain outside the presentation and domain layers.
 
 `App` receives repository results and coordinates state updates, but visual components do not access `localStorage` directly.
 
-Each collection uses its own key (`it-job-search-assistant.opportunities`, `.applications`, `.sources`, `.deletions`, `.profile`) and a versioned envelope with `schemaVersion: 1`. Backup files use `schemaVersion: 4`.
+Each collection uses its own key (`it-job-search-assistant.opportunities`, `.applications`, `.sources`, `.deletions`, `.profile`, `.preferences`) and a versioned envelope with `schemaVersion: 1`. Backup files use `schemaVersion: 5`.
 
 Same-origin tab changes are received through the browser `storage` event and reloaded through the repositories.
 
@@ -615,7 +628,6 @@ These gaps should be addressed only when the corresponding approved milestone re
 
 Candidates, each requiring Luciano's decisions before implementation:
 
-* search preferences: editing and persisting `JobSearchPreferences`; needs the approved set of preferences (for example target roles, modalities, and employment types);
 * rule-based compatibility analysis, which needs approved criteria, priorities, warning versus exclusion behavior, and missing-data handling.
 
 No implementation is authorized until a milestone is explicitly approved.

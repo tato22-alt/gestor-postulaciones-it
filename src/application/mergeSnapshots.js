@@ -1,6 +1,7 @@
 import Application from '../domain/Application.js'
 import CandidateProfile from '../domain/CandidateProfile.js'
 import CompanySource from '../domain/CompanySource.js'
+import JobSearchPreferences from '../domain/JobSearchPreferences.js'
 import JobOpportunity from '../domain/JobOpportunity.js'
 
 const COLLECTIONS = {
@@ -51,14 +52,19 @@ function mergeRecords(localRecords, remoteRecords) {
   return [...merged.values()]
 }
 
-// There is a single profile per person: the most recent edit wins, like any other record.
-// It is never deleted (removing every skill is an edit), so it needs no deletion record.
-function mergeProfile(localProfile, remoteProfile) {
-  if (!localProfile || !remoteProfile) {
-    return localProfile ?? remoteProfile ?? null
+// Records that exist once per person: the most recent edit wins, like any other record.
+// They are never deleted (clearing their lists is an edit), so they need no deletion record.
+const SINGLE_RECORDS = {
+  profile: CandidateProfile,
+  preferences: JobSearchPreferences,
+}
+
+function mergeSingleRecord(localRecord, remoteRecord) {
+  if (!localRecord || !remoteRecord) {
+    return localRecord ?? remoteRecord ?? null
   }
 
-  return isPreferred(remoteProfile, localProfile) ? remoteProfile : localProfile
+  return isPreferred(remoteRecord, localRecord) ? remoteRecord : localRecord
 }
 
 const byId = (records) => [...records].sort((a, b) => a.id.localeCompare(b.id))
@@ -70,6 +76,7 @@ function toComparable(snapshot) {
     applications: byId(snapshot.applications),
     sources: byId(snapshot.sources),
     profile: snapshot.profile ?? null,
+    preferences: snapshot.preferences ?? null,
     deletions: [...snapshot.deletions].sort((a, b) =>
       deletionKey(a.collection, a.id).localeCompare(deletionKey(b.collection, b.id)),
     ),
@@ -88,7 +95,8 @@ function toComparable(snapshot) {
  * - an opportunity that still has an application is never removed, because an
  *   opportunity with an application cannot be deleted;
  * - an opportunity that points to a deleted source keeps its data without that source;
- * - the candidate profile follows the most-recent-edit rule as a single record.
+ * - the candidate profile and the search preferences follow the most-recent-edit rule as
+ *   single records.
  */
 export default function mergeSnapshots(local, remote) {
   const deletions = mergeDeletions(local.deletions, remote.deletions)
@@ -167,9 +175,10 @@ export default function mergeSnapshots(local, remote) {
 
   result.deletions = [...deletions.values()]
 
-  const profile = mergeProfile(local.profile ?? null, remote.profile ?? null)
-  result.profile =
-    profile === null || profile instanceof CandidateProfile ? profile : new CandidateProfile(profile)
+  for (const [name, EntityClass] of Object.entries(SINGLE_RECORDS)) {
+    const record = mergeSingleRecord(local[name] ?? null, remote[name] ?? null)
+    result[name] = record === null || record instanceof EntityClass ? record : new EntityClass(record)
+  }
 
   const merged = toComparable(result)
 

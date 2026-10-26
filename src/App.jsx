@@ -10,6 +10,11 @@ import deleteApplication from './application/deleteApplication.js'
 import deleteOpportunity from './application/deleteOpportunity.js'
 import filterOpportunities from './application/filterOpportunities.js'
 import getPendingFollowUps from './application/getPendingFollowUps.js'
+import {
+  addTargetRole,
+  removeTargetRole,
+  setPreferenceOption,
+} from './application/managePreferences.js'
 import { addProfileSkill, removeProfileSkill } from './application/manageProfile.js'
 import { createSource, deleteSource, updateSource } from './application/manageSources.js'
 import planBackupImport from './application/planBackupImport.js'
@@ -59,6 +64,9 @@ import LocalStorageOpportunityRepository, {
 import LocalStorageDeletionRepository, {
   DELETION_STORAGE_KEY,
 } from './infrastructure/LocalStorageDeletionRepository.js'
+import LocalStoragePreferencesRepository, {
+  PREFERENCES_STORAGE_KEY,
+} from './infrastructure/LocalStoragePreferencesRepository.js'
 import LocalStorageProfileRepository, {
   PROFILE_STORAGE_KEY,
 } from './infrastructure/LocalStorageProfileRepository.js'
@@ -207,6 +215,18 @@ const PROFILE_LOAD_WARNING =
 const PROFILE_SAVE_WARNING =
   'El perfil se actualizó en esta sesión, pero no pudo guardarse en el navegador. El cambio puede perderse al recargar la página.'
 
+const PREFERENCES_LOAD_WARNING =
+  'No pudimos recuperar las preferencias de búsqueda guardadas de forma segura. Los datos almacenados se conservaron sin sobrescribirse. Los cambios de preferencias de esta sesión no se guardarán permanentemente.'
+
+const PREFERENCES_SAVE_WARNING =
+  'Las preferencias se actualizaron en esta sesión, pero no pudieron guardarse en el navegador. El cambio puede perderse al recargar la página.'
+
+const EMPTY_PREFERENCES = Object.freeze({
+  targetRoles: [],
+  preferredModalities: [],
+  acceptedEmploymentTypes: [],
+})
+
 const OPPORTUNITY_SOURCE_MISSING_WARNING =
   'La fuente de esta oportunidad ya no existe. Tus datos no se guardaron: cancelá y cargá la oportunidad otra vez.'
 
@@ -224,6 +244,9 @@ const SOURCE_EDIT_SUCCESS_MESSAGE = 'Fuente actualizada.'
 const SOURCE_DELETE_SUCCESS_MESSAGE = 'Fuente eliminada.'
 const SKILL_ADD_SUCCESS_MESSAGE = 'Skill agregada.'
 const SKILL_REMOVE_SUCCESS_MESSAGE = 'Skill quitada.'
+const ROLE_ADD_SUCCESS_MESSAGE = 'Rol agregado.'
+const ROLE_REMOVE_SUCCESS_MESSAGE = 'Rol quitado.'
+const PREFERENCES_SUCCESS_MESSAGE = 'Preferencias actualizadas.'
 const BACKUP_EXPORT_SUCCESS_MESSAGE = 'Respaldo exportado.'
 const CSV_EXPORT_SUCCESS_MESSAGE = 'Planilla CSV exportada.'
 const FOLLOW_UP_SUCCESS_MESSAGE =
@@ -244,13 +267,15 @@ function describeBackupImport(plan) {
     plan.sourcesToAdd.length > 0
       ? `${pluralize(plan.sourcesToAdd.length, 'fuente', 'fuentes')}, `
       : ''
-  const profilePart = plan.profileToAdd ? 'tu perfil, ' : ''
+  const profilePart = `${plan.profileToAdd ? 'tu perfil, ' : ''}${plan.preferencesToAdd ? 'tus preferencias de búsqueda, ' : ''}`
   const lines = [
     `Se van a agregar ${profilePart}${sourcesPart}${pluralize(plan.opportunitiesToAdd.length, 'oportunidad', 'oportunidades')} y ${pluralize(plan.applicationsToAdd.length, 'postulación', 'postulaciones')}.`,
   ]
   const { skipped } = plan
   const omitted = [
     skipped.existingProfile && 'el perfil, porque ya tenés uno en este navegador',
+    skipped.existingPreferences &&
+      'las preferencias de búsqueda, porque ya tenés otras en este navegador',
     skipped.existingSources > 0 &&
       `${pluralize(skipped.existingSources, 'fuente que ya existe', 'fuentes que ya existen')}`,
     skipped.existingOpportunities > 0 &&
@@ -303,6 +328,8 @@ const deletionRepository = new LocalStorageDeletionRepository(getBrowserStorage(
 const initialDeletionLoad = deletionRepository.loadAll()
 const profileRepository = new LocalStorageProfileRepository(getBrowserStorage())
 const initialProfileLoad = profileRepository.load()
+const preferencesRepository = new LocalStoragePreferencesRepository(getBrowserStorage())
+const initialPreferencesLoad = preferencesRepository.load()
 
 // Public OAuth client identifier for Google Drive synchronization. Without it, the
 // synchronization section is not shown.
@@ -323,6 +350,11 @@ function App() {
   const [profile, setProfile] = useState(initialProfileLoad.profile)
   const [profileWarning, setProfileWarning] = useState(
     initialProfileLoad.ok ? null : PROFILE_LOAD_WARNING,
+  )
+  // Job search preferences (roles, modalities, employment types), or null before the first change.
+  const [preferences, setPreferences] = useState(initialPreferencesLoad.preferences)
+  const [preferencesWarning, setPreferencesWarning] = useState(
+    initialPreferencesLoad.ok ? null : PREFERENCES_LOAD_WARNING,
   )
   const [sourceEditSession, setSourceEditSession] = useState(null)
   const [sourceEditWarning, setSourceEditWarning] = useState(null)
@@ -420,6 +452,17 @@ function App() {
           setProfileWarning(null)
         } else {
           setProfileWarning(PROFILE_LOAD_WARNING)
+        }
+      }
+
+      if (event.key === PREFERENCES_STORAGE_KEY) {
+        const loadResult = preferencesRepository.load()
+
+        if (loadResult.ok) {
+          setPreferences(loadResult.preferences)
+          setPreferencesWarning(null)
+        } else {
+          setPreferencesWarning(PREFERENCES_LOAD_WARNING)
         }
       }
 
@@ -845,7 +888,8 @@ function App() {
     applicationRepository.isPersistenceBlocked ||
     sourceRepository.isPersistenceBlocked ||
     deletionRepository.isPersistenceBlocked ||
-    profileRepository.isPersistenceBlocked
+    profileRepository.isPersistenceBlocked ||
+    preferencesRepository.isPersistenceBlocked
 
   // Each message gets a new id so repeating the same text is announced again.
   const showDataPanelMessage = (message) => {
@@ -858,7 +902,14 @@ function App() {
   const exportBackup = () => {
     downloadTextFile({
       filename: `gestor-postulaciones-respaldo-${todayFileSuffix()}.json`,
-      content: createBackupText({ opportunities, applications, sources, deletions, profile }),
+      content: createBackupText({
+        opportunities,
+        applications,
+        sources,
+        deletions,
+        profile,
+        preferences,
+      }),
       mimeType: 'application/json',
     })
 
@@ -929,6 +980,8 @@ function App() {
       backupSources: parsed.sources,
       currentProfile: profile,
       backupProfile: parsed.profile,
+      currentPreferences: preferences,
+      backupPreferences: parsed.preferences,
       deletions,
     })
 
@@ -968,6 +1021,8 @@ function App() {
       backupSources: backup.sources,
       currentProfile: profile,
       backupProfile: backup.profile,
+      currentPreferences: preferences,
+      backupPreferences: backup.preferences,
       deletions,
       now: new Date(),
     })
@@ -981,6 +1036,7 @@ function App() {
     setOpportunities(plan.nextOpportunities)
     setApplications(plan.nextApplications)
     setProfile(plan.nextProfile)
+    setPreferences(plan.nextPreferences)
 
     // Records brought back by an import must not be removed again by an older deletion.
     const importedKeys = new Set([
@@ -1005,8 +1061,11 @@ function App() {
       : opportunitySave
     // The profile does not reference other records, so its save does not depend on them.
     const profileSave = plan.profileToAdd ? profileRepository.save(plan.nextProfile) : { ok: true }
+    const preferencesSave = plan.preferencesToAdd
+      ? preferencesRepository.save(plan.nextPreferences)
+      : { ok: true }
 
-    if (!opportunitySave.ok || !applicationSave.ok || !profileSave.ok) {
+    if (!opportunitySave.ok || !applicationSave.ok || !profileSave.ok || !preferencesSave.ok) {
       showDataPanelMessage({
         type: 'error',
         text: 'Los datos se importaron en esta sesión, pero no pudieron guardarse en el navegador. Pueden perderse al recargar la página.',
@@ -1018,9 +1077,10 @@ function App() {
     setApplicationWarning(null)
     setSourceWarning(null)
     setProfileWarning(null)
+    setPreferencesWarning(null)
     showDataPanelMessage({
       type: 'info',
-      text: `Respaldo importado: ${plan.profileToAdd ? 'perfil agregado, ' : ''}${pluralize(plan.sourcesToAdd.length, 'fuente agregada', 'fuentes agregadas')}, ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad agregada', 'oportunidades agregadas')} y ${pluralize(plan.applicationsToAdd.length, 'postulación agregada', 'postulaciones agregadas')}.`,
+      text: `Respaldo importado: ${plan.profileToAdd ? 'perfil agregado, ' : ''}${plan.preferencesToAdd ? 'preferencias agregadas, ' : ''}${pluralize(plan.sourcesToAdd.length, 'fuente agregada', 'fuentes agregadas')}, ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad agregada', 'oportunidades agregadas')} y ${pluralize(plan.applicationsToAdd.length, 'postulación agregada', 'postulaciones agregadas')}.`,
     })
   }
 
@@ -1089,6 +1149,45 @@ function App() {
     showSuccessFeedback(SKILL_REMOVE_SUCCESS_MESSAGE)
     return true
   }
+
+  const preferencesWarningAction =
+    preferencesWarning === PREFERENCES_LOAD_WARNING && preferencesRepository.readRawValue() !== null
+      ? {
+          label: CORRUPTED_DOWNLOAD_LABEL,
+          onClick: () => downloadStoredRawValue(preferencesRepository, 'preferencias'),
+        }
+      : null
+
+  // Applies a preferences use-case result: saves it and shows the success message.
+  const applyPreferencesResult = (result, successMessage) => {
+    if (!result.ok) return false
+
+    setPreferences(result.preferences)
+
+    if (preferencesRepository.save(result.preferences).ok) {
+      setPreferencesWarning(null)
+    } else {
+      setPreferencesWarning(keepLoadWarningOr(PREFERENCES_LOAD_WARNING, PREFERENCES_SAVE_WARNING))
+    }
+
+    showSuccessFeedback(successMessage)
+    return true
+  }
+
+  const addRole = (role) =>
+    applyPreferencesResult(addTargetRole(preferences, { role, now: new Date() }), ROLE_ADD_SUCCESS_MESSAGE)
+
+  const removeRole = (role) =>
+    applyPreferencesResult(
+      removeTargetRole(preferences, { role, now: new Date() }),
+      ROLE_REMOVE_SUCCESS_MESSAGE,
+    )
+
+  const changePreferenceOption = (field, value, isSelected) =>
+    applyPreferencesResult(
+      setPreferenceOption(preferences, { field, value, isSelected, now: new Date() }),
+      PREFERENCES_SUCCESS_MESSAGE,
+    )
 
   const saveSources = (nextSources) => {
     setSources(nextSources)
@@ -1195,13 +1294,15 @@ function App() {
     setApplications(merged.applications)
     setDeletions(merged.deletions)
     setProfile(merged.profile)
+    setPreferences(merged.preferences)
 
     const saved =
       sourceRepository.saveAll(merged.sources).ok &&
       opportunityRepository.saveAll(merged.opportunities).ok &&
       applicationRepository.saveAll(merged.applications).ok &&
       deletionRepository.saveAll(merged.deletions).ok &&
-      profileRepository.save(merged.profile).ok
+      profileRepository.save(merged.profile).ok &&
+      preferencesRepository.save(merged.preferences).ok
 
     if (!saved) {
       showDataPanelMessage({
@@ -1214,7 +1315,7 @@ function App() {
   const driveSync = useDriveSync({
     clientId: GOOGLE_CLIENT_ID,
     storage: getBrowserStorage(),
-    snapshot: { opportunities, applications, sources, deletions, profile },
+    snapshot: { opportunities, applications, sources, deletions, profile, preferences },
     isStorageBlocked: isAnyStorageBlocked,
     applyMergedSnapshot,
   })
@@ -1377,6 +1478,7 @@ function App() {
         <PersistenceWarning message={applicationWarning} action={applicationWarningAction} />
         <PersistenceWarning message={sourceWarning} action={sourceWarningAction} />
         <PersistenceWarning message={profileWarning} action={profileWarningAction} />
+        <PersistenceWarning message={preferencesWarning} action={preferencesWarningAction} />
         <div
           className="workspace-panel"
           role="tabpanel"
@@ -1485,6 +1587,10 @@ function App() {
             skills={profile?.skills ?? []}
             onAddSkill={addSkill}
             onRemoveSkill={removeSkill}
+            preferences={preferences ?? EMPTY_PREFERENCES}
+            onAddTargetRole={addRole}
+            onRemoveTargetRole={removeRole}
+            onSetPreferenceOption={changePreferenceOption}
           />
         </div>
         <SyncPanel sync={driveSync} />

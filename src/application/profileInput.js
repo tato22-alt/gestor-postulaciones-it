@@ -1,9 +1,6 @@
-import {
-  SKILLS_MAX_COUNT,
-  SKILL_MAX_LENGTH,
-  hasSkill,
-  normalizeSkill,
-} from '../domain/candidateSkillsPolicy.js'
+import { SKILL_LIST_LIMITS, normalizeSkill } from '../domain/candidateSkillsPolicy.js'
+import { TARGET_ROLE_LIST_LIMITS } from '../domain/jobSearchPreferencesPolicy.js'
+import { normalizeListText, validateListTextInput } from '../domain/textListPolicy.js'
 
 export function normalizeSkillInput(value) {
   return normalizeSkill(value)
@@ -11,12 +8,13 @@ export function normalizeSkillInput(value) {
 
 // Returns an error code, or null when the skill can be added to the current list.
 export function validateSkillInput(value, currentSkills = []) {
-  const skill = normalizeSkill(value)
+  return validateListTextInput(value, currentSkills, SKILL_LIST_LIMITS)
+}
 
-  if (!skill) return 'required'
-  if (skill.length > SKILL_MAX_LENGTH) return 'too_long'
-  if (hasSkill(currentSkills, skill)) return 'duplicate'
-  if (currentSkills.length >= SKILLS_MAX_COUNT) return 'too_many'
+export function normalizeTargetRoleInput(value) {
+  return normalizeListText(value)
+}
 
-  return null
+export function validateTargetRoleInput(value, currentRoles = []) {
+  return validateListTextInput(value, currentRoles, TARGET_ROLE_LIST_LIMITS)
 }

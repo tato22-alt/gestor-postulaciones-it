@@ -1,40 +1,19 @@
 // Rules for the skills of a CandidateProfile. Skills are free text written by the user;
 // two skills that differ only in case, accents, or spacing are the same skill.
+import { getListTextKey, hasListText, isValidTextList, normalizeListText } from './textListPolicy.js'
 
 export const SKILL_MAX_LENGTH = 60
 export const SKILLS_MAX_COUNT = 100
 
-const COMBINING_DIACRITICAL_MARKS = /[̀-ͯ]/g
+export const SKILL_LIST_LIMITS = Object.freeze({
+  maxLength: SKILL_MAX_LENGTH,
+  maxCount: SKILLS_MAX_COUNT,
+})
 
-// Trims and collapses inner whitespace, keeping the text the user wrote.
-export function normalizeSkill(value) {
-  return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : ''
-}
-
-// Comparison key: "Gestión de Proyectos" and "gestion  de proyectos" are the same skill.
-export function getSkillKey(value) {
-  return normalizeSkill(value)
-    .toLocaleLowerCase('es')
-    .normalize('NFD')
-    .replace(COMBINING_DIACRITICAL_MARKS, '')
-}
-
-export function hasSkill(skills, value) {
-  const key = getSkillKey(value)
-  return skills.some((skill) => getSkillKey(skill) === key)
-}
+export const normalizeSkill = normalizeListText
+export const getSkillKey = getListTextKey
+export const hasSkill = hasListText
 
 export function isValidSkillList(skills) {
-  return (
-    Array.isArray(skills) &&
-    skills.length <= SKILLS_MAX_COUNT &&
-    skills.every(
-      (skill) =>
-        typeof skill === 'string' &&
-        skill === normalizeSkill(skill) &&
-        skill.length > 0 &&
-        skill.length <= SKILL_MAX_LENGTH,
-    ) &&
-    new Set(skills.map(getSkillKey)).size === skills.length
-  )
+  return isValidTextList(skills, SKILL_LIST_LIMITS)
 }

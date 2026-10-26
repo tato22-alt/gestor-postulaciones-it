@@ -9,7 +9,7 @@ import mergeSnapshots from './mergeSnapshots.js'
  */
 export default async function synchronizeData({ local, remoteStore, parseSnapshot, serializeSnapshot }) {
   const { fileId, text } = await remoteStore.readSyncFile()
-  let remote = { opportunities: [], applications: [], sources: [], deletions: [], profile: null }
+  let remote = { opportunities: [], applications: [], sources: [], deletions: [], profile: null, preferences: null }
 
   if (text !== null) {
     const parsed = parseSnapshot(text)

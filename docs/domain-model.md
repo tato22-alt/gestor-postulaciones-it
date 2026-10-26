@@ -16,6 +16,8 @@ Hoy solo las skills (`skills`) se pueden editar y se guardan, junto con `id`, `c
 
 Representa criterios configurables para una búsqueda laboral, como roles objetivo, modalidades, tolerancias y preferencias de notificación. No contiene identidad del candidato ni valores hardcodeados para una persona específica.
 
+Hoy se editan y se guardan los roles buscados (`targetRoles`, texto libre de hasta 80 caracteres y como máximo 20 roles), las modalidades preferidas (`preferredModalities`) y los tipos de jornada aceptados (`acceptedEmploymentTypes`), que reutilizan los valores controlados de las oportunidades. Hay un único conjunto de preferencias por persona, con `id`, `createdAt` y `updatedAt` para la sincronización. Las reglas viven en `jobSearchPreferencesPolicy.js`. El resto de los campos todavía no se usa ni se persiste.
+
 Los rangos pueden expresarse con objetos `{ min, max }`. Por ejemplo, `travelTimeRangeHours` puede representar entre cuatro y cinco horas, y `weeklyOpportunityTarget` entre tres y cinco oportunidades. Los criterios no configurados permanecen en `null` o en colecciones vacías.
 
 ### `CompanySource`
@@ -94,7 +96,8 @@ Todavía no existen:
 
 - validaciones de campos obligatorios;
 - instancias con información de Luciano;
-- repositorios para preferencias o resultados de compatibilidad (las fuentes y las skills del perfil ya tienen su repositorio local y se sincronizan con Drive);
+- repositorios para resultados de compatibilidad (las fuentes, las skills del perfil y las preferencias de búsqueda ya tienen su repositorio local y se sincronizan con Drive);
+- edición de las preferencias distintas de roles, modalidades y tipos de jornada;
 - edición de los campos del perfil distintos de las skills;
 - monitoreo de fuentes;
 - scraping o consumo de APIs de empleo;

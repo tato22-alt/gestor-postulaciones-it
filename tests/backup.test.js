@@ -26,8 +26,9 @@ describe('backup file', () => {
     const result = parseBackupText(text)
 
     assert.equal(envelope.format, 'it-job-search-assistant.backup')
-    assert.equal(envelope.schemaVersion, 4)
+    assert.equal(envelope.schemaVersion, 5)
     assert.equal(envelope.profile, null)
+    assert.equal(envelope.preferences, null)
     assert.equal(envelope.exportedAt, NOW)
     assert.equal(result.ok, true)
     assert.ok(result.opportunities[0] instanceof JobOpportunity)
@@ -42,7 +43,7 @@ describe('backup file', () => {
     assert.equal(parseBackupText('{nope').status, 'invalid_json')
     assert.equal(parseBackupText('[]').status, 'unknown_format')
     assert.equal(parseBackupText(tamper(valid, (b) => { b.format = 'other' })).status, 'unknown_format')
-    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 5 })).status, 'unsupported_version')
+    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 6 })).status, 'unsupported_version')
   })
 
   it('accepts long descriptions saved before the text limits existed', () => {
@@ -65,6 +66,7 @@ describe('backup file', () => {
       delete b.sources
       delete b.deletions
       delete b.profile
+      delete b.preferences
     })
     const result = parseBackupText(v1)
 
@@ -76,6 +78,7 @@ describe('backup file', () => {
     const v3 = tamper(backupOf([createOpportunity()], []), (b) => {
       b.schemaVersion = 3
       delete b.profile
+      delete b.preferences
     })
     const result = parseBackupText(v3)
 
@@ -183,6 +186,7 @@ describe('planBackupImport', () => {
     assert.deepEqual(result.applicationsToAdd.map((a) => a.id), ['for-o2', 'for-o3'])
     assert.deepEqual(result.skipped, {
       existingProfile: false,
+      existingPreferences: false,
       existingSources: 0,
       existingOpportunities: 0,
       opportunitiesWithoutSource: 0,

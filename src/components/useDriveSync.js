@@ -14,7 +14,7 @@ const AUTO_SYNC_DELAY_MS = 3000
 // After uploading, read the copy once more a little later: if another device uploaded at
 // the same moment, its changes are picked up instead of waiting for the next local edit.
 const VERIFY_SYNC_DELAY_MS = 10000
-const SNAPSHOT_COLLECTIONS = ['opportunities', 'applications', 'sources', 'deletions', 'profile']
+const SNAPSHOT_COLLECTIONS = ['opportunities', 'applications', 'sources', 'deletions', 'profile', 'preferences']
 
 // The snapshot object is rebuilt on every render, so changes are detected per collection.
 const hasSnapshotChanged = (previous, next) =>
@@ -172,7 +172,7 @@ export default function useDriveSync({
     const timer = setTimeout(() => runSyncRef.current?.({ interactive: false }), AUTO_SYNC_DELAY_MS)
     return () => clearTimeout(timer)
     // hasValidToken reads a ref; the effect intentionally reacts only to data changes.
-  }, [snapshot.opportunities, snapshot.applications, snapshot.sources, snapshot.deletions, snapshot.profile, isEnabled])
+  }, [snapshot.opportunities, snapshot.applications, snapshot.sources, snapshot.deletions, snapshot.profile, snapshot.preferences, isEnabled])
 
   // Coming back to the tab picks up changes made on other devices.
   useEffect(() => {

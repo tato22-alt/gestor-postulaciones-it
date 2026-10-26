@@ -1,140 +1,118 @@
-import { useId, useRef, useState } from 'react'
-import { validateSkillInput } from '../application/profileInput.js'
+import { validateSkillInput, validateTargetRoleInput } from '../application/profileInput.js'
+import { EMPLOYMENT_TYPES, MODALITIES } from '../constants/domainOptions.js'
 import { SKILLS_MAX_COUNT, SKILL_MAX_LENGTH } from '../domain/candidateSkillsPolicy.js'
+import { TARGET_ROLES_MAX_COUNT, TARGET_ROLE_MAX_LENGTH } from '../domain/jobSearchPreferencesPolicy.js'
+import TextListEditor from './TextListEditor.jsx'
 
-const ERROR_MESSAGES = {
+const SKILL_ERROR_MESSAGES = {
   required: 'Ingresá una skill.',
   too_long: `Usá como máximo ${SKILL_MAX_LENGTH} caracteres.`,
   duplicate: 'Esa skill ya está en tu perfil.',
   too_many: `Podés cargar hasta ${SKILLS_MAX_COUNT} skills.`,
 }
 
-function ProfilePanel({ skills, onAddSkill, onRemoveSkill }) {
-  const idPrefix = useId()
-  const [draft, setDraft] = useState('')
-  const [error, setError] = useState(null)
-  const inputRef = useRef(null)
-  const removeButtonRefs = useRef([])
-  const inputId = `${idPrefix}-skill`
-  const errorId = `${idPrefix}-skill-error`
-  const hintId = `${idPrefix}-skill-hint`
+const ROLE_ERROR_MESSAGES = {
+  required: 'Ingresá un rol.',
+  too_long: `Usá como máximo ${TARGET_ROLE_MAX_LENGTH} caracteres.`,
+  duplicate: 'Ese rol ya está en tus preferencias.',
+  too_many: `Podés cargar hasta ${TARGET_ROLES_MAX_COUNT} roles.`,
+}
 
-  const handleChange = (event) => {
-    setDraft(event.target.value)
+const SKILL_HINT = 'Una por vez. Mayúsculas y acentos no cuentan como diferencia.'
+const ROLE_HINT = 'Uno por vez. Mayúsculas y acentos no cuentan como diferencia.'
 
-    if (error) {
-      setError(validateSkillInput(event.target.value, skills))
-    }
-  }
+const OPTION_GROUPS = [
+  { field: 'preferredModalities', legend: 'Modalidades preferidas', options: Object.values(MODALITIES) },
+  { field: 'acceptedEmploymentTypes', legend: 'Tipos de jornada aceptados', options: Object.values(EMPLOYMENT_TYPES) },
+]
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
-    const validationError = validateSkillInput(draft, skills)
-    setError(validationError)
-
-    if (validationError) return
-
-    if (onAddSkill(draft) !== false) {
-      setDraft('')
-    }
-
-    inputRef.current?.focus()
-  }
-
-  // After removing, focus the skill that took its place, or the input when none is left,
-  // so keyboard users do not lose their position.
-  const handleRemove = (skill, index) => {
-    if (onRemoveSkill(skill) === false) return
-
-    const remaining = skills.length - 1
-    const nextIndex = Math.min(index, remaining - 1)
-
-    requestAnimationFrame(() => {
-      if (nextIndex >= 0) {
-        removeButtonRefs.current[nextIndex]?.focus()
-      } else {
-        inputRef.current?.focus()
-      }
-    })
-  }
-
+function ProfilePanel({
+  skills,
+  preferences,
+  onAddSkill,
+  onRemoveSkill,
+  onAddTargetRole,
+  onRemoveTargetRole,
+  onSetPreferenceOption,
+}) {
   return (
-    <section className="panel" aria-labelledby="profile-title">
-      <div className="section-heading">
-        <div>
-          <p className="section-kicker">Perfil</p>
-          <h2 id="profile-title">
-            Perfil profesional
-          </h2>
-        </div>
-        <p>
-          Cargá tus skills. Por ahora solo se guardan; más adelante servirán para comparar tu perfil
-          con las oportunidades.
-        </p>
-      </div>
-
-      <form className="profile-skill-form" onSubmit={handleSubmit} noValidate>
-        <div className="form-field">
-          <label htmlFor={inputId}>Skill</label>
-          <input
-            ref={inputRef}
-            id={inputId}
-            name="skill"
-            value={draft}
-            onChange={handleChange}
-            maxLength={SKILL_MAX_LENGTH}
-            placeholder="Ej.: React, SQL Server, Git"
-            autoComplete="off"
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? `${hintId} ${errorId}` : hintId}
-          />
-          <p className="form-hint" id={hintId}>
-            Una por vez. Mayúsculas y acentos no cuentan como diferencia.
+    <>
+      <section className="panel" aria-labelledby="profile-title">
+        <div className="section-heading">
+          <div>
+            <p className="section-kicker">Perfil</p>
+            <h2 id="profile-title">Perfil profesional</h2>
+          </div>
+          <p>
+            Cargá tus skills. Por ahora solo se guardan; más adelante servirán para comparar tu
+            perfil con las oportunidades.
           </p>
-          {error && (
-            <p className="form-error" id={errorId} role="alert">
-              {ERROR_MESSAGES[error]}
-            </p>
-          )}
         </div>
-        <div className="form-actions">
-          <button className="button button-primary" type="submit" disabled={Boolean(error)}>
-            Agregar skill
-          </button>
-        </div>
-      </form>
 
-      {skills.length === 0 ? (
-        <div className="empty-state compact-empty-state">
-          <h3>Todavía no cargaste skills.</h3>
-          <p>Agregá las tecnologías y herramientas que sabés usar.</p>
+        <TextListEditor
+          label="Skill"
+          placeholder="Ej.: React, SQL Server, Git"
+          hint={SKILL_HINT}
+          maxLength={SKILL_MAX_LENGTH}
+          values={skills}
+          validate={validateSkillInput}
+          errorMessages={SKILL_ERROR_MESSAGES}
+          addLabel="Agregar skill"
+          getRemoveLabel={(skill) => `Quitar skill: ${skill}`}
+          countLabel={(count) => (count === 1 ? '1 skill' : `${count} skills`)}
+          emptyTitle="Todavía no cargaste skills."
+          emptyText="Agregá las tecnologías y herramientas que sabés usar."
+          onAdd={onAddSkill}
+          onRemove={onRemoveSkill}
+        />
+      </section>
+
+      <section className="panel" aria-labelledby="preferences-title">
+        <div className="section-heading">
+          <div>
+            <p className="section-kicker">Búsqueda</p>
+            <h2 id="preferences-title">Preferencias de búsqueda</h2>
+          </div>
+          <p>Qué tipo de trabajo buscás. Por ahora solo se guardan.</p>
         </div>
-      ) : (
-        <>
-          <h3 className="profile-skills-title">
-            {skills.length === 1 ? '1 skill' : `${skills.length} skills`}
-          </h3>
-          <ul className="profile-skill-list">
-            {skills.map((skill, index) => (
-              <li key={skill} className="profile-skill">
-                <span className="profile-skill-name">{skill}</span>
-                <button
-                  ref={(element) => {
-                    removeButtonRefs.current[index] = element
-                  }}
-                  className="button button-danger-outline profile-skill-remove"
-                  type="button"
-                  aria-label={`Quitar skill: ${skill}`}
-                  onClick={() => handleRemove(skill, index)}
-                >
-                  Quitar
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </section>
+
+        <TextListEditor
+          label="Rol buscado"
+          placeholder="Ej.: Desarrollador trainee"
+          hint={ROLE_HINT}
+          maxLength={TARGET_ROLE_MAX_LENGTH}
+          values={preferences.targetRoles}
+          validate={validateTargetRoleInput}
+          errorMessages={ROLE_ERROR_MESSAGES}
+          addLabel="Agregar rol"
+          getRemoveLabel={(role) => `Quitar rol: ${role}`}
+          countLabel={(count) => (count === 1 ? '1 rol' : `${count} roles`)}
+          emptyTitle="Todavía no cargaste roles."
+          emptyText="Agregá los puestos a los que te querés postular."
+          onAdd={onAddTargetRole}
+          onRemove={onRemoveTargetRole}
+        />
+
+        <div className="preference-option-groups">
+          {OPTION_GROUPS.map(({ field, legend, options }) => (
+            <fieldset key={field} className="preference-option-group">
+              <legend>{legend}</legend>
+              <p className="form-hint">Elegí las que quieras. Sin ninguna marcada, no hay preferencia.</p>
+              {options.map((option) => (
+                <label key={option.value} className="preference-option">
+                  <input
+                    type="checkbox"
+                    checked={preferences[field].includes(option.value)}
+                    onChange={(event) => onSetPreferenceOption(field, option.value, event.target.checked)}
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </fieldset>
+          ))}
+        </div>
+      </section>
+    </>
   )
 }
 

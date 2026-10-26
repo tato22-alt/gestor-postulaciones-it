@@ -1,5 +1,8 @@
+import { generateId } from '../utils/id.js'
+
 class JobSearchPreferences {
   constructor({
+    id = generateId(),
     targetRoles = [],
     rolePriorities = {},
     acceptedEmploymentTypes = [],
@@ -13,7 +16,10 @@ class JobSearchPreferences {
     staleAfterDays = null,
     weeklyOpportunityTarget = { min: null, max: null },
     notificationPreferences = {},
+    createdAt = new Date().toISOString(),
+    updatedAt = createdAt,
   } = {}) {
+    this.id = id
     this.targetRoles = [...targetRoles]
     this.rolePriorities = { ...rolePriorities }
     this.acceptedEmploymentTypes = [...acceptedEmploymentTypes]
@@ -27,6 +33,8 @@ class JobSearchPreferences {
     this.staleAfterDays = staleAfterDays
     this.weeklyOpportunityTarget = { ...weeklyOpportunityTarget }
     this.notificationPreferences = { ...notificationPreferences }
+    this.createdAt = createdAt
+    this.updatedAt = updatedAt
   }
 }
 
