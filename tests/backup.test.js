@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import planBackupImport from '../src/application/planBackupImport.js'
 import Application from '../src/domain/Application.js'
+import CandidateProfile from '../src/domain/CandidateProfile.js'
 import CompanySource from '../src/domain/CompanySource.js'
 import JobOpportunity from '../src/domain/JobOpportunity.js'
 import { BACKUP_MAX_BYTES, createBackupText, parseBackupText } from '../src/infrastructure/backupFile.js'
@@ -25,7 +26,8 @@ describe('backup file', () => {
     const result = parseBackupText(text)
 
     assert.equal(envelope.format, 'it-job-search-assistant.backup')
-    assert.equal(envelope.schemaVersion, 3)
+    assert.equal(envelope.schemaVersion, 4)
+    assert.equal(envelope.profile, null)
     assert.equal(envelope.exportedAt, NOW)
     assert.equal(result.ok, true)
     assert.ok(result.opportunities[0] instanceof JobOpportunity)
@@ -40,7 +42,7 @@ describe('backup file', () => {
     assert.equal(parseBackupText('{nope').status, 'invalid_json')
     assert.equal(parseBackupText('[]').status, 'unknown_format')
     assert.equal(parseBackupText(tamper(valid, (b) => { b.format = 'other' })).status, 'unknown_format')
-    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 4 })).status, 'unsupported_version')
+    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 5 })).status, 'unsupported_version')
   })
 
   it('accepts long descriptions saved before the text limits existed', () => {
@@ -62,11 +64,46 @@ describe('backup file', () => {
       b.schemaVersion = 1
       delete b.sources
       delete b.deletions
+      delete b.profile
     })
     const result = parseBackupText(v1)
 
     assert.equal(result.ok, true)
     assert.deepEqual(result.sources, [])
+  })
+
+  it('still accepts version 3 backups without a profile', () => {
+    const v3 = tamper(backupOf([createOpportunity()], []), (b) => {
+      b.schemaVersion = 3
+      delete b.profile
+    })
+    const result = parseBackupText(v3)
+
+    assert.equal(result.ok, true)
+    assert.equal(result.profile, null)
+    assert.equal(parseBackupText(tamper(v3, (b) => { b.profile = null })).status, 'invalid_records')
+  })
+
+  it('round-trips the profile skills and rejects invalid ones', () => {
+    const profile = new CandidateProfile({ id: 'p1', skills: ['React', 'SQL Server'], createdAt: NOW })
+    const text = createBackupText({ opportunities: [], applications: [], sources: [], profile, now: NOW })
+    const result = parseBackupText(text)
+
+    assert.deepEqual(JSON.parse(text).profile, { id: 'p1', skills: ['React', 'SQL Server'], createdAt: NOW, updatedAt: NOW })
+    assert.ok(result.profile instanceof CandidateProfile)
+    assert.deepEqual(result.profile.skills, ['React', 'SQL Server'])
+
+    const invalidProfiles = {
+      'a duplicated skill': (b) => { b.profile.skills.push('react') },
+      'a skill over the limit': (b) => { b.profile.skills.push('s'.repeat(61)) },
+      'a blank skill': (b) => { b.profile.skills.push('  ') },
+      'an extra field': (b) => { b.profile.name = 'Nombre' },
+      'a non-array skill list': (b) => { b.profile.skills = 'React' },
+    }
+
+    for (const [description, change] of Object.entries(invalidProfiles)) {
+      assert.equal(parseBackupText(tamper(text, change)).status, 'invalid_records', description)
+    }
   })
 
   it('round-trips sources and rejects unsafe source URLs', () => {
@@ -145,6 +182,7 @@ describe('planBackupImport', () => {
 
     assert.deepEqual(result.applicationsToAdd.map((a) => a.id), ['for-o2', 'for-o3'])
     assert.deepEqual(result.skipped, {
+      existingProfile: false,
       existingSources: 0,
       existingOpportunities: 0,
       opportunitiesWithoutSource: 0,
@@ -188,5 +226,32 @@ describe('planBackupImport', () => {
 
     assert.equal(result.hasChanges, false)
     assert.deepEqual(result.nextOpportunities, opportunities)
+  })
+
+  it('adds the backup profile only when this browser has none', () => {
+    const local = new CandidateProfile({ id: 'local', skills: ['Java'], createdAt: NOW })
+    const fromBackup = new CandidateProfile({ id: 'backup', skills: ['React'], createdAt: NOW })
+    const withProfiles = (currentProfile, backupProfile) =>
+      planBackupImport({
+        currentOpportunities: [],
+        currentApplications: [],
+        backupOpportunities: [],
+        backupApplications: [],
+        currentProfile,
+        backupProfile,
+      })
+
+    const added = withProfiles(null, fromBackup)
+    assert.equal(added.profileToAdd, fromBackup)
+    assert.equal(added.nextProfile, fromBackup)
+    assert.equal(added.hasChanges, true)
+
+    const kept = withProfiles(local, fromBackup)
+    assert.equal(kept.profileToAdd, null)
+    assert.equal(kept.nextProfile, local)
+    assert.equal(kept.skipped.existingProfile, true)
+    assert.equal(kept.hasChanges, false)
+
+    assert.equal(withProfiles(null, null).nextProfile, null)
   })
 })

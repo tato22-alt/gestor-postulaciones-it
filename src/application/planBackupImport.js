@@ -12,6 +12,8 @@ export default function planBackupImport({
   backupApplications,
   currentSources = [],
   backupSources = [],
+  currentProfile = null,
+  backupProfile = null,
   deletions = [],
   now = new Date(),
 }) {
@@ -87,11 +89,17 @@ export default function planBackupImport({
     }
   }
 
+  // Like every other record, an existing profile is never replaced: the backup profile is
+  // only added when this browser has none.
+  const profileToAdd = currentProfile === null ? backupProfile : null
+
   return {
+    profileToAdd,
     sourcesToAdd,
     opportunitiesToAdd,
     applicationsToAdd,
     skipped: {
+      existingProfile: currentProfile !== null && backupProfile !== null,
       existingSources: backupSources.length - sourcesToAdd.length,
       existingOpportunities,
       opportunitiesWithoutSource,
@@ -102,7 +110,9 @@ export default function planBackupImport({
     nextOpportunities: [...currentOpportunities, ...opportunitiesToAdd],
     nextApplications: [...currentApplications, ...applicationsToAdd],
     nextSources: [...currentSources, ...sourcesToAdd],
+    nextProfile: profileToAdd ?? currentProfile,
     hasChanges:
+      profileToAdd !== null ||
       sourcesToAdd.length > 0 || opportunitiesToAdd.length > 0 || applicationsToAdd.length > 0,
   }
 }

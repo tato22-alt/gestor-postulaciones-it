@@ -10,6 +10,8 @@ El modelo de dominio representa los conceptos principales del asistente de búsq
 
 Representa información profesional no sensible y relativamente estable de una persona candidata: formación, habilidades, idiomas y referencia al CV. No contiene preferencias de búsqueda ni lógica de postulaciones.
 
+Hoy solo las skills (`skills`) se pueden editar y se guardan, junto con `id`, `createdAt` y `updatedAt`. Hay un único perfil por persona. Las reglas viven en `candidateSkillsPolicy.js`: cada skill es texto libre de hasta 60 caracteres, con como máximo 100 skills, y dos skills que solo difieren en mayúsculas, acentos o espacios se consideran la misma. El resto de los campos de la clase todavía no se usa ni se persiste.
+
 ### `JobSearchPreferences`
 
 Representa criterios configurables para una búsqueda laboral, como roles objetivo, modalidades, tolerancias y preferencias de notificación. No contiene identidad del candidato ni valores hardcodeados para una persona específica.
@@ -92,7 +94,8 @@ Todavía no existen:
 
 - validaciones de campos obligatorios;
 - instancias con información de Luciano;
-- repositorios para perfiles, preferencias o resultados de compatibilidad (las fuentes ya tienen su repositorio local y se sincronizan con Drive);
+- repositorios para preferencias o resultados de compatibilidad (las fuentes y las skills del perfil ya tienen su repositorio local y se sincronizan con Drive);
+- edición de los campos del perfil distintos de las skills;
 - monitoreo de fuentes;
 - scraping o consumo de APIs de empleo;
 - fusión automática de duplicados;

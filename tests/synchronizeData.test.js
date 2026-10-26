@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import synchronizeData from '../src/application/synchronizeData.js'
+import CandidateProfile from '../src/domain/CandidateProfile.js'
 import { createBackupText, parseBackupText } from '../src/infrastructure/backupFile.js'
 import { DriveRequestError, createDriveAppDataClient } from '../src/infrastructure/googleDriveAppData.js'
 import { createApplication, createOpportunity } from './helpers.js'
@@ -72,6 +73,24 @@ describe('synchronizeData with a simulated Drive', () => {
     assert.equal(phone.changedLocal, true)
     assert.equal(phone.uploaded, false)
     assert.deepEqual(phone.merged.opportunities.map((o) => o.id), ['from-laptop'])
+  })
+
+  it('brings the profile skills to another device and keeps the newest edit', async () => {
+    const drive = createFakeDrive()
+    const laptopProfile = new CandidateProfile({ id: 'p', skills: ['React'], createdAt: '2026-01-10T12:00:00.000Z' })
+
+    await sync({ ...empty(), profile: laptopProfile }, drive)
+
+    const phone = await sync(empty(), drive)
+    assert.equal(phone.changedLocal, true)
+    assert.ok(phone.merged.profile instanceof CandidateProfile)
+    assert.deepEqual(phone.merged.profile.skills, ['React'])
+
+    const edited = new CandidateProfile({ ...phone.merged.profile, skills: ['React', 'Git'], updatedAt: '2026-01-11T12:00:00.000Z' })
+    await sync({ ...empty(), profile: edited }, drive)
+
+    const laptop = await sync({ ...empty(), profile: laptopProfile }, drive)
+    assert.deepEqual(laptop.merged.profile.skills, ['React', 'Git'])
   })
 
   it('propagates a deletion to the other device', async () => {

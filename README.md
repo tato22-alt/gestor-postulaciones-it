@@ -41,13 +41,18 @@ No requiere cuenta. Tus datos se guardan en tu navegador y, si querés, se sincr
 
 ![Fuentes de empleo](docs/screenshots/fuentes.png)
 
+**Perfil**
+
+* skills cargadas como texto libre, una por vez, sin repetir (mayúsculas, acentos y espacios no cuentan como diferencia);
+* por ahora solo se guardan: todavía no se comparan con las oportunidades.
+
 **Tus datos**
 
 * sincronización opcional con tu Google Drive: conectás tu cuenta una vez y tus datos quedan disponibles en la computadora y en el celular;
 * respaldo en un archivo JSON para guardar una copia o pasar los datos a otro navegador;
 * importación de respaldos que solo agrega lo nuevo, con vista previa;
 * exportación de oportunidades y postulaciones a CSV para abrirlas en una planilla;
-* el respaldo incluye oportunidades, postulaciones y fuentes.
+* el respaldo incluye oportunidades, postulaciones, fuentes y las skills del perfil.
 
 **Estadísticas**
 
@@ -60,7 +65,8 @@ No requiere cuenta. Tus datos se guardan en tu navegador y, si querés, se sincr
 2. Cuando te postules, presioná «Registrar postulación» en su tarjeta.
 3. En **Postulaciones**, avanzá el estado de cada proceso y editá fechas, próxima acción y notas.
 4. Revisá **Próximos seguimientos** para saber a quién escribir y cuándo. Marcá cada seguimiento como hecho al completarlo.
-5. Para usar la app en varios dispositivos, tocá «Conectar Google Drive» en cada uno. También podés exportar un respaldo en **Tus datos** e importarlo en otro navegador.
+5. En **Perfil**, cargá tus skills.
+6. Para usar la app en varios dispositivos, tocá «Conectar Google Drive» en cada uno. También podés exportar un respaldo en **Tus datos** e importarlo en otro navegador.
 
 ## Privacidad
 

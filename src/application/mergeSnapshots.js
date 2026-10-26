@@ -1,4 +1,5 @@
 import Application from '../domain/Application.js'
+import CandidateProfile from '../domain/CandidateProfile.js'
 import CompanySource from '../domain/CompanySource.js'
 import JobOpportunity from '../domain/JobOpportunity.js'
 
@@ -50,6 +51,16 @@ function mergeRecords(localRecords, remoteRecords) {
   return [...merged.values()]
 }
 
+// There is a single profile per person: the most recent edit wins, like any other record.
+// It is never deleted (removing every skill is an edit), so it needs no deletion record.
+function mergeProfile(localProfile, remoteProfile) {
+  if (!localProfile || !remoteProfile) {
+    return localProfile ?? remoteProfile ?? null
+  }
+
+  return isPreferred(remoteProfile, localProfile) ? remoteProfile : localProfile
+}
+
 const byId = (records) => [...records].sort((a, b) => a.id.localeCompare(b.id))
 
 // Order is ignored: two snapshots with the same records in a different order are equal.
@@ -58,6 +69,7 @@ function toComparable(snapshot) {
     opportunities: byId(snapshot.opportunities),
     applications: byId(snapshot.applications),
     sources: byId(snapshot.sources),
+    profile: snapshot.profile ?? null,
     deletions: [...snapshot.deletions].sort((a, b) =>
       deletionKey(a.collection, a.id).localeCompare(deletionKey(b.collection, b.id)),
     ),
@@ -75,7 +87,8 @@ function toComparable(snapshot) {
  *   edited one is kept and the other is recorded as deleted, so every device converges;
  * - an opportunity that still has an application is never removed, because an
  *   opportunity with an application cannot be deleted;
- * - an opportunity that points to a deleted source keeps its data without that source.
+ * - an opportunity that points to a deleted source keeps its data without that source;
+ * - the candidate profile follows the most-recent-edit rule as a single record.
  */
 export default function mergeSnapshots(local, remote) {
   const deletions = mergeDeletions(local.deletions, remote.deletions)
@@ -153,6 +166,10 @@ export default function mergeSnapshots(local, remote) {
   )
 
   result.deletions = [...deletions.values()]
+
+  const profile = mergeProfile(local.profile ?? null, remote.profile ?? null)
+  result.profile =
+    profile === null || profile instanceof CandidateProfile ? profile : new CandidateProfile(profile)
 
   const merged = toComparable(result)
 

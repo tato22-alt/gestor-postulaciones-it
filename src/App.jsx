@@ -10,6 +10,7 @@ import deleteApplication from './application/deleteApplication.js'
 import deleteOpportunity from './application/deleteOpportunity.js'
 import filterOpportunities from './application/filterOpportunities.js'
 import getPendingFollowUps from './application/getPendingFollowUps.js'
+import { addProfileSkill, removeProfileSkill } from './application/manageProfile.js'
 import { createSource, deleteSource, updateSource } from './application/manageSources.js'
 import planBackupImport from './application/planBackupImport.js'
 import registerApplication from './application/registerApplication.js'
@@ -24,6 +25,7 @@ import Header from './components/Header.jsx'
 import OpportunityForm from './components/OpportunityForm.jsx'
 import OpportunitySection from './components/OpportunitySection.jsx'
 import PersistenceWarning from './components/PersistenceWarning.jsx'
+import ProfilePanel from './components/ProfilePanel.jsx'
 import SourcesPanel from './components/SourcesPanel.jsx'
 import SyncPanel from './components/SyncPanel.jsx'
 import DriveSyncPrompt from './components/DriveSyncPrompt.jsx'
@@ -57,6 +59,9 @@ import LocalStorageOpportunityRepository, {
 import LocalStorageDeletionRepository, {
   DELETION_STORAGE_KEY,
 } from './infrastructure/LocalStorageDeletionRepository.js'
+import LocalStorageProfileRepository, {
+  PROFILE_STORAGE_KEY,
+} from './infrastructure/LocalStorageProfileRepository.js'
 import LocalStorageSourceRepository, {
   SOURCE_STORAGE_KEY,
 } from './infrastructure/LocalStorageSourceRepository.js'
@@ -196,6 +201,12 @@ const SOURCE_DELETE_WARNINGS = {
     'No se pueden eliminar fuentes mientras las oportunidades guardadas no puedan leerse.',
 }
 
+const PROFILE_LOAD_WARNING =
+  'No pudimos recuperar el perfil guardado de forma segura. Los datos almacenados se conservaron sin sobrescribirse. Los cambios del perfil de esta sesión no se guardarán permanentemente.'
+
+const PROFILE_SAVE_WARNING =
+  'El perfil se actualizó en esta sesión, pero no pudo guardarse en el navegador. El cambio puede perderse al recargar la página.'
+
 const OPPORTUNITY_SOURCE_MISSING_WARNING =
   'La fuente de esta oportunidad ya no existe. Tus datos no se guardaron: cancelá y cargá la oportunidad otra vez.'
 
@@ -211,6 +222,8 @@ const APPLICATION_DELETE_SUCCESS_MESSAGE = 'Postulación eliminada.'
 const SOURCE_CREATE_SUCCESS_MESSAGE = 'Fuente agregada.'
 const SOURCE_EDIT_SUCCESS_MESSAGE = 'Fuente actualizada.'
 const SOURCE_DELETE_SUCCESS_MESSAGE = 'Fuente eliminada.'
+const SKILL_ADD_SUCCESS_MESSAGE = 'Skill agregada.'
+const SKILL_REMOVE_SUCCESS_MESSAGE = 'Skill quitada.'
 const BACKUP_EXPORT_SUCCESS_MESSAGE = 'Respaldo exportado.'
 const CSV_EXPORT_SUCCESS_MESSAGE = 'Planilla CSV exportada.'
 const FOLLOW_UP_SUCCESS_MESSAGE =
@@ -231,11 +244,13 @@ function describeBackupImport(plan) {
     plan.sourcesToAdd.length > 0
       ? `${pluralize(plan.sourcesToAdd.length, 'fuente', 'fuentes')}, `
       : ''
+  const profilePart = plan.profileToAdd ? 'tu perfil, ' : ''
   const lines = [
-    `Se van a agregar ${sourcesPart}${pluralize(plan.opportunitiesToAdd.length, 'oportunidad', 'oportunidades')} y ${pluralize(plan.applicationsToAdd.length, 'postulación', 'postulaciones')}.`,
+    `Se van a agregar ${profilePart}${sourcesPart}${pluralize(plan.opportunitiesToAdd.length, 'oportunidad', 'oportunidades')} y ${pluralize(plan.applicationsToAdd.length, 'postulación', 'postulaciones')}.`,
   ]
   const { skipped } = plan
   const omitted = [
+    skipped.existingProfile && 'el perfil, porque ya tenés uno en este navegador',
     skipped.existingSources > 0 &&
       `${pluralize(skipped.existingSources, 'fuente que ya existe', 'fuentes que ya existen')}`,
     skipped.existingOpportunities > 0 &&
@@ -286,6 +301,8 @@ const sourceRepository = new LocalStorageSourceRepository(getBrowserStorage())
 const initialSourceLoad = sourceRepository.loadAll()
 const deletionRepository = new LocalStorageDeletionRepository(getBrowserStorage())
 const initialDeletionLoad = deletionRepository.loadAll()
+const profileRepository = new LocalStorageProfileRepository(getBrowserStorage())
+const initialProfileLoad = profileRepository.load()
 
 // Public OAuth client identifier for Google Drive synchronization. Without it, the
 // synchronization section is not shown.
@@ -302,6 +319,11 @@ function App() {
   // Deletion records: what was deleted and when, so synchronization does not restore it.
   const [deletions, setDeletions] = useState(initialDeletionLoad.deletions)
   const [sourceWarning, setSourceWarning] = useState(initialSourceLoad.ok ? null : SOURCE_LOAD_WARNING)
+  // The candidate profile (only skills for now), or null before the first skill is added.
+  const [profile, setProfile] = useState(initialProfileLoad.profile)
+  const [profileWarning, setProfileWarning] = useState(
+    initialProfileLoad.ok ? null : PROFILE_LOAD_WARNING,
+  )
   const [sourceEditSession, setSourceEditSession] = useState(null)
   const [sourceEditWarning, setSourceEditWarning] = useState(null)
   const [pendingSourceDeletion, setPendingSourceDeletion] = useState(null)
@@ -387,6 +409,17 @@ function App() {
           setSourceWarning(null)
         } else {
           setSourceWarning(SOURCE_LOAD_WARNING)
+        }
+      }
+
+      if (event.key === PROFILE_STORAGE_KEY) {
+        const loadResult = profileRepository.load()
+
+        if (loadResult.ok) {
+          setProfile(loadResult.profile)
+          setProfileWarning(null)
+        } else {
+          setProfileWarning(PROFILE_LOAD_WARNING)
         }
       }
 
@@ -811,7 +844,8 @@ function App() {
     opportunityRepository.isPersistenceBlocked ||
     applicationRepository.isPersistenceBlocked ||
     sourceRepository.isPersistenceBlocked ||
-    deletionRepository.isPersistenceBlocked
+    deletionRepository.isPersistenceBlocked ||
+    profileRepository.isPersistenceBlocked
 
   // Each message gets a new id so repeating the same text is announced again.
   const showDataPanelMessage = (message) => {
@@ -824,7 +858,7 @@ function App() {
   const exportBackup = () => {
     downloadTextFile({
       filename: `gestor-postulaciones-respaldo-${todayFileSuffix()}.json`,
-      content: createBackupText({ opportunities, applications, sources, deletions }),
+      content: createBackupText({ opportunities, applications, sources, deletions, profile }),
       mimeType: 'application/json',
     })
 
@@ -893,6 +927,8 @@ function App() {
       backupOpportunities: parsed.opportunities,
       backupApplications: parsed.applications,
       backupSources: parsed.sources,
+      currentProfile: profile,
+      backupProfile: parsed.profile,
       deletions,
     })
 
@@ -930,6 +966,8 @@ function App() {
       backupOpportunities: backup.opportunities,
       backupApplications: backup.applications,
       backupSources: backup.sources,
+      currentProfile: profile,
+      backupProfile: backup.profile,
       deletions,
       now: new Date(),
     })
@@ -942,6 +980,7 @@ function App() {
     setSources(plan.nextSources)
     setOpportunities(plan.nextOpportunities)
     setApplications(plan.nextApplications)
+    setProfile(plan.nextProfile)
 
     // Records brought back by an import must not be removed again by an older deletion.
     const importedKeys = new Set([
@@ -964,8 +1003,10 @@ function App() {
     const applicationSave = opportunitySave.ok
       ? applicationRepository.saveAll(plan.nextApplications)
       : opportunitySave
+    // The profile does not reference other records, so its save does not depend on them.
+    const profileSave = plan.profileToAdd ? profileRepository.save(plan.nextProfile) : { ok: true }
 
-    if (!opportunitySave.ok || !applicationSave.ok) {
+    if (!opportunitySave.ok || !applicationSave.ok || !profileSave.ok) {
       showDataPanelMessage({
         type: 'error',
         text: 'Los datos se importaron en esta sesión, pero no pudieron guardarse en el navegador. Pueden perderse al recargar la página.',
@@ -976,9 +1017,10 @@ function App() {
     setPersistenceWarning(null)
     setApplicationWarning(null)
     setSourceWarning(null)
+    setProfileWarning(null)
     showDataPanelMessage({
       type: 'info',
-      text: `Respaldo importado: ${pluralize(plan.sourcesToAdd.length, 'fuente agregada', 'fuentes agregadas')}, ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad agregada', 'oportunidades agregadas')} y ${pluralize(plan.applicationsToAdd.length, 'postulación agregada', 'postulaciones agregadas')}.`,
+      text: `Respaldo importado: ${plan.profileToAdd ? 'perfil agregado, ' : ''}${pluralize(plan.sourcesToAdd.length, 'fuente agregada', 'fuentes agregadas')}, ${pluralize(plan.opportunitiesToAdd.length, 'oportunidad agregada', 'oportunidades agregadas')} y ${pluralize(plan.applicationsToAdd.length, 'postulación agregada', 'postulaciones agregadas')}.`,
     })
   }
 
@@ -1009,6 +1051,44 @@ function App() {
           onClick: () => downloadStoredRawValue(sourceRepository, 'fuentes'),
         }
       : null
+
+  const profileWarningAction =
+    profileWarning === PROFILE_LOAD_WARNING && profileRepository.readRawValue() !== null
+      ? {
+          label: CORRUPTED_DOWNLOAD_LABEL,
+          onClick: () => downloadStoredRawValue(profileRepository, 'perfil'),
+        }
+      : null
+
+  const saveProfile = (nextProfile) => {
+    setProfile(nextProfile)
+
+    if (profileRepository.save(nextProfile).ok) {
+      setProfileWarning(null)
+    } else {
+      setProfileWarning(keepLoadWarningOr(PROFILE_LOAD_WARNING, PROFILE_SAVE_WARNING))
+    }
+  }
+
+  const addSkill = (skill) => {
+    const result = addProfileSkill(profile, { skill, now: new Date() })
+
+    if (!result.ok) return false
+
+    saveProfile(result.profile)
+    showSuccessFeedback(SKILL_ADD_SUCCESS_MESSAGE)
+    return true
+  }
+
+  const removeSkill = (skill) => {
+    const result = removeProfileSkill(profile, { skill, now: new Date() })
+
+    if (!result.ok) return false
+
+    saveProfile(result.profile)
+    showSuccessFeedback(SKILL_REMOVE_SUCCESS_MESSAGE)
+    return true
+  }
 
   const saveSources = (nextSources) => {
     setSources(nextSources)
@@ -1114,12 +1194,14 @@ function App() {
     setOpportunities(merged.opportunities)
     setApplications(merged.applications)
     setDeletions(merged.deletions)
+    setProfile(merged.profile)
 
     const saved =
       sourceRepository.saveAll(merged.sources).ok &&
       opportunityRepository.saveAll(merged.opportunities).ok &&
       applicationRepository.saveAll(merged.applications).ok &&
-      deletionRepository.saveAll(merged.deletions).ok
+      deletionRepository.saveAll(merged.deletions).ok &&
+      profileRepository.save(merged.profile).ok
 
     if (!saved) {
       showDataPanelMessage({
@@ -1132,7 +1214,7 @@ function App() {
   const driveSync = useDriveSync({
     clientId: GOOGLE_CLIENT_ID,
     storage: getBrowserStorage(),
-    snapshot: { opportunities, applications, sources, deletions },
+    snapshot: { opportunities, applications, sources, deletions, profile },
     isStorageBlocked: isAnyStorageBlocked,
     applyMergedSnapshot,
   })
@@ -1294,6 +1376,7 @@ function App() {
         <PersistenceWarning message={persistenceWarning} action={opportunityWarningAction} />
         <PersistenceWarning message={applicationWarning} action={applicationWarningAction} />
         <PersistenceWarning message={sourceWarning} action={sourceWarningAction} />
+        <PersistenceWarning message={profileWarning} action={profileWarningAction} />
         <div
           className="workspace-panel"
           role="tabpanel"
@@ -1389,6 +1472,19 @@ function App() {
             onRequestDelete={requestSourceDeletion}
             onAddOpportunity={openOpportunityFormFromSource}
             headingRef={sourcesHeadingRef}
+          />
+        </div>
+        <div
+          className="workspace-panel"
+          role="tabpanel"
+          id={getWorkspacePanelId(WORKSPACE_TABS.PROFILE)}
+          aria-labelledby={getWorkspaceTabId(WORKSPACE_TABS.PROFILE)}
+          hidden={activeWorkspaceTab !== WORKSPACE_TABS.PROFILE}
+        >
+          <ProfilePanel
+            skills={profile?.skills ?? []}
+            onAddSkill={addSkill}
+            onRemoveSkill={removeSkill}
           />
         </div>
         <SyncPanel sync={driveSync} />

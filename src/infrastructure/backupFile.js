@@ -13,18 +13,20 @@ import {
 } from './LocalStorageSourceRepository.js'
 import CompanySource from '../domain/CompanySource.js'
 import { hasUniqueDeletionKeys, isValidDeletionRecord, serializeDeletion } from './deletionRecords.js'
+import { isValidStoredProfile, rehydrateProfile, serializeProfile } from './LocalStorageProfileRepository.js'
 import { hasExactFields, isPlainObject, isValidTimestamp } from './storageValidation.js'
 
 export const BACKUP_FORMAT = 'it-job-search-assistant.backup'
-// Version 2 adds job sources and version 3 adds deletion records, which synchronization
-// needs. Older versions are still accepted.
-export const BACKUP_SCHEMA_VERSION = 3
+// Version 2 adds job sources, version 3 adds deletion records, which synchronization
+// needs, and version 4 adds the candidate profile (or null). Older versions are still accepted.
+export const BACKUP_SCHEMA_VERSION = 4
 export const BACKUP_MAX_BYTES = 5 * 1024 * 1024
 
 const BACKUP_FIELDS_BY_VERSION = {
   1: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications'],
   2: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications', 'sources'],
   3: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications', 'sources', 'deletions'],
+  4: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications', 'sources', 'deletions', 'profile'],
 }
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 
@@ -33,6 +35,7 @@ export function createBackupText({
   applications,
   sources,
   deletions = [],
+  profile = null,
   now = new Date(),
 }) {
   const backup = {
@@ -43,6 +46,7 @@ export function createBackupText({
     applications: applications.map(serializeApplication),
     sources: sources.map(serializeSource),
     deletions: deletions.map(serializeDeletion),
+    profile: profile === null ? null : serializeProfile(profile),
   }
 
   return JSON.stringify(backup, null, 2)
@@ -98,6 +102,7 @@ export function parseBackupText(text) {
 
   const sources = backup.schemaVersion >= 2 ? backup.sources : []
   const deletions = backup.schemaVersion >= 3 ? backup.deletions : []
+  const profile = backup.schemaVersion >= 4 ? backup.profile : null
 
   if (
     !hasExactFields(backup, fields) ||
@@ -107,6 +112,7 @@ export function parseBackupText(text) {
     !Array.isArray(deletions) ||
     !deletions.every(isValidDeletionRecord) ||
     !hasUniqueDeletionKeys(deletions) ||
+    (profile !== null && !isValidStoredProfile(profile)) ||
     !isValidTimestamp(backup.exportedAt) ||
     !Array.isArray(backup.opportunities) ||
     !Array.isArray(backup.applications) ||
@@ -125,5 +131,6 @@ export function parseBackupText(text) {
     applications: backup.applications.map((record) => new Application(record)),
     sources: sources.map((record) => new CompanySource(record)),
     deletions: deletions.map(serializeDeletion),
+    profile: profile === null ? null : rehydrateProfile(profile),
   }
 }

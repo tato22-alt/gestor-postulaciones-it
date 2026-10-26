@@ -1,7 +1,12 @@
 import { useRef } from 'react'
 import { WORKSPACE_TABS, getWorkspacePanelId, getWorkspaceTabId } from './workspaceTabIds.js'
 
-const TAB_ORDER = [WORKSPACE_TABS.OPPORTUNITIES, WORKSPACE_TABS.APPLICATIONS, WORKSPACE_TABS.SOURCES]
+const TAB_ORDER = [
+  WORKSPACE_TABS.OPPORTUNITIES,
+  WORKSPACE_TABS.APPLICATIONS,
+  WORKSPACE_TABS.SOURCES,
+  WORKSPACE_TABS.PROFILE,
+]
 
 function WorkspaceTabs({ activeTab, applicationCount, sourceCount, onChange }) {
   const tabRefs = useRef({})
@@ -9,6 +14,7 @@ function WorkspaceTabs({ activeTab, applicationCount, sourceCount, onChange }) {
     [WORKSPACE_TABS.OPPORTUNITIES]: 'Oportunidades',
     [WORKSPACE_TABS.APPLICATIONS]: `Postulaciones (${applicationCount})`,
     [WORKSPACE_TABS.SOURCES]: `Fuentes (${sourceCount})`,
+    [WORKSPACE_TABS.PROFILE]: 'Perfil',
   }
 
   // Arrow keys, Home, and End move between tabs, following the WAI-ARIA tabs pattern.

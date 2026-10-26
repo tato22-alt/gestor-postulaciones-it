@@ -3,6 +3,7 @@ export const WORKSPACE_TABS = Object.freeze({
   OPPORTUNITIES: 'opportunities',
   APPLICATIONS: 'applications',
   SOURCES: 'sources',
+  PROFILE: 'profile',
 })
 
 export function getWorkspaceTabId(tab) {

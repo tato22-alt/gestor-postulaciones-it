@@ -136,6 +136,53 @@
   margin-bottom: 24px;
 }
 
+.profile-skill-form {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.profile-skills-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.profile-skill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-skill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  background: #f9fafb;
+  padding: 4px 4px 4px 14px;
+}
+
+.profile-skill-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  color: #344054;
+}
+
+.button.profile-skill-remove {
+  flex: 0 0 auto;
+  min-height: 36px;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
 .source-count {
   flex: 0 0 auto;
   align-self: flex-start;
