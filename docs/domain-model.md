@@ -92,9 +92,9 @@ Todavía no existen:
 
 - validaciones de campos obligatorios;
 - instancias con información de Luciano;
-- persistencia remota o repositorios para perfiles, preferencias, fuentes o resultados de compatibilidad;
+- repositorios para perfiles, preferencias o resultados de compatibilidad (las fuentes ya tienen su repositorio local y se sincronizan con Drive);
 - monitoreo de fuentes;
-- scraping o consumo de APIs;
+- scraping o consumo de APIs de empleo;
 - fusión automática de duplicados;
 - cálculo de puntajes o recomendaciones;
 - pesos de compatibilidad;

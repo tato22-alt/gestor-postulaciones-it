@@ -371,7 +371,7 @@ Approved by Luciano ("sí a todo"):
 * **Unreadable stored data:** the storage warning offers "Descargar los datos guardados tal como están", which downloads the raw stored text through `readRawValue()`. Nothing is repaired or deleted.
 * **CSV export:** opportunities and applications as separate files with Spanish headers, RFC 4180 quoting (semicolons and tabs are also quoted, because Spanish-locale spreadsheets split CSV files on `;`), CRLF line endings, a UTF-8 BOM, and an apostrophe prefix for cells starting with `=`, `+`, `-`, `@`, tab, or carriage return (`src/application/csvExport.js`).
 * **Possible duplicates:** `duplicateOpportunityPolicy.js` compares URLs after lowercasing protocol and host, dropping the fragment, and dropping a trailing slash. Saving an opportunity whose URL matches another shows a non-blocking warning with "Guardar igual" and "Seguir editando"; changing the URL clears it. Nothing is blocked or deleted.
-* **Privacy note** in the header: data is stored only in this browser; export a backup to keep it.
+* **Privacy note** in the header: data is stored in this browser and, when connected, in the user's own Google Drive; export a backup to keep it.
 * **Success feedback:** the `role="status"` live region stays mounted and is shown as a fixed toast at the bottom, so messages are announced reliably and do not shift the layout.
 * **Removed placeholders:** the static "Fuentes de empleo" section and the "Recomendaciones" placeholder group were removed from the interface; `CompanySource` and `MatchResult` remain in the domain model.
 * **Workflow:** `actions/checkout@v5`, `actions/setup-node@v5`, `actions/configure-pages@v6`, and `actions/deploy-pages@v5` run on Node 24; `actions/upload-pages-artifact@v3` is a composite action and was kept.
@@ -391,7 +391,7 @@ Relevant documentation distinguishes:
 The repository does not yet include:
 
 * automatic duplicate merging (possible duplicates are only flagged);
-* deleting applications;
+* editing or persisting `CandidateProfile` and `JobSearchPreferences` (the domain classes exist, but no interface, repository, backup field, or synchronization uses them);
 * follow-up history (completed follow-ups are cleared, not archived);
 * reminders or notifications outside the application;
 * automatic source discovery or approval workflows (sources are added manually);
@@ -399,10 +399,10 @@ The repository does not yet include:
 * opportunity discovery;
 * compatibility matching;
 * recommendation calculation;
-* a backend;
-* a remote database;
-* authentication;
-* authorization;
+* a backend of the project's own;
+* a remote database (Google Drive appDataFolder holds a synchronization file, not a queryable database);
+* user accounts or authentication of the project's own (Google authorization is used only to reach the user's Drive);
+* server-side authorization;
 * artificial intelligence;
 * automated component or browser tests inside the repository.
 
@@ -425,18 +425,18 @@ React components render the header, statistics, workspace tabs, the shared creat
 
 `App` owns:
 
-* the opportunity collection;
-* opportunity-form visibility;
-* the selected edit session and expected `updatedAt` version;
-* the current persistence warning;
-* the temporary opportunity search query;
-* the temporary opportunity status filter;
-* the pending deletion target, captured as `{ id, expectedUpdatedAt }` at trigger time.
+* the opportunity, application, source, and deletion-record collections;
+* opportunity-form visibility and the source an opportunity form was opened from;
+* the opportunity, application, and source edit sessions with their expected `updatedAt` versions;
+* the persistence, source, application, and edit warnings;
+* whether stored applications could not be read;
+* the temporary opportunity search query and status filter;
+* the pending confirmations (opportunity, application, and source deletion, application registration, final application status, backup import), each captured at trigger time;
+* the active workspace tab, success feedback, data-panel message, and whether the Drive prompt was dismissed for this visit.
 
-`OpportunityForm` owns:
+`useDriveSync` owns the synchronization status and keeps the access token only in memory.
 
-* the temporary create or edit draft;
-* form validation errors.
+`OpportunityForm`, `ApplicationDetailsForm`, and `SourceForm` own their temporary drafts and validation errors; `OpportunityForm` also owns the possible-duplicate warning.
 
 Dashboard values are derived from the opportunity collection during rendering. They are not independent state and are not stored in `localStorage`.
 
@@ -466,15 +466,15 @@ Presentation components receive data through props and communicate actions throu
 
 ### Infrastructure
 
-`LocalStorageOpportunityRepository` owns browser-storage access and remains outside the presentation and domain layers.
+`LocalStorageOpportunityRepository`, `LocalStorageApplicationRepository`, `LocalStorageSourceRepository`, and `LocalStorageDeletionRepository` own browser-storage access and remain outside the presentation and domain layers.
 
 `App` receives repository results and coordinates state updates, but visual components do not access `localStorage` directly.
 
-Persisted records use the key `it-job-search-assistant.opportunities` and a versioned envelope with `schemaVersion: 1`.
+Each collection uses its own key (`it-job-search-assistant.opportunities`, `.applications`, `.sources`, `.deletions`) and a versioned envelope with `schemaVersion: 1`. Backup files use `schemaVersion: 3`.
 
-Same-origin tab changes are received through the browser `storage` event and reloaded through the repository.
+Same-origin tab changes are received through the browser `storage` event and reloaded through the repositories.
 
-No remote service is connected.
+The only remote services are Google Identity Services and the Google Drive API (`googleIdentity.js`, `googleDriveAppData.js`), used only when the user connects Drive.
 
 ## Current Limitations
 
@@ -483,9 +483,9 @@ No remote service is connected.
 * Opportunities with an application cannot be deleted; the long-term rule is a pending product decision.
 * If application storage cannot be read safely, the corrupted value is preserved and the app cannot know which opportunities already have an application, so opportunity deletion and application registration are disabled until a valid load succeeds.
 * Two tabs registering different applications at the same moment, before the `storage` event arrives, follow last-write-wins for the whole collection, as opportunities already do.
-* Persistence remains local to one browser origin and device.
-* No remote synchronization exists.
-* No multi-device data sharing exists.
+* Without a Drive connection, persistence remains local to one browser origin and device.
+* Multi-device synchronization works only through the user's own Google Drive, requires tapping «Sincronizar» after each reload, and, while the OAuth app is in testing mode, is limited to the test users listed in Google Cloud.
+* Data is never shared between different users.
 * Tabs using `localhost`, `127.0.0.1`, or different ports do not share data.
 * Unreadable stored data is preserved, reported, and downloadable as raw text; there is no automatic repair or reset.
 * Backup import adds records only; it never updates records that already exist with newer data from the file.
@@ -508,7 +508,10 @@ The current implementation:
 * treats browser storage as untrusted input;
 * rejects malformed records and unsafe stored URLs before rendering;
 * preserves corrupted values instead of silently deleting them;
-* does not connect to external APIs.
+* connects to external APIs only when the user connects Google Drive: Google Identity Services and the Drive API with the `drive.appdata` scope;
+* keeps Google access tokens only in memory and never stores or logs them;
+* validates the remote Drive file with the same strict validators as backups and never overwrites an invalid remote file;
+* uses only a public OAuth client ID, set at build time; no secret exists in the frontend.
 
 Frontend validation remains a user-experience boundary, not a future backend security boundary.
 
@@ -599,6 +602,7 @@ These gaps should be addressed only when the corresponding approved milestone re
 
 Candidates, each requiring Luciano's decisions before implementation:
 
+* candidate profile and search preferences: editing, local persistence, backup, and synchronization of `CandidateProfile` and `JobSearchPreferences`; needs approved fields, privacy limits, and whether the profile is synchronized with Drive. It is a prerequisite for compatibility analysis, which has nothing to compare an opportunity against without it;
 * rule-based compatibility analysis, which needs approved criteria, priorities, warning versus exclusion behavior, and missing-data handling.
 
 No implementation is authorized until a milestone is explicitly approved.
