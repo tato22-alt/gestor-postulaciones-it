@@ -374,6 +374,17 @@ Luciano delegated the choice of the first preferences to the agent ("elegí lo q
 * **Backups and sync:** `schemaVersion: 5` adds `preferences` (or `null`); versions 1 to 4 are still accepted. Import adds the backup preferences only when this browser has none. Synchronization treats them as a single record like the profile: the most recent edit wins.
 * **Verification:** 15 new unit tests (276 in total, also under `Pacific/Pago_Pago`); 27 automated browser checks (validation, duplicates, keyboard checkbox toggling, canonical order, reload, removal focus, cross-tab updates, backup export and import, corrupted storage preserved, no overflow at five widths, no console errors), and the 42 profile checks still pass.
 
+### Rule-based compatibility (first version)
+
+After the preferences were published, Luciano approved the proposed first version ("mándale cumbia nomás"): no score, only matches, warnings, and unknown data. The concrete rules were chosen by the agent and are reversible.
+
+* **Rules** (`src/domain/compatibilityPolicy.js`, pure): skills mentioned as whole words in the title or description (accent- and case-insensitive; `Java` does not match `JavaScript`, `C` does not match `C++` or `C#`) are strengths; no skill mentioned or no description is unknown. A title containing a target role is a strength; otherwise unknown, because titles vary. Modality and employment type: preferred is a strength, known but not preferred is a warning, missing is unknown. Criteria the user did not set are skipped.
+* **Never negative by default:** missing information is never a warning, a warning is never a rejection, nothing is hidden, and the opportunity status never changes.
+* **Result:** a `MatchResult` (new `unknowns` field) with `score`, `recommendation`, and `missingSkills` left empty. Items are controlled types with values; Spanish labels live in `CompatibilitySummary.jsx`.
+* **Derived, not stored:** `App` computes results for the visible opportunities on every render only when the profile or preferences have something to compare. Nothing is persisted, backed up, or synchronized.
+* **Interface:** a collapsed native `<details>` «Compatibilidad» on each opportunity card with counts (coincidencias · a revisar · sin datos), grouped lists, and a note that the comparison is approximate and does not decide for the user. The disclosure indicator is drawn explicitly because the flex `summary` hides the native one.
+* **Verification:** 8 new unit tests (284 in total); 22 automated browser checks (no summary without criteria, counts, keyboard opening, whole-word skill matching, warnings and unknowns, script-looking text not executed, nothing stored, statuses untouched, immediate update after a preference change, no overflow at five widths, no console errors); profile and preferences checks still pass.
+
 ### Sources, text limits, and application deletion
 
 Approved by Luciano ("sí a todo"):
@@ -423,8 +434,7 @@ The repository does not yet include:
 * automatic source discovery or approval workflows (sources are added manually);
 * source monitoring;
 * opportunity discovery;
-* compatibility matching;
-* recommendation calculation;
+* compatibility scores, weights, or recommendations (the first version only explains matches, warnings, and unknown data);
 * a backend of the project's own;
 * a remote database (Google Drive appDataFolder holds a synchronization file, not a queryable database);
 * user accounts or authentication of the project's own (Google authorization is used only to reach the user's Drive);
@@ -628,6 +638,6 @@ These gaps should be addressed only when the corresponding approved milestone re
 
 Candidates, each requiring Luciano's decisions before implementation:
 
-* rule-based compatibility analysis, which needs approved criteria, priorities, warning versus exclusion behavior, and missing-data handling.
+* compatibility refinements, each needing Luciano's decisions: structured required skills per opportunity, scores or weights, exclusion rules, or filtering by compatibility.
 
 No implementation is authorized until a milestone is explicitly approved.

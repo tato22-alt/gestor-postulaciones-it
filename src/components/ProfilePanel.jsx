@@ -44,8 +44,7 @@ function ProfilePanel({
             <h2 id="profile-title">Perfil profesional</h2>
           </div>
           <p>
-            Cargá tus skills. Por ahora solo se guardan; más adelante servirán para comparar tu
-            perfil con las oportunidades.
+            Cargá tus skills. Se usan para mostrar la compatibilidad de cada oportunidad.
           </p>
         </div>
 
@@ -73,7 +72,7 @@ function ProfilePanel({
             <p className="section-kicker">Búsqueda</p>
             <h2 id="preferences-title">Preferencias de búsqueda</h2>
           </div>
-          <p>Qué tipo de trabajo buscás. Por ahora solo se guardan.</p>
+          <p>Qué tipo de trabajo buscás. Se usan para mostrar la compatibilidad de cada oportunidad.</p>
         </div>
 
         <TextListEditor

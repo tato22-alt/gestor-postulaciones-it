@@ -45,7 +45,11 @@ No requiere cuenta. Tus datos se guardan en tu navegador y, si querés, se sincr
 
 * skills cargadas como texto libre, una por vez, sin repetir (mayúsculas, acentos y espacios no cuentan como diferencia);
 * preferencias de búsqueda: roles buscados, modalidades preferidas y tipos de jornada aceptados;
-* por ahora solo se guardan: todavía no se comparan con las oportunidades.
+
+**Compatibilidad**
+
+* cada oportunidad muestra qué coincide con tu perfil y tus preferencias (skills mencionadas, rol, modalidad y jornada), qué conviene revisar y qué no se puede comparar por falta de datos;
+* es orientativa: no hay puntaje, no descarta ofertas y no cambia su estado; decidir si postularte sigue siendo tuyo.
 
 **Tus datos**
 

@@ -6,6 +6,7 @@ import {
 } from '../constants/domainOptions.js'
 import { getApplicationRegistrationBlocker } from '../domain/applicationRegistrationPolicy.js'
 import { getAllowedTargetStatuses } from '../domain/opportunityStatusPolicy.js'
+import CompatibilitySummary from './CompatibilitySummary.jsx'
 import useStatusChangeFocus from './useStatusChangeFocus.js'
 
 const ACTION_VERB_LABELS = {
@@ -37,6 +38,7 @@ function OpportunityCard({
   opportunity,
   application,
   sourceName,
+  compatibility,
   areStoredApplicationsUnavailable,
   isEditDisabled,
   isBeingEdited,
@@ -110,6 +112,8 @@ function OpportunityCard({
       {opportunity.description && (
         <p className="opportunity-description">{opportunity.description}</p>
       )}
+
+      {compatibility && <CompatibilitySummary result={compatibility} />}
 
       <div className="opportunity-card-actions">
         <a

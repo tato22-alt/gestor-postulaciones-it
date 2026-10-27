@@ -46,6 +46,7 @@ import {
 import { APPLICATION_STATUSES } from './constants/domainOptions.js'
 import { findApplicationForOpportunity } from './domain/applicationRegistrationPolicy.js'
 import { isFinalApplicationStatus } from './domain/applicationStatusPolicy.js'
+import { analyzeCompatibility, hasCompatibilityCriteria } from './domain/compatibilityPolicy.js'
 import { findOpportunityWithSameUrl } from './domain/duplicateOpportunityPolicy.js'
 import { FOLLOW_UP_URGENCY } from './domain/followUpPolicy.js'
 import JobOpportunity from './domain/JobOpportunity.js'
@@ -403,6 +404,16 @@ function App() {
     now: new Date(),
   })
   const applicationMetrics = calculateApplicationMetrics({ applications })
+  // Derived on every render and never stored: it always reflects the current profile,
+  // preferences, and opportunity data.
+  const compatibilityByOpportunityId = hasCompatibilityCriteria(profile, preferences)
+    ? new Map(
+        visibleOpportunities.map((opportunity) => [
+          opportunity.id,
+          analyzeCompatibility({ opportunity, profile, preferences }),
+        ]),
+      )
+    : new Map()
   const pendingFollowUps = getPendingFollowUps({
     applications,
     opportunities,
@@ -1512,6 +1523,7 @@ function App() {
             visibleOpportunities={visibleOpportunities}
             applications={applications}
             sourceNamesById={sourceNamesById}
+            compatibilityByOpportunityId={compatibilityByOpportunityId}
             areStoredApplicationsUnavailable={areStoredApplicationsUnavailable}
             searchQuery={opportunitySearchQuery}
             statusFilter={opportunityStatusFilter}

@@ -10,6 +10,7 @@ class MatchResult {
     strengths = [],
     warnings = [],
     missingSkills = [],
+    unknowns = [],
     evaluatedAt = new Date().toISOString(),
   } = {}) {
     this.id = id
@@ -20,6 +21,7 @@ class MatchResult {
     this.strengths = [...strengths]
     this.warnings = [...warnings]
     this.missingSkills = [...missingSkills]
+    this.unknowns = [...unknowns]
     this.evaluatedAt = evaluatedAt
   }
 }

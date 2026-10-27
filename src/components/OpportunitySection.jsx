@@ -7,6 +7,7 @@ function OpportunitySection({
   visibleOpportunities,
   applications,
   sourceNamesById,
+  compatibilityByOpportunityId,
   areStoredApplicationsUnavailable,
   searchQuery,
   statusFilter,
@@ -78,6 +79,7 @@ function OpportunitySection({
               opportunity={opportunity}
               application={findApplicationForOpportunity(applications, opportunity.id)}
               sourceName={sourceNamesById.get(opportunity.sourceId) ?? null}
+              compatibility={compatibilityByOpportunityId.get(opportunity.id) ?? null}
               areStoredApplicationsUnavailable={areStoredApplicationsUnavailable}
               isEditDisabled={isOpportunityFormVisible}
               isBeingEdited={editingOpportunityId === opportunity.id}
