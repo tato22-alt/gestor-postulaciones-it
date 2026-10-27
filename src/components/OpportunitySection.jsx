@@ -8,6 +8,9 @@ function OpportunitySection({
   applications,
   sourceNamesById,
   compatibilityByOpportunityId,
+  isAiAvailable,
+  onSuggestRequiredSkills,
+  onSaveRequiredSkills,
   areStoredApplicationsUnavailable,
   searchQuery,
   statusFilter,
@@ -80,6 +83,9 @@ function OpportunitySection({
               application={findApplicationForOpportunity(applications, opportunity.id)}
               sourceName={sourceNamesById.get(opportunity.sourceId) ?? null}
               compatibility={compatibilityByOpportunityId.get(opportunity.id) ?? null}
+              isAiAvailable={isAiAvailable}
+              onSuggestRequiredSkills={onSuggestRequiredSkills}
+              onSaveRequiredSkills={onSaveRequiredSkills}
               areStoredApplicationsUnavailable={areStoredApplicationsUnavailable}
               isEditDisabled={isOpportunityFormVisible}
               isBeingEdited={editingOpportunityId === opportunity.id}

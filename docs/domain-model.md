@@ -38,12 +38,15 @@ El atributo `salary` puede almacenar por separado `amount`, `currency`, `period`
 
 Representa el resultado de evaluar un perfil y sus preferencias contra una oportunidad. Puede contener puntaje, recomendación, fortalezas, advertencias, habilidades faltantes y datos desconocidos (`unknowns`). No calcula nada por sí mismo.
 
-Hoy lo produce `analyzeCompatibility` (`compatibilityPolicy.js`) en una primera versión sin puntaje ni recomendación (`score` y `recommendation` quedan en `null`, `missingSkills` vacío). Cada elemento es un tipo controlado más los valores relacionados; los textos visibles viven en la interfaz. Las reglas son:
+Hoy lo produce `analyzeCompatibility` (`compatibilityPolicy.js`) en una primera versión sin puntaje ni recomendación (`score` y `recommendation` quedan en `null`). Cada elemento es un tipo controlado más los valores relacionados; los textos visibles viven en la interfaz. Las reglas son:
 
 - **Skills:** una skill es una fortaleza si aparece como palabra completa en el título o la descripción, sin distinguir mayúsculas ni acentos («Java» no coincide con «JavaScript» ni «C» con «C++»). Si no aparece ninguna, o no hay descripción, es un dato desconocido, nunca negativo, porque la publicación puede no listar todo.
 - **Roles buscados:** si el título contiene un rol, es una fortaleza; si no, es un dato desconocido, porque los títulos varían mucho.
 - **Modalidad y jornada:** si coinciden con las preferencias, fortaleza; si son conocidas y no coinciden, advertencia (no un rechazo); si la oportunidad no las indica, dato desconocido.
+- **Skills requeridas:** si la oportunidad tiene `requiredSkills`, las que el perfil incluye son una fortaleza y las demás van a `missingSkills`. Las skills requeridas no se repiten como «mencionadas».
 - Un criterio que el usuario no configuró no se evalúa.
+
+`JobOpportunity.requiredSkills` se carga a mano o a partir de sugerencias de IA que el usuario revisa y confirma; siguen las mismas reglas de texto que las skills del perfil.
 
 El resultado se deriva en cada renderizado y no se guarda, así siempre refleja los datos actuales.
 

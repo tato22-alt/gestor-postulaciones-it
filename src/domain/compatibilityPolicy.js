@@ -6,10 +6,12 @@ import { getListTextKey } from './textListPolicy.js'
  * opportunity with the candidate's skills and search preferences and explains the result:
  * - strengths: what matches;
  * - warnings: a known value outside the preferences (a warning, never a rejection);
- * - unknowns: what cannot be compared because a value is missing (never negative).
+ * - unknowns: what cannot be compared because a value is missing (never negative);
+ * - missingSkills: required skills of the opportunity that the profile does not list.
  * Each item is a controlled type plus the related value; labels belong to the interface.
  */
 export const MATCH_ITEM_TYPES = Object.freeze({
+  REQUIRED_SKILLS_MET: 'required_skills_met',
   SKILLS_MENTIONED: 'skills_mentioned',
   SKILLS_NOT_MENTIONED: 'skills_not_mentioned',
   NO_TEXT_FOR_SKILLS: 'no_text_for_skills',
@@ -72,21 +74,37 @@ export function hasCompatibilityCriteria(profile, preferences) {
 }
 
 export function analyzeCompatibility({ opportunity, profile = null, preferences = null, now = new Date() }) {
-  const result = { strengths: [], warnings: [], unknowns: [] }
+  const result = { strengths: [], warnings: [], unknowns: [], missingSkills: [] }
   const skills = profile?.skills ?? []
+  const requiredSkills = opportunity.requiredSkills ?? []
   const text = getListTextKey(`${opportunity.title} ${opportunity.description ?? ''}`)
 
   if (skills.length > 0) {
-    if (!getListTextKey(opportunity.description)) {
-      result.unknowns.push({ type: MATCH_ITEM_TYPES.NO_TEXT_FOR_SKILLS })
+    const profileKeys = new Set(skills.map(getListTextKey))
+    const requiredKeys = new Set(requiredSkills.map(getListTextKey))
+    const met = requiredSkills.filter((skill) => profileKeys.has(getListTextKey(skill)))
+
+    result.missingSkills = requiredSkills.filter((skill) => !profileKeys.has(getListTextKey(skill)))
+
+    if (met.length > 0) {
+      result.strengths.push({ type: MATCH_ITEM_TYPES.REQUIRED_SKILLS_MET, values: met })
     }
 
-    const mentioned = skills.filter((skill) => containsPhrase(text, getListTextKey(skill)))
+    // Skills already counted as required are not repeated as mentioned.
+    const mentioned = skills.filter(
+      (skill) => !requiredKeys.has(getListTextKey(skill)) && containsPhrase(text, getListTextKey(skill)),
+    )
 
     if (mentioned.length > 0) {
       result.strengths.push({ type: MATCH_ITEM_TYPES.SKILLS_MENTIONED, values: mentioned })
-    } else if (getListTextKey(opportunity.description)) {
-      result.unknowns.push({ type: MATCH_ITEM_TYPES.SKILLS_NOT_MENTIONED })
+    }
+
+    if (requiredSkills.length === 0) {
+      if (!getListTextKey(opportunity.description)) {
+        result.unknowns.push({ type: MATCH_ITEM_TYPES.NO_TEXT_FOR_SKILLS })
+      } else if (mentioned.length === 0) {
+        result.unknowns.push({ type: MATCH_ITEM_TYPES.SKILLS_NOT_MENTIONED })
+      }
     }
   }
 

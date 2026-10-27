@@ -7,6 +7,7 @@ import {
 import { getApplicationRegistrationBlocker } from '../domain/applicationRegistrationPolicy.js'
 import { getAllowedTargetStatuses } from '../domain/opportunityStatusPolicy.js'
 import CompatibilitySummary from './CompatibilitySummary.jsx'
+import RequiredSkillsPanel from './RequiredSkillsPanel.jsx'
 import useStatusChangeFocus from './useStatusChangeFocus.js'
 
 const ACTION_VERB_LABELS = {
@@ -39,6 +40,9 @@ function OpportunityCard({
   application,
   sourceName,
   compatibility,
+  isAiAvailable,
+  onSuggestRequiredSkills,
+  onSaveRequiredSkills,
   areStoredApplicationsUnavailable,
   isEditDisabled,
   isBeingEdited,
@@ -112,6 +116,13 @@ function OpportunityCard({
       {opportunity.description && (
         <p className="opportunity-description">{opportunity.description}</p>
       )}
+
+      <RequiredSkillsPanel
+        opportunity={opportunity}
+        isAiAvailable={isAiAvailable}
+        onSuggest={onSuggestRequiredSkills}
+        onSave={onSaveRequiredSkills}
+      />
 
       {compatibility && <CompatibilitySummary result={compatibility} />}
 

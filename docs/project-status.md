@@ -374,6 +374,18 @@ Luciano delegated the choice of the first preferences to the agent ("elegí lo q
 * **Backups and sync:** `schemaVersion: 5` adds `preferences` (or `null`); versions 1 to 4 are still accepted. Import adds the backup preferences only when this browser has none. Synchronization treats them as a single record like the profile: the most recent edit wins.
 * **Verification:** 15 new unit tests (276 in total, also under `Pacific/Pago_Pago`); 27 automated browser checks (validation, duplicates, keyboard checkbox toggling, canonical order, reload, removal focus, cross-tab updates, backup export and import, corrupted storage preserved, no overflow at five widths, no console errors), and the 42 profile checks still pass.
 
+### AI suggestions for required skills
+
+Approved by Luciano: option B (a free AI API behind a small backend), Supabase as the backend, sending the opportunity text to the AI provider, and starting with required-skill extraction. The provider (Groq, model `openai/gpt-oss-20b`, configurable through `GROQ_MODEL`) was chosen by the agent: free tier, no inference data retained by default according to its documentation, and strict JSON schema output.
+
+* **Never applies for the user:** AI only suggests skills. Nothing is submitted anywhere, and suggestions are saved only after the user reviews and confirms them.
+* **Edge Function** `supabase/functions/extract-required-skills/index.ts` (deployed with `verify_jwt = false`, because the new publishable keys are not JWTs; it does its own checks): POST only; JSON `{ title, description }` with the opportunity limits (200 and 10,000 characters) and a 32 KB body cap; CORS allowlist (`https://tato22-alt.github.io`, `http://127.0.0.1:5173`) and browser requests from other origins rejected; the posting is wrapped in `<posting>` tags and the system prompt says to ignore instructions inside it; strict JSON schema output; 20-second provider timeout; output re-validated and **only skills that literally appear in the posting are kept** (at most 30, 60 characters each, unique); short error codes only (`invalid_input`, `rate_limited`, `provider_busy`, `provider_error`, `invalid_output`, `timeout`, `not_configured`, `unavailable`), no provider details; nothing about the request is logged; the prompt version is returned.
+* **Quota protection** (`supabase/migrations/20261027000000_ai_usage_quota.sql`): table `public.ai_usage` with RLS enabled and no policies, and `consume_ai_quota`, executable only by `service_role`, which atomically allows 30 requests per client and 500 in total per UTC day. Clients are identified by an HMAC-SHA-256 of the IP address keyed with the project secret key, never the IP itself; rows older than yesterday are deleted. Calls without an `Origin` header (for example `curl`) are allowed but count against the same limits.
+* **Secrets:** `GROQ_API_KEY` is a Supabase Edge Function secret set by Luciano in the dashboard; it never appears in the repository, the frontend, or the chat. The frontend only receives the public project URL and publishable key (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, see `.env.example`); without them the AI button is hidden.
+* **Frontend:** `requiredSkillsClient.js` (infrastructure, 30-second timeout, known error codes only), `setRequiredSkills` (application, normalization, optimistic concurrency), and `RequiredSkillsPanel.jsx`: a collapsed «Skills requeridas (N)» block on each card to add or remove skills by hand and, when the opportunity has a description, «Sugerir skills con IA» with a privacy note, a loading state, Spanish error messages, and a checkbox review list («Agregar seleccionadas» / «Descartar»). Skills already saved are not suggested again.
+* **Compatibility:** required skills the profile lists are a strength; the others fill `MatchResult.missingSkills` and are shown as «Skills que pide y no tenés en tu perfil».
+* **Verification:** 7 new unit tests (291 in total); the Edge Function was tested locally with Node type stripping and mocked Deno, quota, and Groq (success, invented, duplicated and oversized skills dropped, prompt-injection-looking output dropped, CORS, method, input limits, quota exhaustion without calling the provider, provider errors, invalid output, missing configuration, IP never sent in clear); 20 browser checks with the function stubbed (only the opportunity text and the public key sent, nothing saved before confirming, only selected skills saved, missing skills in compatibility, no repeated suggestions, manual edits, rate-limit and network messages, reload, overflow, console); earlier suites still pass.
+
 ### Rule-based compatibility (first version)
 
 After the preferences were published, Luciano approved the proposed first version ("mándale cumbia nomás"): no score, only matches, warnings, and unknown data. The concrete rules were chosen by the agent and are reversible.
@@ -435,11 +447,11 @@ The repository does not yet include:
 * source monitoring;
 * opportunity discovery;
 * compatibility scores, weights, or recommendations (the first version only explains matches, warnings, and unknown data);
-* a backend of the project's own;
+* a backend of the project's own beyond the AI suggestion Edge Function;
 * a remote database (Google Drive appDataFolder holds a synchronization file, not a queryable database);
 * user accounts or authentication of the project's own (Google authorization is used only to reach the user's Drive);
 * server-side authorization;
-* artificial intelligence;
+* artificial intelligence beyond required-skill suggestions (no automatic applications, ever);
 * automated component or browser tests inside the repository.
 
 ## Removed Legacy Files
@@ -510,7 +522,7 @@ Each collection uses its own key (`it-job-search-assistant.opportunities`, `.app
 
 Same-origin tab changes are received through the browser `storage` event and reloaded through the repositories.
 
-The only remote services are Google Identity Services and the Google Drive API (`googleIdentity.js`, `googleDriveAppData.js`), used only when the user connects Drive.
+The remote services are Google Identity Services and the Google Drive API (`googleIdentity.js`, `googleDriveAppData.js`), used only when the user connects Drive, and the `extract-required-skills` Supabase Edge Function (`requiredSkillsClient.js`), called only when the user asks for AI suggestions.
 
 ## Current Limitations
 
@@ -544,7 +556,7 @@ The current implementation:
 * treats browser storage as untrusted input;
 * rejects malformed records and unsafe stored URLs before rendering;
 * preserves corrupted values instead of silently deleting them;
-* connects to external APIs only when the user connects Google Drive: Google Identity Services and the Drive API with the `drive.appdata` scope;
+* connects to external APIs only when the user connects Google Drive (Google Identity Services and the Drive API with the `drive.appdata` scope) or asks for AI suggestions (the Supabase Edge Function, which alone holds the Groq key);
 * keeps Google access tokens only in memory and never stores or logs them;
 * validates the remote Drive file with the same strict validators as backups and never overwrites an invalid remote file;
 * uses only a public OAuth client ID, set at build time; no secret exists in the frontend.
@@ -638,6 +650,7 @@ These gaps should be addressed only when the corresponding approved milestone re
 
 Candidates, each requiring Luciano's decisions before implementation:
 
-* compatibility refinements, each needing Luciano's decisions: structured required skills per opportunity, scores or weights, exclusion rules, or filtering by compatibility.
+* compatibility refinements, each needing Luciano's decisions: scores or weights, exclusion rules, or filtering by compatibility;
+* other AI help (draft messages, summaries), always reviewed by the user and never submitted automatically.
 
 No implementation is authorized until a milestone is explicitly approved.

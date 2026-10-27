@@ -33,6 +33,10 @@ jobs:
         env:
           # Public OAuth client ID (not a secret) that enables Google Drive synchronization.
           VITE_GOOGLE_CLIENT_ID: 89407035908-6pp4ha0p88q8t17371kao2brk3plhdfs.apps.googleusercontent.com
+          # Public Supabase URL and publishable key (not secrets) for the AI suggestion Edge
+          # Function. The Groq key is an Edge Function secret and is never here.
+          VITE_SUPABASE_URL: https://ptavzqbgaamnnacgercs.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_YiZTDmi2KCtnQTEfgXIgqg_UmBRYSQV
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:

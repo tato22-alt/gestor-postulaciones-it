@@ -6,6 +6,7 @@ function getOptionLabel(options, value) {
 }
 
 const ITEM_LABELS = {
+  [MATCH_ITEM_TYPES.REQUIRED_SKILLS_MET]: (values) => `Tenés skills que pide: ${values.join(', ')}.`,
   [MATCH_ITEM_TYPES.SKILLS_MENTIONED]: (values) => `Menciona tus skills: ${values.join(', ')}.`,
   [MATCH_ITEM_TYPES.SKILLS_NOT_MENTIONED]: () => 'La publicación no menciona ninguna de tus skills.',
   [MATCH_ITEM_TYPES.NO_TEXT_FOR_SKILLS]: () => 'No hay descripción para comparar tus skills.',
@@ -38,8 +39,12 @@ function CompatibilitySummary({ result }) {
   const summary = [
     pluralize(result.strengths.length, 'coincidencia', 'coincidencias'),
     pluralize(result.warnings.length, 'a revisar', 'a revisar'),
+    result.missingSkills.length > 0 &&
+      pluralize(result.missingSkills.length, 'skill faltante', 'skills faltantes'),
     pluralize(result.unknowns.length, 'sin datos', 'sin datos'),
-  ].join(' · ')
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <details className="compatibility">
@@ -58,6 +63,12 @@ function CompatibilitySummary({ result }) {
             </ul>
           </div>
         ))}
+        {result.missingSkills.length > 0 && (
+          <div className="compatibility-group compatibility-group--warnings">
+            <h4>Skills que pide y no tenés en tu perfil</h4>
+            <p>{result.missingSkills.join(', ')}</p>
+          </div>
+        )}
         <p className="form-hint">
           Comparación por texto con tu perfil y tus preferencias. Es orientativa: no descarta
           ofertas ni decide por vos.

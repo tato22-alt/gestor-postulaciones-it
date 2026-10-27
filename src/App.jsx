@@ -19,6 +19,7 @@ import { addProfileSkill, removeProfileSkill } from './application/manageProfile
 import { createSource, deleteSource, updateSource } from './application/manageSources.js'
 import planBackupImport from './application/planBackupImport.js'
 import registerApplication from './application/registerApplication.js'
+import setRequiredSkills from './application/manageRequiredSkills.js'
 import updateApplicationDetails from './application/updateApplicationDetails.js'
 import updateOpportunity from './application/updateOpportunity.js'
 import ApplicationList from './components/ApplicationList.jsx'
@@ -56,6 +57,7 @@ import {
   parseBackupText,
 } from './infrastructure/backupFile.js'
 import { downloadTextFile } from './infrastructure/fileDownload.js'
+import { createRequiredSkillsClient } from './infrastructure/requiredSkillsClient.js'
 import LocalStorageApplicationRepository, {
   APPLICATION_STORAGE_KEY,
 } from './infrastructure/LocalStorageApplicationRepository.js'
@@ -228,6 +230,15 @@ const EMPTY_PREFERENCES = Object.freeze({
   acceptedEmploymentTypes: [],
 })
 
+const REQUIRED_SKILLS_WARNINGS = {
+  conflict: 'Esta oportunidad cambió en otra pestaña. Las skills requeridas no se guardaron; probá de nuevo.',
+  not_found: 'La oportunidad ya no está disponible. Las skills requeridas no se guardaron.',
+  invalid_input: 'Las skills requeridas no son válidas y no se guardaron.',
+}
+
+const REQUIRED_SKILLS_SAVE_WARNING =
+  'Las skills requeridas se actualizaron en esta sesión, pero no pudieron guardarse en el navegador. El cambio puede perderse al recargar la página.'
+
 const OPPORTUNITY_SOURCE_MISSING_WARNING =
   'La fuente de esta oportunidad ya no existe. Tus datos no se guardaron: cancelá y cargá la oportunidad otra vez.'
 
@@ -248,6 +259,7 @@ const SKILL_REMOVE_SUCCESS_MESSAGE = 'Skill quitada.'
 const ROLE_ADD_SUCCESS_MESSAGE = 'Rol agregado.'
 const ROLE_REMOVE_SUCCESS_MESSAGE = 'Rol quitado.'
 const PREFERENCES_SUCCESS_MESSAGE = 'Preferencias actualizadas.'
+const REQUIRED_SKILLS_SUCCESS_MESSAGE = 'Skills requeridas actualizadas.'
 const BACKUP_EXPORT_SUCCESS_MESSAGE = 'Respaldo exportado.'
 const CSV_EXPORT_SUCCESS_MESSAGE = 'Planilla CSV exportada.'
 const FOLLOW_UP_SUCCESS_MESSAGE =
@@ -335,6 +347,15 @@ const initialPreferencesLoad = preferencesRepository.load()
 // Public OAuth client identifier for Google Drive synchronization. Without it, the
 // synchronization section is not shown.
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
+
+// Public Supabase project URL and publishable key for the AI Edge Function. Both are public;
+// the AI provider key stays in the function. Without them, AI suggestions are not shown.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? ''
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
+const requiredSkillsClient =
+  SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY
+    ? createRequiredSkillsClient({ supabaseUrl: SUPABASE_URL, publishableKey: SUPABASE_PUBLISHABLE_KEY })
+    : null
 
 function App() {
   const [opportunities, setOpportunities] = useState(initialOpportunityLoad.opportunities)
@@ -1200,6 +1221,38 @@ function App() {
       PREFERENCES_SUCCESS_MESSAGE,
     )
 
+  // The opportunity text goes to the Edge Function; the result is only a suggestion that the
+  // card shows for review.
+  const suggestRequiredSkills = (opportunity) =>
+    requiredSkillsClient
+      ? requiredSkillsClient.extract({ title: opportunity.title, description: opportunity.description })
+      : Promise.resolve({ ok: false, status: 'not_configured' })
+
+  const saveRequiredSkills = (opportunity, skills) => {
+    const result = setRequiredSkills(opportunities, {
+      id: opportunity.id,
+      expectedUpdatedAt: opportunity.updatedAt,
+      skills,
+      now: new Date(),
+    })
+
+    if (!result.ok) {
+      setPersistenceWarning(keepLoadWarningOr(LOAD_WARNING, REQUIRED_SKILLS_WARNINGS[result.status]))
+      return false
+    }
+
+    setOpportunities(result.opportunities)
+
+    if (opportunityRepository.saveAll(result.opportunities).ok) {
+      setPersistenceWarning(null)
+    } else {
+      setPersistenceWarning(keepLoadWarningOr(LOAD_WARNING, REQUIRED_SKILLS_SAVE_WARNING))
+    }
+
+    showSuccessFeedback(REQUIRED_SKILLS_SUCCESS_MESSAGE)
+    return true
+  }
+
   const saveSources = (nextSources) => {
     setSources(nextSources)
 
@@ -1524,6 +1577,9 @@ function App() {
             applications={applications}
             sourceNamesById={sourceNamesById}
             compatibilityByOpportunityId={compatibilityByOpportunityId}
+            isAiAvailable={requiredSkillsClient !== null}
+            onSuggestRequiredSkills={suggestRequiredSkills}
+            onSaveRequiredSkills={saveRequiredSkills}
             areStoredApplicationsUnavailable={areStoredApplicationsUnavailable}
             searchQuery={opportunitySearchQuery}
             statusFilter={opportunityStatusFilter}

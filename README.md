@@ -50,6 +50,13 @@ No requiere cuenta. Tus datos se guardan en tu navegador y, si querés, se sincr
 
 * cada oportunidad muestra qué coincide con tu perfil y tus preferencias (skills mencionadas, rol, modalidad y jornada), qué conviene revisar y qué no se puede comparar por falta de datos;
 * es orientativa: no hay puntaje, no descarta ofertas y no cambia su estado; decidir si postularte sigue siendo tuyo.
+* cada oportunidad puede tener **skills requeridas**, cargadas a mano o sugeridas con IA; la compatibilidad muestra cuáles tenés y cuáles te faltan.
+
+**Sugerencias con IA**
+
+* «Sugerir skills con IA» envía solo el título y la descripción de la oferta a una función de Supabase, que consulta a Groq;
+* la IA solo puede sugerir skills que aparecen literalmente en la oferta, y nada se guarda hasta que elegís cuáles agregar;
+* la app nunca se postula sola: preparar y enviar la postulación siempre lo hacés vos.
 
 **Tus datos**
 
@@ -75,7 +82,7 @@ No requiere cuenta. Tus datos se guardan en tu navegador y, si querés, se sincr
 
 ## Privacidad
 
-La información queda en el `localStorage` del navegador que usás. Si conectás Google Drive, la app guarda una copia en una carpeta privada de tu propia cuenta, a la que solo ella accede y que no le permite ver tus otros archivos. Los datos nunca pasan por un servidor propio de la app. Más detalles en la [política de privacidad](https://tato22-alt.github.io/gestor-postulaciones-it/privacidad.html).
+La información queda en el `localStorage` del navegador que usás. Si conectás Google Drive, la app guarda una copia en una carpeta privada de tu propia cuenta, a la que solo ella accede y que no le permite ver tus otros archivos. Tus datos personales nunca pasan por un servidor propio de la app; solo si pedís sugerencias con IA se envía el texto de esa oferta. Más detalles en la [política de privacidad](https://tato22-alt.github.io/gestor-postulaciones-it/privacidad.html).
 
 ## Tecnologías
 
