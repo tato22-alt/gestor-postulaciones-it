@@ -162,7 +162,7 @@ describe('preferences in backups, imports, and synchronization', () => {
     const text = createBackupText({ opportunities: [], applications: [], sources: [], preferences, now: NOW })
     const parsed = parseBackupText(text)
 
-    assert.equal(JSON.parse(text).schemaVersion, 5)
+    assert.equal(JSON.parse(text).schemaVersion, 6)
     assert.ok(parsed.preferences instanceof JobSearchPreferences)
     assert.deepEqual(parsed.preferences.targetRoles, ['QA'])
 

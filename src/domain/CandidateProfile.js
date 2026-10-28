@@ -10,6 +10,7 @@ class CandidateProfile {
     experienceSummary = '',
     languages = [],
     cvReference = '',
+    cvText = '',
     createdAt = new Date().toISOString(),
     updatedAt = createdAt,
   } = {}) {
@@ -21,6 +22,7 @@ class CandidateProfile {
     this.experienceSummary = experienceSummary
     this.languages = [...languages]
     this.cvReference = cvReference
+    this.cvText = cvText
     this.createdAt = createdAt
     this.updatedAt = updatedAt
   }

@@ -26,7 +26,7 @@ describe('backup file', () => {
     const result = parseBackupText(text)
 
     assert.equal(envelope.format, 'it-job-search-assistant.backup')
-    assert.equal(envelope.schemaVersion, 5)
+    assert.equal(envelope.schemaVersion, 6)
     assert.equal(envelope.profile, null)
     assert.equal(envelope.preferences, null)
     assert.equal(envelope.exportedAt, NOW)
@@ -43,7 +43,7 @@ describe('backup file', () => {
     assert.equal(parseBackupText('{nope').status, 'invalid_json')
     assert.equal(parseBackupText('[]').status, 'unknown_format')
     assert.equal(parseBackupText(tamper(valid, (b) => { b.format = 'other' })).status, 'unknown_format')
-    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 6 })).status, 'unsupported_version')
+    assert.equal(parseBackupText(tamper(valid, (b) => { b.schemaVersion = 7 })).status, 'unsupported_version')
   })
 
   it('accepts long descriptions saved before the text limits existed', () => {
@@ -92,7 +92,7 @@ describe('backup file', () => {
     const text = createBackupText({ opportunities: [], applications: [], sources: [], profile, now: NOW })
     const result = parseBackupText(text)
 
-    assert.deepEqual(JSON.parse(text).profile, { id: 'p1', skills: ['React', 'SQL Server'], createdAt: NOW, updatedAt: NOW })
+    assert.deepEqual(JSON.parse(text).profile, { id: 'p1', skills: ['React', 'SQL Server'], cvText: '', createdAt: NOW, updatedAt: NOW })
     assert.ok(result.profile instanceof CandidateProfile)
     assert.deepEqual(result.profile.skills, ['React', 'SQL Server'])
 

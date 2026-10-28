@@ -56,6 +56,7 @@ No requiere cuenta. Tus datos se guardan en tu navegador y, si querés, se sincr
 
 * «Sugerir skills con IA» envía solo el título y la descripción de la oferta a una función de Supabase, que consulta a Groq;
 * la IA solo puede sugerir skills que aparecen literalmente en la oferta, y nada se guarda hasta que elegís cuáles agregar;
+* en **Perfil** podés subir tu CV en PDF (se lee en tu navegador y no se sube) o pegar su texto; «Sugerir skills desde el CV» te muestra antes lo que se envía, sin mails, teléfonos, links, DNI ni CUIL, y vos elegís qué skills agregar;
 * la app nunca se postula sola: preparar y enviar la postulación siempre lo hacés vos.
 
 **Tus datos**
@@ -90,6 +91,8 @@ La información queda en el `localStorage` del navegador que usás. Si conectás
 * JavaScript y CSS;
 * `localStorage` del navegador;
 * Google Identity Services y la API de Google Drive (carpeta privada de la app);
+* pdf.js (`pdfjs-dist`) para leer el CV en PDF dentro del navegador;
+* una Edge Function de Supabase que consulta a Groq para las sugerencias con IA;
 * pruebas con `node:test`, el ejecutor nativo de Node.js;
 * GitHub Actions y GitHub Pages.
 

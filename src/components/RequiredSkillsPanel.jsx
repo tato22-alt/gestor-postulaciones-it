@@ -2,6 +2,8 @@ import { useId, useState } from 'react'
 import { validateSkillInput } from '../application/profileInput.js'
 import { SKILLS_MAX_COUNT, SKILL_MAX_LENGTH } from '../domain/candidateSkillsPolicy.js'
 import { getListTextKey } from '../domain/textListPolicy.js'
+import { DEFAULT_SUGGESTION_ERROR, SUGGESTION_ERRORS } from './aiSuggestionMessages.js'
+import SkillSuggestionReview from './SkillSuggestionReview.jsx'
 import TextListEditor from './TextListEditor.jsx'
 
 const SKILL_ERROR_MESSAGES = {
@@ -11,15 +13,6 @@ const SKILL_ERROR_MESSAGES = {
   too_many: `Podés cargar hasta ${SKILLS_MAX_COUNT} skills.`,
 }
 
-const SUGGESTION_ERRORS = {
-  rate_limited: 'Se alcanzó el límite diario de sugerencias. Probá mañana o cargalas a mano.',
-  provider_busy: 'El servicio de IA está ocupado. Probá de nuevo en unos minutos.',
-  timeout: 'El servicio de IA tardó demasiado. Probá de nuevo.',
-  network: 'No hay conexión con el servicio de IA. Revisá tu conexión y probá de nuevo.',
-  invalid_input: 'La descripción es demasiado larga o está vacía para pedir sugerencias.',
-  not_configured: 'Las sugerencias con IA todavía no están configuradas.',
-}
-const DEFAULT_SUGGESTION_ERROR = 'No pudimos obtener sugerencias. Probá de nuevo o cargalas a mano.'
 
 // Required skills of one opportunity: typed by the user or suggested by AI. Suggestions are
 // only a draft: nothing is saved until the user picks them and confirms.
@@ -53,18 +46,10 @@ function RequiredSkillsPanel({ opportunity, isAiAvailable, onSuggest, onSave }) 
       return
     }
 
-    setSuggestions(fresh.map((skill) => ({ skill, isSelected: true })))
+    setSuggestions(fresh)
   }
 
-  const toggleSuggestion = (skill) => {
-    setSuggestions((current) =>
-      current.map((item) => (item.skill === skill ? { ...item, isSelected: !item.isSelected } : item)),
-    )
-  }
-
-  const confirmSuggestions = () => {
-    const selected = suggestions.filter((item) => item.isSelected).map((item) => item.skill)
-
+  const confirmSuggestions = (selected) => {
     if (onSave(opportunity, [...required, ...selected]) !== false) {
       setSuggestions(null)
       setMessage(null)
@@ -123,33 +108,12 @@ function RequiredSkillsPanel({ opportunity, isAiAvailable, onSuggest, onSave }) 
         </p>
 
         {suggestions && (
-          <fieldset className="preference-option-group">
-            <legend>Sugerencias de la IA</legend>
-            <p className="form-hint">Desmarcá las que no correspondan.</p>
-            {suggestions.map((item) => (
-              <label key={item.skill} className="preference-option">
-                <input
-                  type="checkbox"
-                  checked={item.isSelected}
-                  onChange={() => toggleSuggestion(item.skill)}
-                />
-                {item.skill}
-              </label>
-            ))}
-            <div className="form-actions">
-              <button className="button button-secondary" type="button" onClick={() => setSuggestions(null)}>
-                Descartar
-              </button>
-              <button
-                className="button button-primary"
-                type="button"
-                disabled={!suggestions.some((item) => item.isSelected)}
-                onClick={confirmSuggestions}
-              >
-                Agregar seleccionadas
-              </button>
-            </div>
-          </fieldset>
+          <SkillSuggestionReview
+            key={suggestions.join('\n')}
+            skills={suggestions}
+            onConfirm={confirmSuggestions}
+            onDiscard={() => setSuggestions(null)}
+          />
         )}
       </div>
     </details>

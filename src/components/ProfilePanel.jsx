@@ -2,6 +2,7 @@ import { validateSkillInput, validateTargetRoleInput } from '../application/prof
 import { EMPLOYMENT_TYPES, MODALITIES } from '../constants/domainOptions.js'
 import { SKILLS_MAX_COUNT, SKILL_MAX_LENGTH } from '../domain/candidateSkillsPolicy.js'
 import { TARGET_ROLES_MAX_COUNT, TARGET_ROLE_MAX_LENGTH } from '../domain/jobSearchPreferencesPolicy.js'
+import CvPanel from './CvPanel.jsx'
 import TextListEditor from './TextListEditor.jsx'
 
 const SKILL_ERROR_MESSAGES = {
@@ -28,9 +29,15 @@ const OPTION_GROUPS = [
 
 function ProfilePanel({
   skills,
+  cvText,
   preferences,
+  isAiAvailable,
+  readPdf,
   onAddSkill,
   onRemoveSkill,
+  onAddSkills,
+  onSaveCv,
+  onSuggestFromCv,
   onAddTargetRole,
   onRemoveTargetRole,
   onSetPreferenceOption,
@@ -44,7 +51,8 @@ function ProfilePanel({
             <h2 id="profile-title">Perfil profesional</h2>
           </div>
           <p>
-            Cargá tus skills. Se usan para mostrar la compatibilidad de cada oportunidad.
+            Cargá tus skills a mano o a partir de tu CV. Se usan para mostrar la compatibilidad
+            de cada oportunidad.
           </p>
         </div>
 
@@ -63,6 +71,17 @@ function ProfilePanel({
           emptyText="Agregá las tecnologías y herramientas que sabés usar."
           onAdd={onAddSkill}
           onRemove={onRemoveSkill}
+        />
+
+        <CvPanel
+          key={cvText}
+          cvText={cvText}
+          skills={skills}
+          isAiAvailable={isAiAvailable}
+          readPdf={readPdf}
+          onSaveCv={onSaveCv}
+          onSuggestFromCv={onSuggestFromCv}
+          onAddSkills={onAddSkills}
         />
       </section>
 

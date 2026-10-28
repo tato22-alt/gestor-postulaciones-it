@@ -15,7 +15,12 @@ import {
   removeTargetRole,
   setPreferenceOption,
 } from './application/managePreferences.js'
-import { addProfileSkill, removeProfileSkill } from './application/manageProfile.js'
+import {
+  addProfileSkill,
+  addProfileSkills,
+  removeProfileSkill,
+  setProfileCv,
+} from './application/manageProfile.js'
 import { createSource, deleteSource, updateSource } from './application/manageSources.js'
 import planBackupImport from './application/planBackupImport.js'
 import registerApplication from './application/registerApplication.js'
@@ -57,6 +62,7 @@ import {
   parseBackupText,
 } from './infrastructure/backupFile.js'
 import { downloadTextFile } from './infrastructure/fileDownload.js'
+import { extractPdfText } from './infrastructure/pdfText.js'
 import { createRequiredSkillsClient } from './infrastructure/requiredSkillsClient.js'
 import LocalStorageApplicationRepository, {
   APPLICATION_STORAGE_KEY,
@@ -256,6 +262,8 @@ const SOURCE_EDIT_SUCCESS_MESSAGE = 'Fuente actualizada.'
 const SOURCE_DELETE_SUCCESS_MESSAGE = 'Fuente eliminada.'
 const SKILL_ADD_SUCCESS_MESSAGE = 'Skill agregada.'
 const SKILL_REMOVE_SUCCESS_MESSAGE = 'Skill quitada.'
+const SKILLS_ADD_SUCCESS_MESSAGE = 'Skills agregadas al perfil.'
+const CV_SAVE_SUCCESS_MESSAGE = 'CV guardado.'
 const ROLE_ADD_SUCCESS_MESSAGE = 'Rol agregado.'
 const ROLE_REMOVE_SUCCESS_MESSAGE = 'Rol quitado.'
 const PREFERENCES_SUCCESS_MESSAGE = 'Preferencias actualizadas.'
@@ -1172,6 +1180,32 @@ function App() {
     return true
   }
 
+  const addSkillsFromCv = (skills) => {
+    const result = addProfileSkills(profile, { skills, now: new Date() })
+
+    if (!result.ok) return false
+
+    saveProfile(result.profile)
+    showSuccessFeedback(SKILLS_ADD_SUCCESS_MESSAGE)
+    return true
+  }
+
+  const saveCv = (cvText) => {
+    const result = setProfileCv(profile, { cvText, now: new Date() })
+
+    if (!result.ok) return false
+
+    saveProfile(result.profile)
+    showSuccessFeedback(CV_SAVE_SUCCESS_MESSAGE)
+    return true
+  }
+
+  // Receives CV text that already had contact data removed and was shown to the user.
+  const suggestSkillsFromCv = (text) =>
+    requiredSkillsClient
+      ? requiredSkillsClient.extractFromCv({ text })
+      : Promise.resolve({ ok: false, status: 'not_configured' })
+
   const removeSkill = (skill) => {
     const result = removeProfileSkill(profile, { skill, now: new Date() })
 
@@ -1653,8 +1687,14 @@ function App() {
         >
           <ProfilePanel
             skills={profile?.skills ?? []}
+            cvText={profile?.cvText ?? ''}
+            isAiAvailable={requiredSkillsClient !== null}
+            readPdf={extractPdfText}
             onAddSkill={addSkill}
             onRemoveSkill={removeSkill}
+            onAddSkills={addSkillsFromCv}
+            onSaveCv={saveCv}
+            onSuggestFromCv={suggestSkillsFromCv}
             preferences={preferences ?? EMPTY_PREFERENCES}
             onAddTargetRole={addRole}
             onRemoveTargetRole={removeRole}

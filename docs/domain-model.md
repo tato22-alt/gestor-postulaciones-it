@@ -10,7 +10,7 @@ El modelo de dominio representa los conceptos principales del asistente de búsq
 
 Representa información profesional no sensible y relativamente estable de una persona candidata: formación, habilidades, idiomas y referencia al CV. No contiene preferencias de búsqueda ni lógica de postulaciones.
 
-Hoy solo las skills (`skills`) se pueden editar y se guardan, junto con `id`, `createdAt` y `updatedAt`. Hay un único perfil por persona. Las reglas viven en `candidateSkillsPolicy.js`: cada skill es texto libre de hasta 60 caracteres, con como máximo 100 skills, y dos skills que solo difieren en mayúsculas, acentos o espacios se consideran la misma. El resto de los campos de la clase todavía no se usa ni se persiste.
+Hoy se editan y se guardan las skills (`skills`) y el texto del CV (`cvText`), junto con `id`, `createdAt` y `updatedAt`. Hay un único perfil por persona. Las reglas viven en `candidateSkillsPolicy.js`: cada skill es texto libre de hasta 60 caracteres, con como máximo 100 skills, y dos skills que solo difieren en mayúsculas, acentos o espacios se consideran la misma. El texto del CV sigue `cvPolicy.js`: hasta 20.000 caracteres, con espacios normalizados y párrafos conservados. Antes de mandar el CV a la IA, `redactContactData` quita mails, links, teléfonos, DNI y CUIL/CUIT; el nombre no se puede detectar de forma confiable y puede quedar. El resto de los campos de la clase todavía no se usa ni se persiste.
 
 ### `JobSearchPreferences`
 

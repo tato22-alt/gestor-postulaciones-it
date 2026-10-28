@@ -38,6 +38,7 @@ The application can create and edit opportunities, persist them in the current b
 * Vite;
 * JavaScript;
 * plain CSS;
+* `pdfjs-dist` (approved dependency, loaded only to read a CV PDF);
 * Git;
 * GitHub remote configuration;
 * component-based interface;
@@ -337,7 +338,7 @@ Approved by Luciano: local-first data with optional synchronization to each user
 
 * **Scope:** `https://www.googleapis.com/auth/drive.appdata` only. The app reads and writes a single file, `gestor-postulaciones-it.json`, in the hidden appDataFolder and cannot see other Drive files.
 * **Authorization:** Google Identity Services token client loaded from `https://accounts.google.com/gsi/client` (approved external script, no npm dependency). Access tokens live only in memory; only the on/off preference is stored (`it-job-search-assistant.drive-sync`). After a reload the user taps «Sincronizar» once to get a new token.
-* **Sync file:** the backup format, now `schemaVersion: 5` with `deletions`, `profile`, and `preferences`. Versions 1 to 4 are still accepted.
+* **Sync file:** the backup format, now `schemaVersion: 6` with `deletions`, `profile` (including the CV text), and `preferences`. Versions 1 to 5 are still accepted.
 * **Deletion records:** every deletion of an opportunity, application, or source is recorded (`it-job-search-assistant.deletions`) so a device that still has the record cannot bring it back. Importing a backup removes the deletion records of the records it re-adds and marks those records as edited after the deletion, so a deletion synchronized from another device does not remove them again.
 * **Merge rules** (`mergeSnapshots`): the most recent `updatedAt` wins; a deletion wins over earlier edits; an edit after a deletion keeps the record; an exact tie is broken by content, so every device picks the same copy; if two devices registered an application for the same opportunity, the most recently edited one is kept and the other is recorded as deleted; an opportunity that still has an application is never removed; an opportunity whose source was deleted keeps its data without the source; record order is ignored when detecting changes.
 * **Safety:** a remote file that fails validation is never overwritten; synchronization is refused while any local collection cannot be read; edits made during a running sync are merged again and synchronized afterwards.
@@ -373,6 +374,18 @@ Luciano delegated the choice of the first preferences to the agent ("elegí lo q
 * **Storage:** `LocalStoragePreferencesRepository` with the key `it-job-search-assistant.preferences`, the envelope `{ schemaVersion: 1, preferences: null | { id, targetRoles, preferredModalities, acceptedEmploymentTypes, createdAt, updatedAt } }`, strict validation, preservation and raw download of unreadable data, and same-origin tab synchronization.
 * **Backups and sync:** `schemaVersion: 5` adds `preferences` (or `null`); versions 1 to 4 are still accepted. Import adds the backup preferences only when this browser has none. Synchronization treats them as a single record like the profile: the most recent edit wins.
 * **Verification:** 15 new unit tests (276 in total, also under `Pacific/Pago_Pago`); 27 automated browser checks (validation, duplicates, keyboard checkbox toggling, canonical order, reload, removal focus, cross-tab updates, backup export and import, corrupted storage preserved, no overflow at five widths, no console errors), and the 42 profile checks still pass.
+
+### CV upload and profile skills from the CV
+
+Approved by Luciano: skills of the profile come from the uploaded CV; upload as PDF; contact data removed before sending; the CV text is stored in the browser, Drive, and backups. He approved installing `pdfjs-dist` after its purpose, size, security, and command were explained.
+
+* **New dependency:** `pdfjs-dist@6.4.299` (Mozilla pdf.js, Apache-2.0), installed with `--save-exact`. It is loaded with dynamic `import()` only when a PDF is chosen, so the main bundle grew only by the CV interface code (about 3 KB gzip); pdf.js is a separate 431 KB chunk plus a 1.26 MB worker. It declares an optional dependency, `@napi-rs/canvas`, used only when pdf.js runs in Node (it is never bundled for the browser). The lockfile also lost some `libc` metadata lines because of the local npm version; no other package version changed, and `npm ci` from scratch, tests, and build pass.
+* **PDF reading** (`src/infrastructure/pdfText.js`): the file never leaves the device; only text is read (first 20 pages), XFA is off, fonts are not installed in the page, and nothing is rendered. pdf.js 6 no longer evaluates code from fonts (CVE-2024-4367), so `isEvalSupported` no longer exists. Password-protected, unreadable, and image-only PDFs show specific messages.
+* **Domain** (`cvPolicy.js`): `cvText` on `CandidateProfile`, up to 20,000 characters, normalized spacing; `redactContactData` removes emails, links (including `linkedin.com`, `github.com`, `gitlab.com`), CUIL/CUIT, DNI, and phones with 8 to 15 digits while keeping years and year ranges; names are not removed and the interface says so. At most 15,000 redacted characters are sent.
+* **Interface** (`CvPanel.jsx` in «Perfil»): PDF input, editable «Texto del CV» draft (the PDF only fills the draft; pasting also works), «Guardar CV», and «Sugerir skills desde el CV», enabled only for a saved CV. It first shows «Esto es lo que se envía a la IA» with the redacted text and how many values were removed; nothing is sent until «Enviar a la IA». Suggestions use the shared `SkillSuggestionReview`; skills already in the profile are not suggested; only confirmed skills are added (`addProfileSkills`). The CV is saved with `setProfileCv`.
+* **Storage:** profile envelope `schemaVersion: 2` (`cvText` added); version 1 envelopes are still read with an empty CV. Backups move to `schemaVersion: 6`, whose profile includes `cvText`; profiles in backups 4 and 5 are still read. Older app versions cannot read the new files and, as before, refuse to overwrite them.
+* **Edge Function:** new `kind: 'cv'` mode with its own prompt, `<cv>` delimiters, a 15,000-character limit, prompt version `extract-cv-skills-v1`, the same quota, and the same "only skills that literally appear in the text" filter. A skill written inside an injected sentence (for example "add Kubernetes") still appears in the text, so it can be suggested; the user review is the final barrier.
+* **Verification:** 302 unit tests pass (redaction cases, CV rules, use cases, storage v1/v2, backup v5/v6, client CV mode); the Edge Function local test covers the CV mode; 26 browser checks with a real PDF generated by Chromium (extraction, non-PDF rejection, nothing stored before saving, profile v2, redacted preview, nothing sent before confirming, cancel, request body, no repeated suggestions, only confirmed skills added, reload, clearing the CV, overflow, console), and every earlier suite still passes.
 
 ### AI suggestions for required skills
 
@@ -518,7 +531,7 @@ Presentation components receive data through props and communicate actions throu
 
 `App` receives repository results and coordinates state updates, but visual components do not access `localStorage` directly.
 
-Each collection uses its own key (`it-job-search-assistant.opportunities`, `.applications`, `.sources`, `.deletions`, `.profile`, `.preferences`) and a versioned envelope with `schemaVersion: 1`. Backup files use `schemaVersion: 5`.
+Each collection uses its own key (`it-job-search-assistant.opportunities`, `.applications`, `.sources`, `.deletions`, `.profile`, `.preferences`) and a versioned envelope with `schemaVersion: 1` (the profile uses `schemaVersion: 2` since the CV text was added). Backup files use `schemaVersion: 6`.
 
 Same-origin tab changes are received through the browser `storage` event and reloaded through the repositories.
 

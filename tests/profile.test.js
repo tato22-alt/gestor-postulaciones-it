@@ -119,8 +119,8 @@ describe('LocalStorageProfileRepository', () => {
     const profile = profileWith(['React'], { name: 'No se guarda' })
     assert.equal(repository.save(profile).ok, true)
     assert.deepEqual(JSON.parse(storage.getItem(PROFILE_STORAGE_KEY)), {
-      schemaVersion: 1,
-      profile: { id: 'profile-1', skills: ['React'], createdAt: NOW, updatedAt: NOW },
+      schemaVersion: 2,
+      profile: { id: 'profile-1', skills: ['React'], cvText: '', createdAt: NOW, updatedAt: NOW },
     })
 
     const loaded = new LocalStorageProfileRepository(storage).load()
@@ -159,7 +159,7 @@ describe('LocalStorageProfileRepository', () => {
 
   it('reports an unsupported version and storage failures', () => {
     const unsupported = new LocalStorageProfileRepository(
-      new MemoryStorage({ [PROFILE_STORAGE_KEY]: JSON.stringify({ schemaVersion: 2, profile: null }) }),
+      new MemoryStorage({ [PROFILE_STORAGE_KEY]: JSON.stringify({ schemaVersion: 3, profile: null }) }),
     )
     assert.equal(unsupported.load().status, 'unsupported_version')
 
@@ -213,5 +213,43 @@ describe('mergeSnapshots with a profile', () => {
     assert.equal(result.profile, null)
     assert.equal(result.changedLocal, false)
     assert.equal(result.changedRemote, false)
+  })
+})
+
+describe('profile CV text', () => {
+  it('still reads version 1 profiles without a CV', () => {
+    const storage = new MemoryStorage({
+      [PROFILE_STORAGE_KEY]: JSON.stringify({
+        schemaVersion: 1,
+        profile: { id: 'p', skills: ['Git'], createdAt: NOW, updatedAt: NOW },
+      }),
+    })
+    const loaded = new LocalStorageProfileRepository(storage).load()
+
+    assert.equal(loaded.ok, true)
+    assert.equal(loaded.profile.cvText, '')
+  })
+
+  it('round-trips the CV text and rejects a version 1 record with a CV', () => {
+    const storage = new MemoryStorage()
+    const repository = new LocalStorageProfileRepository(storage)
+
+    assert.equal(repository.save(profileWith(['Git'], { cvText: 'Soporte IT\n\nJava y SQL' })).ok, true)
+    assert.equal(new LocalStorageProfileRepository(storage).load().profile.cvText, 'Soporte IT\n\nJava y SQL')
+
+    const invalid = new MemoryStorage({
+      [PROFILE_STORAGE_KEY]: JSON.stringify({
+        schemaVersion: 1,
+        profile: { id: 'p', skills: [], cvText: 'x', createdAt: NOW, updatedAt: NOW },
+      }),
+    })
+    assert.equal(new LocalStorageProfileRepository(invalid).load().ok, false)
+  })
+
+  it('rejects an oversized or unnormalized CV text', () => {
+    const repository = new LocalStorageProfileRepository(new MemoryStorage())
+
+    assert.equal(repository.save(profileWith([], { cvText: 'c'.repeat(20001) })).status, 'invalid_data')
+    assert.equal(repository.save(profileWith([], { cvText: '  espacios  ' })).status, 'invalid_data')
   })
 })

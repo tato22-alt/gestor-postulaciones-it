@@ -1,5 +1,6 @@
 import CandidateProfile from '../domain/CandidateProfile.js'
 import { isValidSkillList } from '../domain/candidateSkillsPolicy.js'
+import { isValidCvText } from '../domain/cvPolicy.js'
 import {
   hasExactFields,
   isNonEmptyString,
@@ -9,18 +10,27 @@ import {
 
 export const PROFILE_STORAGE_KEY = 'it-job-search-assistant.profile'
 
-const SCHEMA_VERSION = 1
+// Version 2 adds the CV text. Version 1 envelopes are still read.
+const SCHEMA_VERSION = 2
+export const PROFILE_RECORD_VERSION = 2
 
-// Only the approved profile data is persisted: the skills. Other CandidateProfile fields
-// are not editable yet, so they are never stored.
-const PROFILE_FIELDS = ['id', 'skills', 'createdAt', 'updatedAt']
+// Only the approved profile data is persisted: the skills and, from version 2, the CV text.
+// Other CandidateProfile fields are not editable yet, so they are never stored.
+const PROFILE_FIELDS_BY_VERSION = {
+  1: ['id', 'skills', 'createdAt', 'updatedAt'],
+  2: ['id', 'skills', 'cvText', 'createdAt', 'updatedAt'],
+}
 
-export function isValidStoredProfile(value) {
+export function isValidStoredProfile(value, recordVersion = PROFILE_RECORD_VERSION) {
+  const fields = PROFILE_FIELDS_BY_VERSION[recordVersion]
+
   return (
+    Boolean(fields) &&
     isPlainObject(value) &&
-    hasExactFields(value, PROFILE_FIELDS) &&
+    hasExactFields(value, fields) &&
     isNonEmptyString(value.id) &&
     isValidSkillList(value.skills) &&
+    (recordVersion < 2 || isValidCvText(value.cvText)) &&
     isValidTimestamp(value.createdAt) &&
     isValidTimestamp(value.updatedAt)
   )
@@ -30,6 +40,7 @@ export function serializeProfile(profile) {
   return {
     id: profile.id,
     skills: [...profile.skills],
+    cvText: profile.cvText,
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
   }
@@ -39,6 +50,7 @@ export function rehydrateProfile(record) {
   return new CandidateProfile({
     id: record.id,
     skills: record.skills,
+    cvText: record.cvText ?? '',
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   })
@@ -80,13 +92,13 @@ class LocalStorageProfileRepository {
       return this.blockPersistence('corrupted')
     }
 
-    if (envelope.schemaVersion !== SCHEMA_VERSION) {
+    if (envelope.schemaVersion !== 1 && envelope.schemaVersion !== SCHEMA_VERSION) {
       return this.blockPersistence('unsupported_version')
     }
 
     if (
       !hasExactFields(envelope, ['schemaVersion', 'profile']) ||
-      (envelope.profile !== null && !isValidStoredProfile(envelope.profile))
+      (envelope.profile !== null && !isValidStoredProfile(envelope.profile, envelope.schemaVersion))
     ) {
       return this.blockPersistence('corrupted')
     }

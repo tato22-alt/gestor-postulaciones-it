@@ -24,8 +24,9 @@ import { hasExactFields, isPlainObject, isValidTimestamp } from './storageValida
 export const BACKUP_FORMAT = 'it-job-search-assistant.backup'
 // Version 2 adds job sources, version 3 adds deletion records, which synchronization
 // needs, version 4 adds the candidate profile (or null), and version 5 adds the job search
-// preferences (or null). Older versions are still accepted.
-export const BACKUP_SCHEMA_VERSION = 5
+// preferences (or null), and version 6 adds the CV text to the profile. Older versions are
+// still accepted.
+export const BACKUP_SCHEMA_VERSION = 6
 export const BACKUP_MAX_BYTES = 5 * 1024 * 1024
 
 const BACKUP_FIELDS_BY_VERSION = {
@@ -33,6 +34,17 @@ const BACKUP_FIELDS_BY_VERSION = {
   2: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications', 'sources'],
   3: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications', 'sources', 'deletions'],
   4: ['format', 'schemaVersion', 'exportedAt', 'opportunities', 'applications', 'sources', 'deletions', 'profile'],
+  6: [
+    'format',
+    'schemaVersion',
+    'exportedAt',
+    'opportunities',
+    'applications',
+    'sources',
+    'deletions',
+    'profile',
+    'preferences',
+  ],
   5: [
     'format',
     'schemaVersion',
@@ -132,7 +144,7 @@ export function parseBackupText(text) {
     !Array.isArray(deletions) ||
     !deletions.every(isValidDeletionRecord) ||
     !hasUniqueDeletionKeys(deletions) ||
-    (profile !== null && !isValidStoredProfile(profile)) ||
+    (profile !== null && !isValidStoredProfile(profile, backup.schemaVersion >= 6 ? 2 : 1)) ||
     (preferences !== null && !isValidStoredPreferences(preferences)) ||
     !isValidTimestamp(backup.exportedAt) ||
     !Array.isArray(backup.opportunities) ||
